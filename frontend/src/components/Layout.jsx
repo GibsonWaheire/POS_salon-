@@ -1,14 +1,14 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { 
   LayoutDashboard, 
-  Calendar, 
-  Users, 
   Scissors, 
   UserCog, 
   CreditCard,
-  ShoppingCart,
   LogOut,
-  User
+  User,
+  Package,
+  TrendingDown,
+  FileText
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
@@ -16,13 +16,15 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
 const navigation = [
-  { name: "POS", href: "/pos", icon: ShoppingCart },
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Appointments", href: "/appointments", icon: Calendar },
-  { name: "Customers", href: "/customers", icon: Users },
-  { name: "Services", href: "/services", icon: Scissors },
   { name: "Staff", href: "/staff", icon: UserCog },
   { name: "Payments", href: "/payments", icon: CreditCard },
+  { name: "Inventory", href: "/inventory", icon: Package },
+  { name: "Expenses", href: "/expenses", icon: TrendingDown },
+  { name: "Reports", href: "/reports", icon: FileText },
+  { name: "Services", href: "/services", icon: Scissors },
+  // Appointments and Customers removed - not used in walk-in only business model
+  // POS removed - only accessible via staff login
 ]
 
 export default function Layout() {

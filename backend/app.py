@@ -99,6 +99,9 @@ def seed_demo_staff_if_needed():
             for staff_data in DEMO_STAFF:
                 # Remove 'id' from staff_data as it's auto-generated
                 staff_data_clean = {k: v for k, v in staff_data.items() if k != 'id'}
+                # Ensure is_active is set (default to True if not specified)
+                if 'is_active' not in staff_data_clean:
+                    staff_data_clean['is_active'] = True
                 existing = Staff.query.filter_by(email=staff_data_clean['email']).first()
                 if not existing:
                     staff = Staff(**staff_data_clean)

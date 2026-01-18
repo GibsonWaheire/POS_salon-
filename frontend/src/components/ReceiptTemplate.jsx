@@ -9,7 +9,9 @@ export default function ReceiptTemplate({
   subtotal, 
   tax, 
   total, 
-  paymentMethod 
+  paymentMethod,
+  kraPin = "P051234567K", // Default KRA PIN - should be configurable
+  transactionCode = null // M-Pesa transaction code
 }) {
 
   const formatKES = (amount) => {
@@ -80,6 +82,7 @@ export default function ReceiptTemplate({
           </h1>
           <p style={{ margin: '2px 0', fontSize: '9px', lineHeight: '1.3' }}>Nairobi, Kenya</p>
           <p style={{ margin: '2px 0', fontSize: '9px' }}>Tel: +254 700 000 000</p>
+          <p style={{ margin: '2px 0', fontSize: '9px', fontWeight: 'bold' }}>KRA PIN: {kraPin}</p>
         </div>
 
         {/* Receipt Details */}
@@ -156,7 +159,7 @@ export default function ReceiptTemplate({
             <span>{formatKES(subtotal)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '10px' }}>
-            <span>VAT (8%):</span>
+            <span>VAT (16%):</span>
             <span>{formatKES(tax)}</span>
           </div>
           <div style={{ 
@@ -187,6 +190,11 @@ export default function ReceiptTemplate({
           <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#006400' }}>
             {paymentMethod ? paymentMethod.replace(/-/g, ' ').toUpperCase() : 'CASH'}
           </div>
+          {transactionCode && (
+            <div style={{ fontSize: '9px', color: '#666', marginTop: '4px' }}>
+              Transaction: {transactionCode}
+            </div>
+          )}
         </div>
 
         {/* Manager Signature Section */}

@@ -8,6 +8,11 @@ class Customer(db.Model):
     name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), unique=True)
     email = db.Column(db.String(100))
+    loyalty_points = db.Column(db.Integer, default=0)
+    total_visits = db.Column(db.Integer, default=0)
+    total_spent = db.Column(db.Float, default=0.0)
+    last_visit = db.Column(db.DateTime)
+    preferences = db.Column(db.Text)  # JSON string for preferences
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -19,6 +24,11 @@ class Customer(db.Model):
             'name': self.name,
             'phone': self.phone,
             'email': self.email,
+            'loyalty_points': self.loyalty_points,
+            'total_visits': self.total_visits,
+            'total_spent': self.total_spent,
+            'last_visit': self.last_visit.isoformat() if self.last_visit else None,
+            'preferences': self.preferences,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
@@ -54,10 +64,13 @@ class Staff(db.Model):
     email = db.Column(db.String(100))
     role = db.Column(db.String(50))  # e.g., 'stylist', 'receptionist', 'manager'
     pin = db.Column(db.String(255))  # Hashed PIN in production (5 chars: 4 digits + 1 special char)
+    is_active = db.Column(db.Boolean, default=True)
+    last_login = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
     appointments = db.relationship('Appointment', backref='staff', lazy=True)
+    login_logs = db.relationship('StaffLoginLog', backref='staff', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
@@ -66,6 +79,8 @@ class Staff(db.Model):
             'phone': self.phone,
             'email': self.email,
             'role': self.role,
+            'is_active': self.is_active,
+            'last_login': self.last_login.isoformat() if self.last_login else None,
             'created_at': self.created_at.isoformat() if self.created_at else None
             # PIN is intentionally excluded from to_dict() for security
         }
@@ -120,8 +135,10 @@ class Payment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    payment_method = db.Column(db.String(50))  # cash, card, mobile_money, etc.
+    payment_method = db.Column(db.String(50))  # cash, card, m_pesa, airtel_money, etc.
     status = db.Column(db.String(20), default='pending')  # pending, completed, refunded
+    transaction_code = db.Column(db.String(50))  # M-Pesa transaction code, etc.
+    receipt_number = db.Column(db.String(50))  # Receipt number for tracking
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def to_dict(self):
@@ -131,6 +148,138 @@ class Payment(db.Model):
             'amount': self.amount,
             'payment_method': self.payment_method,
             'status': self.status,
+            'transaction_code': self.transaction_code,
+            'receipt_number': self.receipt_number,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+class StaffLoginLog(db.Model):
+    __tablename__ = 'staff_login_logs'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    staff_id = db.Column(db.Integer, db.ForeignKey('staff.id'), nullable=False)
+    login_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    logout_time = db.Column(db.DateTime)
+    session_duration = db.Column(db.Integer)  # Duration in seconds
+    ip_address = db.Column(db.String(45))  # IPv6 max length
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'staff_id': self.staff_id,
+            'login_time': self.login_time.isoformat() if self.login_time else None,
+            'logout_time': self.logout_time.isoformat() if self.logout_time else None,
+            'session_duration': self.session_duration,
+            'ip_address': self.ip_address
+        }
+
+class Product(db.Model):
+    __tablename__ = 'products'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text)
+    category = db.Column(db.String(50))  # hair_products, nail_products, tools, supplies
+    sku = db.Column(db.String(50), unique=True)  # Stock Keeping Unit
+    unit_price = db.Column(db.Float, nullable=False)  # Cost price
+    selling_price = db.Column(db.Float)  # Selling price (if applicable)
+    stock_quantity = db.Column(db.Integer, default=0)
+    min_stock_level = db.Column(db.Integer, default=5)  # Alert when below this
+    unit = db.Column(db.String(20), default='piece')  # piece, bottle, box, etc.
+    supplier = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    product_usage = db.relationship('ProductUsage', backref='product', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'category': self.category,
+            'sku': self.sku,
+            'unit_price': self.unit_price,
+            'selling_price': self.selling_price,
+            'stock_quantity': self.stock_quantity,
+            'min_stock_level': self.min_stock_level,
+            'unit': self.unit,
+            'supplier': self.supplier,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+            'is_low_stock': self.stock_quantity <= self.min_stock_level
+        }
+
+class ProductUsage(db.Model):
+    __tablename__ = 'product_usage'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=False)
+    quantity_used = db.Column(db.Float, nullable=False)
+    used_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'product_id': self.product_id,
+            'appointment_id': self.appointment_id,
+            'quantity_used': self.quantity_used,
+            'used_at': self.used_at.isoformat() if self.used_at else None
+        }
+
+class Expense(db.Model):
+    __tablename__ = 'expenses'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    category = db.Column(db.String(50), nullable=False)  # rent, utilities, supplies, salaries, etc.
+    description = db.Column(db.Text, nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    expense_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    receipt_number = db.Column(db.String(50))  # Receipt/invoice number
+    paid_by = db.Column(db.String(100))  # Who paid
+    created_by = db.Column(db.Integer, db.ForeignKey('staff.id'))  # Staff who recorded
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'category': self.category,
+            'description': self.description,
+            'amount': self.amount,
+            'expense_date': self.expense_date.isoformat() if self.expense_date else None,
+            'receipt_number': self.receipt_number,
+            'paid_by': self.paid_by,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+class Shift(db.Model):
+    __tablename__ = 'shifts'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    staff_id = db.Column(db.Integer, db.ForeignKey('staff.id'), nullable=False)
+    shift_date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    clock_in = db.Column(db.DateTime)  # Actual clock in time
+    clock_out = db.Column(db.DateTime)  # Actual clock out time
+    status = db.Column(db.String(20), default='scheduled')  # scheduled, active, completed, missed
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'staff_id': self.staff_id,
+            'shift_date': self.shift_date.isoformat() if self.shift_date else None,
+            'start_time': self.start_time.strftime('%H:%M') if self.start_time else None,
+            'end_time': self.end_time.strftime('%H:%M') if self.end_time else None,
+            'clock_in': self.clock_in.isoformat() if self.clock_in else None,
+            'clock_out': self.clock_out.isoformat() if self.clock_out else None,
+            'status': self.status,
+            'notes': self.notes,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

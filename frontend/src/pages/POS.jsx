@@ -28,6 +28,7 @@ import {
   History,
   Clock,
 } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 const categories = [
   { id: "all", name: "All Services" },
@@ -139,6 +140,8 @@ export default function POS() {
   const [showReceipt, setShowReceipt] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("")
   const [sessionLocked, setSessionLocked] = useState(false)
+  const [transactionCode, setTransactionCode] = useState("")
+  const [showTransactionInput, setShowTransactionInput] = useState(false)
   const [staffStats, setStaffStats] = useState({
     clients_served_today: 0,
     commission_today: 0
@@ -286,7 +289,7 @@ export default function POS() {
   }
 
   const subtotal = currentSale.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-  const tax = subtotal * 0.08 // 8% VAT in Kenya
+  const tax = subtotal * 0.16 // 16% VAT in Kenya (KRA standard)
   const total = subtotal + tax
   const totalCommission = currentSale.reduce((sum, item) => {
     const commissionRate = item.commissionRate || defaultCommissionRate
@@ -392,12 +395,13 @@ export default function POS() {
         const paymentResponse = await fetch("http://localhost:5001/api/payments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+            body: JSON.stringify({
             appointment_id: appointment.id,
             amount: total,
             payment_method: method.toLowerCase().replace("-", "_"),
             status: "completed",
-            receipt_number: receiptNumber // Pass receipt number to backend
+            receipt_number: receiptNumber,
+            transaction_code: method === "M-Pesa" ? transactionCode : null
           })
         })
         
@@ -496,6 +500,8 @@ export default function POS() {
             tax={tax}
             total={total}
             paymentMethod={paymentMethod || "Cash"}
+            transactionCode={transactionCode}
+            kraPin="P051234567K"
           />
         </>
       )}
@@ -847,6 +853,52 @@ export default function POS() {
           </div>
         </div>
       </div>
+
+      {/* M-Pesa Transaction Code Dialog */}
+      <Dialog open={showTransactionInput} onOpenChange={setShowTransactionInput}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enter M-Pesa Transaction Code</DialogTitle>
+            <DialogDescription>
+              Please enter the M-Pesa transaction code from the customer's phone
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="transaction-code">Transaction Code</Label>
+              <Input
+                id="transaction-code"
+                placeholder="e.g., QGH7X2K9L8"
+                value={transactionCode}
+                onChange={(e) => setTransactionCode(e.target.value.toUpperCase())}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && transactionCode) {
+                    setShowTransactionInput(false)
+                    processPayment("M-Pesa")
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowTransactionInput(false)
+              setTransactionCode("")
+              setPaymentMethod("")
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={() => {
+              if (transactionCode) {
+                setShowTransactionInput(false)
+                processPayment("M-Pesa")
+              }
+            }} disabled={!transactionCode}>
+              Confirm Payment
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

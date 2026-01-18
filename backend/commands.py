@@ -61,6 +61,9 @@ def seed_staff(force):
     for staff_data in demo_staff_list:
         # Remove 'id' from staff_data as it's auto-generated
         staff_data_clean = {k: v for k, v in staff_data.items() if k != 'id'}
+        # Ensure is_active is set (default to True if not specified)
+        if 'is_active' not in staff_data_clean:
+            staff_data_clean['is_active'] = True
         existing = Staff.query.filter_by(email=staff_data_clean['email']).first()
         if not existing:
             staff = Staff(**staff_data_clean)
@@ -84,12 +87,13 @@ def list_staff():
         return
     
     click.echo(f'Found {len(staff_list)} staff member(s):')
-    click.echo('-' * 80)
-    click.echo(f"{'ID':<5} {'Name':<25} {'Email':<30} {'Role':<20} {'PIN'}")
-    click.echo('-' * 80)
+    click.echo('-' * 100)
+    click.echo(f"{'ID':<5} {'Name':<25} {'Email':<30} {'Role':<15} {'Status':<10} {'Last Login':<20}")
+    click.echo('-' * 100)
     for staff in staff_list:
-        pin_display = staff.pin if staff.pin else 'N/A'
-        click.echo(f"{staff.id:<5} {staff.name:<25} {staff.email or 'N/A':<30} {staff.role or 'N/A':<20} {pin_display}")
+        status = 'Active' if staff.is_active else 'Inactive'
+        last_login = staff.last_login.strftime('%Y-%m-%d %H:%M') if staff.last_login else 'Never'
+        click.echo(f"{staff.id:<5} {staff.name:<25} {staff.email or 'N/A':<30} {staff.role or 'N/A':<15} {status:<10} {last_login:<20}")
 
 @click.command('create-staff')
 @click.option('--name', prompt='Staff Name', help='Full name of the staff member')
@@ -125,11 +129,18 @@ def create_staff(name, phone, email, role, pin):
         click.echo(f'Error: PIN {pin} is already in use', err=True)
         return
     
-    staff = Staff(name=name, phone=phone or None, email=email or None, role=role, pin=pin)
+    staff = Staff(
+        name=name, 
+        phone=phone or None, 
+        email=email or None, 
+        role=role, 
+        pin=pin,
+        is_active=True  # New staff are active by default
+    )
     db.session.add(staff)
     db.session.commit()
     
-    click.echo(f'✓ Staff created successfully: {name} (ID: {staff.id}, PIN: {pin})')
+    click.echo(f'✓ Staff created successfully: {name} (ID: {staff.id}, PIN: {pin}, Role: {role})')
 
 @click.command('reset-db')
 @click.confirmation_option(prompt='Are you sure you want to reset the database? This will delete all data!')

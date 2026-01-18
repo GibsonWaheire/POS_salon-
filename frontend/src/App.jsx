@@ -13,6 +13,9 @@ import Customers from "./pages/Customers"
 import Services from "./pages/Services"
 import Staff from "./pages/Staff"
 import Payments from "./pages/Payments"
+import Inventory from "./pages/Inventory"
+import Expenses from "./pages/Expenses"
+import Reports from "./pages/Reports"
 
 function App() {
   return (
@@ -106,6 +109,39 @@ function App() {
             }
           >
             <Route index element={<Payments />} />
+          </Route>
+          
+          <Route
+            path="/inventory"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Inventory />} />
+          </Route>
+          
+          <Route
+            path="/expenses"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Expenses />} />
+          </Route>
+          
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Reports />} />
           </Route>
         </Routes>
       </BrowserRouter>

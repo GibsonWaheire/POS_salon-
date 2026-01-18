@@ -193,9 +193,9 @@ export default function Login() {
                   type="button"
                   variant="outline"
                   className="w-full rounded-xl border-2 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-all"
-                  onClick={() => navigate("/pos")}
+                  onClick={() => navigate("/staff-login")}
                 >
-                  Access POS Directly
+                  Staff Login
                 </Button>
               </div>
             </CardContent>

@@ -142,7 +142,8 @@ export function AuthProvider({ children }) {
       if (data.success && data.staff) {
         const staffData = {
           ...data.staff,
-          role: "staff"
+          role: "staff",
+          login_log_id: data.login_log_id // Store login log ID for logout tracking
         }
         // #region agent log
         fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.jsx:125',message:'Staff login successful - setting state',data:{staffId:staffData.id,staffName:staffData.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
@@ -174,7 +175,24 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("salon_auth")
   }
 
-  const staffLogout = () => {
+  const staffLogout = async () => {
+    // Log logout event to backend if staff is logged in
+    if (staff) {
+      try {
+        await fetch("http://localhost:5001/api/staff/logout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            login_log_id: staff.login_log_id,
+            staff_id: staff.id
+          })
+        })
+      } catch (err) {
+        console.error("Failed to log logout event:", err)
+        // Continue with logout even if backend call fails
+      }
+    }
+    
     setStaff(null)
     setIsStaffAuthenticated(false)
     // Clear any staff data from localStorage (shouldn't be there, but clean up anyway)
