@@ -5,11 +5,13 @@ import {
   Users, 
   Scissors, 
   UserCog, 
-  CreditCard 
+  CreditCard,
+  ShoppingCart
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navigation = [
+  { name: "POS", href: "/pos", icon: ShoppingCart },
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Appointments", href: "/appointments", icon: Calendar },
   { name: "Customers", href: "/customers", icon: Users },

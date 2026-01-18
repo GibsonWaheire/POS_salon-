@@ -34,8 +34,8 @@ export default function Dashboard() {
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$0</div>
-            <p className="text-xs text-muted-foreground">This month</p>
+            <div className="text-2xl font-bold">KES 0</div>
+            <p className="text-xs text-muted-foreground">Today's sales</p>
           </CardContent>
         </Card>
         
