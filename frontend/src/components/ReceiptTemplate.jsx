@@ -185,7 +185,7 @@ export default function ReceiptTemplate({
         }}>
           <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Payment Method</div>
           <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#006400' }}>
-            {paymentMethod?.toUpperCase() || 'CASH'}
+            {paymentMethod ? paymentMethod.replace(/-/g, ' ').toUpperCase() : 'CASH'}
           </div>
         </div>
 

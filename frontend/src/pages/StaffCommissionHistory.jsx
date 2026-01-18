@@ -71,7 +71,7 @@ export default function StaffCommissionHistory() {
         if (customEndDate) endDate = new Date(customEndDate).toISOString()
       }
       
-      let url = `http://localhost:5000/api/staff/${staff.id}/commission-history`
+      let url = `http://localhost:5001/api/staff/${staff.id}/commission-history`
       const params = new URLSearchParams()
       if (startDate) params.append('start_date', startDate)
       if (endDate) params.append('end_date', endDate)

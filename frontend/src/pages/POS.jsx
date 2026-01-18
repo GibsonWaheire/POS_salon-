@@ -137,6 +137,8 @@ export default function POS() {
   const [receiptPrinted, setReceiptPrinted] = useState(false)
   const [receiptNumber, setReceiptNumber] = useState("")
   const [showReceipt, setShowReceipt] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState("")
+  const [sessionLocked, setSessionLocked] = useState(false)
   const [staffStats, setStaffStats] = useState({
     clients_served_today: 0,
     commission_today: 0
@@ -156,7 +158,7 @@ export default function POS() {
     if (!staff?.id) return
     setLoadingStats(true)
     try {
-      const response = await fetch(`http://localhost:5000/api/staff/${staff.id}/stats`)
+      const response = await fetch(`http://localhost:5001/api/staff/${staff.id}/stats`)
       if (response.ok) {
         const data = await response.json()
         setStaffStats({
@@ -174,7 +176,7 @@ export default function POS() {
   const fetchRecentTransactions = async () => {
     if (!staff?.id) return
     try {
-      const response = await fetch(`http://localhost:5000/api/staff/${staff.id}/commission-history?limit=10`)
+      const response = await fetch(`http://localhost:5001/api/staff/${staff.id}/commission-history?limit=10`)
       if (response.ok) {
         const data = await response.json()
         setRecentTransactions(data.transactions?.slice(0, 10) || [])
@@ -209,6 +211,10 @@ export default function POS() {
   const defaultCommissionRate = 0.50
 
   const addToSale = (service) => {
+    if (sessionLocked) {
+      alert("Session ended. Please log in again.")
+      return
+    }
     const existingItem = currentSale.find(item => item.id === service.id)
     const commissionRate = service.commissionRate || defaultCommissionRate
     
@@ -236,6 +242,10 @@ export default function POS() {
   }
 
   const updateQuantity = (id, change) => {
+    if (sessionLocked) {
+      alert("Session ended. Please log in again.")
+      return
+    }
     setCurrentSale(currentSale.map(item => {
       if (item.id === id) {
         const newQuantity = item.quantity + change
@@ -255,6 +265,10 @@ export default function POS() {
   }
 
   const removeFromSale = (id) => {
+    if (sessionLocked) {
+      alert("Session ended. Please log in again.")
+      return
+    }
     setCurrentSale(currentSale.filter(item => item.id !== id))
     if (receiptPrinted) {
       setReceiptPrinted(false)
@@ -268,6 +282,7 @@ export default function POS() {
     setReceiptPrinted(false)
     setReceiptNumber("")
     setShowReceipt(false)
+    setPaymentMethod("")
   }
 
   const subtotal = currentSale.reduce((sum, item) => sum + (item.price * item.quantity), 0)
@@ -289,14 +304,39 @@ export default function POS() {
     setReceiptNumber(receiptNum)
     setShowReceipt(true)
     
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:290',message:'Receipt print triggered',data:{receiptNumber:receiptNum,itemsCount:currentSale.length,subtotal:currentSale.reduce((sum, item) => sum + (item.price * item.quantity), 0),staffName:staff?.name,clientName,clientPhone,paymentMethod:paymentMethod || 'Not set'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'receipt-data'})}).catch(()=>{});
+    // #endregion
+    
     // Trigger print after a short delay to ensure receipt is rendered
     setTimeout(() => {
       window.print()
       setReceiptPrinted(true)
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:302',message:'Receipt printed - initiating logout',data:{receiptNumber:receiptNum},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'logout-after-print'})}).catch(()=>{});
+      // #endregion
+      
+      // Lock session immediately to prevent further entries
+      setSessionLocked(true)
+      
+      // Log out after receipt is printed - wait a bit for print dialog to close
+      setTimeout(() => {
+        // Clear all sale data first
+        clearSale()
+        // Log out and redirect to login
+        staffLogout()
+        navigate("/staff-login")
+      }, 2000) // 2 second delay to allow print dialog to close
     }, 100)
   }
 
   const handlePayment = async (method) => {
+    if (sessionLocked) {
+      alert("Session ended. Please log in again.")
+      return
+    }
+    
     if (currentSale.length === 0) {
       alert("Please add items to the sale first")
       return
@@ -307,11 +347,18 @@ export default function POS() {
       return
     }
     
+    // Set payment method for receipt display
+    setPaymentMethod(method)
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:309',message:'Payment initiated',data:{method,receiptNumber,total,subtotal:currentSale.reduce((sum, item) => sum + (item.price * item.quantity), 0),itemsCount:currentSale.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'receipt-data'})}).catch(()=>{});
+    // #endregion
+    
     try {
       // Create customer if name or phone provided
       let customerId = null
       if (clientName || clientPhone) {
-        const customerResponse = await fetch("http://localhost:5000/api/customers", {
+        const customerResponse = await fetch("http://localhost:5001/api/customers", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -326,7 +373,7 @@ export default function POS() {
       }
 
       // Create appointment with staff_id
-      const appointmentResponse = await fetch("http://localhost:5000/api/appointments", {
+      const appointmentResponse = await fetch("http://localhost:5001/api/appointments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -342,7 +389,7 @@ export default function POS() {
         const appointment = await appointmentResponse.json()
         
         // Create payment with staff_id
-        await fetch("http://localhost:5000/api/payments", {
+        const paymentResponse = await fetch("http://localhost:5001/api/payments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -353,6 +400,13 @@ export default function POS() {
             receipt_number: receiptNumber // Pass receipt number to backend
           })
         })
+        
+        // #region agent log
+        if (paymentResponse.ok) {
+          const paymentData = await paymentResponse.json()
+          fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:355',message:'Payment saved to backend',data:{paymentId:paymentData.id,appointmentId:appointment.id,amount:total,paymentMethod:method,receiptNumber},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'receipt-data'})}).catch(()=>{});
+        }
+        // #endregion
 
         // Clear sale first
         clearSale()
@@ -388,25 +442,62 @@ export default function POS() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Session Locked Overlay */}
+      {sessionLocked && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4 text-center">
+            <h2 className="text-xl font-bold mb-2 text-red-600">Session Ended</h2>
+            <p className="text-gray-700 mb-4">Receipt has been printed. You will be logged out automatically.</p>
+            <p className="text-sm text-gray-500">Redirecting to login...</p>
+          </div>
+        </div>
+      )}
+      
       {/* Receipt for Printing */}
       {showReceipt && currentSale.length > 0 && (
-        <ReceiptTemplate
-          receiptNumber={receiptNumber}
-          date={receiptDate}
-          time={receiptTime}
-          staffName={staff?.name || "Staff"}
-          clientName={clientName}
-          clientPhone={clientPhone}
-          services={currentSale.map(item => ({ 
-            name: item.name, 
-            price: item.price, 
-            quantity: item.quantity 
-          }))}
-          subtotal={subtotal}
-          tax={tax}
-          total={total}
-          paymentMethod={paymentMethod || "To be selected"}
-        />
+        <>
+          {/* #region agent log */}
+          {(() => {
+            const receiptData = {
+              receiptNumber,
+              date: receiptDate,
+              time: receiptTime,
+              staffName: staff?.name || "Staff",
+              clientName,
+              clientPhone,
+              servicesCount: currentSale.length,
+              services: currentSale.map(item => ({ 
+                name: item.name, 
+                price: item.price, 
+                quantity: item.quantity 
+              })),
+              subtotal,
+              tax,
+              total,
+              paymentMethod: paymentMethod || "Cash"
+            }
+            fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:412',message:'Receipt rendered with data',data:receiptData,timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'receipt-data'})}).catch(()=>{});
+            return null
+          })()}
+          {/* #endregion */}
+          <ReceiptTemplate
+            receiptNumber={receiptNumber}
+            date={receiptDate}
+            time={receiptTime}
+            staffName={staff?.name || "Staff"}
+            clientName={clientName}
+            clientPhone={clientPhone}
+            services={currentSale.map(item => ({ 
+              name: item.name, 
+              price: item.price, 
+              quantity: item.quantity 
+            }))}
+            subtotal={subtotal}
+            tax={tax}
+            total={total}
+            paymentMethod={paymentMethod || "Cash"}
+          />
+        </>
       )}
 
       {/* Header with Compact Stats */}
@@ -461,6 +552,7 @@ export default function POS() {
                     setSelectedCategory(category.id)
                     setSelectedService("") // Reset service selection when category changes
                   }}
+                  disabled={sessionLocked}
                   className="h-10 px-4 text-sm font-medium"
                 >
                   {category.name}
@@ -471,8 +563,8 @@ export default function POS() {
             {/* Services Dropdown */}
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Select Service to Add</Label>
-              <Select value={selectedService} onValueChange={handleServiceSelect}>
-                <SelectTrigger className="h-12 text-base">
+              <Select value={selectedService} onValueChange={handleServiceSelect} disabled={sessionLocked}>
+                <SelectTrigger className="h-12 text-base" disabled={sessionLocked}>
                   <SelectValue placeholder="Choose a service..." />
                 </SelectTrigger>
                 <SelectContent className="max-h-[500px] w-full p-2">
@@ -541,6 +633,7 @@ export default function POS() {
                     variant="outline"
                     size="sm"
                     onClick={() => addToSale(service)}
+                    disabled={sessionLocked}
                     className="h-10 text-xs font-medium"
                   >
                     <Plus className="h-3 w-3 mr-1" />
@@ -557,7 +650,7 @@ export default function POS() {
           <div className="p-4 border-b bg-white">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold">Current Sale</h2>
-              <Button variant="ghost" size="sm" onClick={clearSale} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+              <Button variant="ghost" size="sm" onClick={clearSale} disabled={sessionLocked} className="text-red-600 hover:text-red-700 hover:bg-red-50">
                 <Trash2 className="h-4 w-4 mr-1" />
                 Clear
               </Button>
@@ -576,6 +669,7 @@ export default function POS() {
                     placeholder="Enter client name (Optional)"
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
+                    disabled={sessionLocked}
                     className="pl-10 h-11 text-base border"
                   />
                 </div>
@@ -589,6 +683,7 @@ export default function POS() {
                     placeholder="07XX XXX XXX (Optional)"
                     value={clientPhone}
                     onChange={(e) => setClientPhone(e.target.value)}
+                    disabled={sessionLocked}
                     className="pl-10 h-11 text-base border"
                   />
                 </div>
@@ -622,26 +717,29 @@ export default function POS() {
                             size="icon"
                             className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
                             onClick={() => removeFromSale(item.id)}
+                            disabled={sessionLocked}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
                         </div>
                         <div className="flex items-center justify-between pt-2 border-t">
                           <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => updateQuantity(item.id, -1)}
-                            >
-                              -
-                            </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => updateQuantity(item.id, -1)}
+                            disabled={sessionLocked}
+                          >
+                            -
+                          </Button>
                             <span className="text-sm font-semibold w-8 text-center">{item.quantity}</span>
                             <Button
                               variant="outline"
                               size="icon"
                               className="h-8 w-8"
                               onClick={() => updateQuantity(item.id, 1)}
+                              disabled={sessionLocked}
                             >
                               +
                             </Button>
@@ -715,7 +813,7 @@ export default function POS() {
               <Button 
                 className="w-full h-12 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white"
                 onClick={handlePrintReceipt}
-                disabled={receiptPrinted}
+                disabled={receiptPrinted || sessionLocked}
               >
                 <Printer className="h-5 w-5 mr-2" />
                 {receiptPrinted ? "Receipt Printed ✓" : "Print Receipt"}
@@ -731,7 +829,7 @@ export default function POS() {
                 <Button 
                   className="w-full h-14 text-base font-semibold bg-green-600 hover:bg-green-700 text-white"
                   onClick={() => handlePayment("M-Pesa")}
-                  disabled={!receiptPrinted}
+                  disabled={!receiptPrinted || sessionLocked}
                 >
                   <Phone className="h-5 w-5 mr-2" />
                   M-Pesa Payment
@@ -739,7 +837,7 @@ export default function POS() {
                 <Button 
                   className="w-full h-14 text-base font-semibold bg-gray-800 hover:bg-gray-900 text-white" 
                   onClick={() => handlePayment("Cash")}
-                  disabled={!receiptPrinted}
+                  disabled={!receiptPrinted || sessionLocked}
                 >
                   <Wallet className="h-5 w-5 mr-2" />
                   Cash Payment
