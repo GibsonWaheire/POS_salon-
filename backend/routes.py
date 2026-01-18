@@ -181,7 +181,7 @@ def get_staff_stats(id):
     # Calculate revenue and commission from completed appointments
     revenue_today = 0
     commission_today = 0
-    default_commission_rate = 0.18  # 18% default commission
+    default_commission_rate = 0.50  # 50% commission rate
     
     for appointment in completed_today:
         # Calculate total from appointment services
@@ -205,6 +205,85 @@ def get_staff_stats(id):
         'transactions_today': payments_today,
         'revenue_today': round(revenue_today, 2),
         'commission_today': round(commission_today, 2)
+    }), 200
+
+# Staff commission history endpoint
+@bp.route('/staff/<int:id>/commission-history', methods=['GET'])
+def get_staff_commission_history(id):
+    staff = Staff.query.get_or_404(id)
+    
+    # Get query parameters for filtering
+    start_date = request.args.get('start_date')
+    end_date = request.args.get('end_date')
+    payment_method = request.args.get('payment_method')
+    
+    # Get all completed appointments for this staff
+    query = Appointment.query.filter(
+        Appointment.staff_id == id,
+        Appointment.status == 'completed'
+    )
+    
+    # Apply date filters
+    if start_date:
+        start_dt = datetime.fromisoformat(start_date)
+        query = query.filter(Appointment.appointment_date >= start_dt)
+    if end_date:
+        end_dt = datetime.fromisoformat(end_date)
+        query = query.filter(Appointment.appointment_date <= end_dt)
+    
+    appointments = query.order_by(Appointment.appointment_date.desc()).all()
+    
+    # Filter by payment method if specified
+    if payment_method:
+        payment_ids = [p.appointment_id for p in Payment.query.filter_by(payment_method=payment_method).all()]
+        appointments = [apt for apt in appointments if apt.id in payment_ids]
+    
+    # Build commission history
+    history = []
+    default_commission_rate = 0.50  # 50% commission rate
+    
+    for appointment in appointments:
+        # Get payment for this appointment
+        payment = Payment.query.filter_by(appointment_id=appointment.id).first()
+        
+        # Calculate commission from services
+        appointment_total = 0
+        services_list = []
+        
+        for apt_service in appointment.services:
+            if apt_service.service:
+                service_price = apt_service.service.price
+                appointment_total += service_price
+                services_list.append({
+                    'name': apt_service.service.name,
+                    'price': service_price
+                })
+        
+        commission_amount = appointment_total * default_commission_rate
+        
+        history.append({
+            'id': appointment.id,
+            'date': appointment.appointment_date.strftime('%Y-%m-%d') if appointment.appointment_date else None,
+            'time': appointment.appointment_date.strftime('%H:%M') if appointment.appointment_date else None,
+            'datetime': appointment.appointment_date.isoformat() if appointment.appointment_date else None,
+            'client_name': appointment.customer.name if appointment.customer else 'Walk-in',
+            'client_phone': appointment.customer.phone if appointment.customer else None,
+            'services': services_list,
+            'total_amount': round(appointment_total, 2),
+            'tax': round(appointment_total * 0.08, 2),
+            'grand_total': round(appointment_total * 1.08, 2),
+            'commission': round(commission_amount, 2),
+            'payment_method': payment.payment_method if payment else None,
+            'payment_status': payment.status if payment else None,
+            'receipt_number': f"RCP-{appointment.id:06d}"
+        })
+    
+    return jsonify({
+        'staff_id': id,
+        'staff_name': staff.name,
+        'transactions': history,
+        'total_count': len(history),
+        'total_commission': round(sum(t['commission'] for t in history), 2)
     }), 200
 
 # Appointment routes

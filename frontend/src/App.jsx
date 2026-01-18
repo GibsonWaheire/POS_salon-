@@ -6,6 +6,7 @@ import StaffProtectedRoute from "./components/StaffProtectedRoute"
 import Login from "./pages/Login"
 import StaffLogin from "./pages/StaffLogin"
 import POS from "./pages/POS"
+import StaffCommissionHistory from "./pages/StaffCommissionHistory"
 import Dashboard from "./pages/Dashboard"
 import Appointments from "./pages/Appointments"
 import Customers from "./pages/Customers"
@@ -28,6 +29,14 @@ function App() {
             element={
               <StaffProtectedRoute>
                 <POS />
+              </StaffProtectedRoute>
+            }
+          />
+          <Route
+            path="/commission-history"
+            element={
+              <StaffProtectedRoute>
+                <StaffCommissionHistory />
               </StaffProtectedRoute>
             }
           />
