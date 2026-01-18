@@ -3,6 +3,7 @@ from sqlalchemy import func
 from models import Customer, Service, Staff, Appointment, AppointmentService, Payment
 from db import db
 from datetime import datetime
+import re
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -101,7 +102,8 @@ def create_staff():
         name=data.get('name'),
         phone=data.get('phone'),
         email=data.get('email'),
-        role=data.get('role')
+        role=data.get('role'),
+        pin=data.get('pin')  # PIN is optional, must be set separately if needed
     )
     db.session.add(staff)
     db.session.commit()
@@ -134,33 +136,54 @@ def delete_staff(id):
 @bp.route('/staff/login', methods=['POST'])
 def staff_login():
     data = request.get_json()
-    pin_or_id = data.get('pin') or data.get('staff_id')
+    staff_id = data.get('staff_id')
+    pin = data.get('pin')
     
-    if not pin_or_id:
-        return jsonify({'success': False, 'error': 'PIN or Staff ID is required'}), 400
+    # Validate required fields
+    if not staff_id:
+        return jsonify({'success': False, 'error': 'Staff ID is required'}), 400
     
-    # For now, simple lookup - in production, use proper authentication with hashed PINs
-    # Lookup by ID or name (simple mock)
+    if not pin:
+        return jsonify({'success': False, 'error': 'PIN is required'}), 400
+    
+    # Validate PIN format: 5 characters, at least one digit and one special character
+    if len(pin) != 5:
+        return jsonify({'success': False, 'error': 'PIN must be exactly 5 characters'}), 400
+    
+    # Check if PIN contains at least one digit and one special character
+    has_digit = bool(re.search(r'\d', pin))
+    has_special = bool(re.search(r'[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?]', pin))
+    
+    if not (has_digit and has_special):
+        return jsonify({'success': False, 'error': 'PIN must contain at least one digit and one special character'}), 400
+    
+    # Convert staff_id to integer if it's numeric
+    try:
+        staff_id_int = int(staff_id)
+    except (ValueError, TypeError):
+        return jsonify({'success': False, 'error': 'Invalid Staff ID format'}), 400
+    
+    # Lookup staff by BOTH ID and PIN - both must match the same staff member
+    # In production, compare hashed PIN using bcrypt or similar
     staff = Staff.query.filter(
-        (Staff.id == pin_or_id) | (Staff.name.ilike(f'%{pin_or_id}%'))
+        Staff.id == staff_id_int,
+        Staff.pin == pin
     ).first()
     
     if staff:
+        # Return staff data without PIN for security
+        staff_dict = staff.to_dict()
+        staff_dict.pop('pin', None)  # Don't send PIN back to client
         return jsonify({
             'success': True,
-            'staff': staff.to_dict()
+            'staff': staff_dict
         }), 200
     else:
-        # Fallback: create mock staff if not found (for development)
-        # In production, return error
+        # Return generic error (don't reveal if Staff ID exists but PIN is wrong, or vice versa)
         return jsonify({
-            'success': True,
-            'staff': {
-                'id': 1,
-                'name': 'Jane Wanjiru',
-                'role': 'stylist'
-            }
-        }), 200
+            'success': False,
+            'error': 'Invalid Staff ID or PIN'
+        }), 401
 
 # Staff statistics endpoint
 @bp.route('/staff/<int:id>/stats', methods=['GET'])

@@ -53,6 +53,7 @@ class Staff(db.Model):
     phone = db.Column(db.String(20))
     email = db.Column(db.String(100))
     role = db.Column(db.String(50))  # e.g., 'stylist', 'receptionist', 'manager'
+    pin = db.Column(db.String(255))  # Hashed PIN in production (5 chars: 4 digits + 1 special char)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -66,6 +67,7 @@ class Staff(db.Model):
             'email': self.email,
             'role': self.role,
             'created_at': self.created_at.isoformat() if self.created_at else None
+            # PIN is intentionally excluded from to_dict() for security
         }
 
 class Appointment(db.Model):

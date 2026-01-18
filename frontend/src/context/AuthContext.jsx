@@ -8,7 +8,7 @@ export function AuthProvider({ children }) {
   const [staff, setStaff] = useState(null)
   const [isStaffAuthenticated, setIsStaffAuthenticated] = useState(false)
 
-  // Check localStorage on mount
+  // Check localStorage on mount (only for manager/admin, NOT for staff)
   useEffect(() => {
     const storedUser = localStorage.getItem("salon_user")
     const storedAuth = localStorage.getItem("salon_auth")
@@ -17,12 +17,10 @@ export function AuthProvider({ children }) {
       setIsAuthenticated(true)
     }
     
-    const storedStaff = localStorage.getItem("salon_staff")
-    const storedStaffAuth = localStorage.getItem("salon_staff_auth")
-    if (storedStaff && storedStaffAuth === "true") {
-      setStaff(JSON.parse(storedStaff))
-      setIsStaffAuthenticated(true)
-    }
+    // Staff authentication is NOT persisted - must login each session
+    // Clear any old staff data that might be in localStorage
+    localStorage.removeItem("salon_staff")
+    localStorage.removeItem("salon_staff_auth")
   }, [])
 
   const login = (email, password) => {
@@ -44,15 +42,36 @@ export function AuthProvider({ children }) {
     return { success: false, error: "Email and password are required" }
   }
 
-  const staffLogin = async (pinOrId) => {
+  const staffLogin = async (staffId, pin) => {
     try {
-      // Call backend API for staff authentication
+      // Validate Staff ID
+      if (!staffId || !staffId.toString().trim()) {
+        return { success: false, error: "Staff ID is required" }
+      }
+
+      // Validate PIN format on client side first
+      if (!pin || pin.length !== 5) {
+        return { success: false, error: "PIN must be exactly 5 characters" }
+      }
+      
+      // Check if PIN contains at least one digit and one special character
+      const hasDigit = /\d/.test(pin)
+      const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?]/.test(pin)
+      
+      if (!hasDigit || !hasSpecial) {
+        return { success: false, error: "PIN must contain at least one digit and one special character" }
+      }
+      
+      // Call backend API for staff authentication with BOTH Staff ID and PIN
       const response = await fetch("http://localhost:5000/api/staff/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ pin: pinOrId, staff_id: pinOrId }),
+        body: JSON.stringify({ 
+          staff_id: staffId.toString().trim(), 
+          pin: pin 
+        }),
       })
       
       const data = await response.json()
@@ -62,30 +81,17 @@ export function AuthProvider({ children }) {
           ...data.staff,
           role: "staff"
         }
+        // Store in memory only, NOT in localStorage for security
         setStaff(staffData)
         setIsStaffAuthenticated(true)
-        localStorage.setItem("salon_staff", JSON.stringify(staffData))
-        localStorage.setItem("salon_staff_auth", "true")
+        // Explicitly do NOT save to localStorage
         return { success: true }
       } else {
         return { success: false, error: data.error || "Invalid Staff ID or PIN" }
       }
     } catch (err) {
-      // Fallback to mock authentication for development
-      if (pinOrId) {
-        const staffData = {
-          id: 1,
-          name: "Jane Wanjiru",
-          pin: pinOrId,
-          role: "staff"
-        }
-        setStaff(staffData)
-        setIsStaffAuthenticated(true)
-        localStorage.setItem("salon_staff", JSON.stringify(staffData))
-        localStorage.setItem("salon_staff_auth", "true")
-        return { success: true }
-      }
-      return { success: false, error: "Staff ID or PIN is required" }
+      console.error("Staff login error:", err)
+      return { success: false, error: "An error occurred. Please try again." }
     }
   }
 
@@ -99,8 +105,12 @@ export function AuthProvider({ children }) {
   const staffLogout = () => {
     setStaff(null)
     setIsStaffAuthenticated(false)
+    // Clear any staff data from localStorage (shouldn't be there, but clean up anyway)
     localStorage.removeItem("salon_staff")
     localStorage.removeItem("salon_staff_auth")
+    // Clear sessionStorage as well
+    sessionStorage.removeItem("salon_staff")
+    sessionStorage.removeItem("salon_staff_auth")
   }
 
   return (

@@ -405,8 +405,7 @@ export default function POS() {
           subtotal={subtotal}
           tax={tax}
           total={total}
-          paymentMethod="To be selected"
-          commission={totalCommission}
+          paymentMethod={paymentMethod || "To be selected"}
         />
       )}
 

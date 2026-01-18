@@ -9,8 +9,7 @@ export default function ReceiptTemplate({
   subtotal, 
   tax, 
   total, 
-  paymentMethod, 
-  commission 
+  paymentMethod 
 }) {
 
   const formatKES = (amount) => {
@@ -18,121 +17,214 @@ export default function ReceiptTemplate({
   }
 
   return (
-    <div className="hidden">
+    <div className="hidden print-only">
       <div 
-        className="print-receipt"
+        className="receipt-container"
         style={{
           width: '80mm',
+          maxWidth: '80mm',
           margin: '0 auto',
-          padding: '10mm',
+          padding: '8mm 5mm',
           fontFamily: 'monospace',
-          fontSize: '12px',
-          lineHeight: '1.4'
+          fontSize: '11px',
+          lineHeight: '1.5',
+          color: '#000',
+          backgroundColor: '#fff'
         }}
       >
         {/* Print-only styles */}
         <style>
           {`
             @media print {
+              @page {
+                size: 80mm auto;
+                margin: 0;
+              }
               body * {
                 visibility: hidden;
               }
-              .print-receipt,
-              .print-receipt * {
+              .print-only,
+              .print-only * {
                 visibility: visible;
               }
-              .print-receipt {
+              .print-only {
                 position: absolute;
                 left: 0;
                 top: 0;
                 width: 80mm;
               }
+              .no-print {
+                display: none !important;
+              }
             }
             @media screen {
-              .print-receipt {
-                display: none;
+              .print-only {
+                display: block;
+                border: 1px dashed #ccc;
+                margin: 20px auto;
               }
             }
           `}
         </style>
 
         {/* Receipt Header */}
-        <div style={{ textAlign: 'center', marginBottom: '15px', borderBottom: '2px dashed #000', paddingBottom: '10px' }}>
-          <h1 style={{ margin: '5px 0', fontSize: '18px', fontWeight: 'bold' }}>PREMIUM BEAUTY SALON</h1>
-          <p style={{ margin: '3px 0', fontSize: '11px' }}>Nairobi, Kenya</p>
-          <p style={{ margin: '3px 0', fontSize: '11px' }}>Tel: +254 700 000 000</p>
+        <div style={{ textAlign: 'center', marginBottom: '12px', borderBottom: '2px solid #000', paddingBottom: '8px' }}>
+          <h1 style={{ 
+            margin: '4px 0', 
+            fontSize: '16px', 
+            fontWeight: 'bold', 
+            letterSpacing: '1px',
+            textTransform: 'uppercase'
+          }}>
+            PREMIUM BEAUTY SALON
+          </h1>
+          <p style={{ margin: '2px 0', fontSize: '9px', lineHeight: '1.3' }}>Nairobi, Kenya</p>
+          <p style={{ margin: '2px 0', fontSize: '9px' }}>Tel: +254 700 000 000</p>
         </div>
 
-        {/* Receipt Info */}
-        <div style={{ marginBottom: '10px', fontSize: '11px' }}>
-          <p style={{ margin: '3px 0' }}><strong>Receipt No:</strong> {receiptNumber}</p>
-          <p style={{ margin: '3px 0' }}><strong>Date:</strong> {date}</p>
-          <p style={{ margin: '3px 0' }}><strong>Time:</strong> {time}</p>
-          <p style={{ margin: '3px 0' }}><strong>Staff:</strong> {staffName}</p>
+        {/* Receipt Details */}
+        <div style={{ marginBottom: '10px', fontSize: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+            <span><strong>Receipt #:</strong></span>
+            <span>{receiptNumber}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+            <span><strong>Date:</strong></span>
+            <span>{date}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+            <span><strong>Time:</strong></span>
+            <span>{time}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <span><strong>Staff:</strong></span>
+            <span>{staffName}</span>
+          </div>
         </div>
 
         {/* Divider */}
-        <div style={{ borderTop: '1px dashed #000', margin: '10px 0' }}></div>
+        <div style={{ borderTop: '1px dashed #333', margin: '8px 0' }}></div>
 
-        {/* Client Info */}
+        {/* Client Information */}
         {(clientName || clientPhone) && (
-          <div style={{ marginBottom: '10px', fontSize: '11px' }}>
-            <p style={{ margin: '3px 0' }}><strong>Client:</strong> {clientName || 'Walk-in'}</p>
-            {clientPhone && <p style={{ margin: '3px 0' }}><strong>Phone:</strong> {clientPhone}</p>}
-          </div>
+          <>
+            <div style={{ marginBottom: '8px', fontSize: '10px' }}>
+              <p style={{ margin: '2px 0', fontWeight: 'bold' }}>Client Details:</p>
+              {clientName && <p style={{ margin: '2px 0' }}>Name: {clientName}</p>}
+              {clientPhone && <p style={{ margin: '2px 0' }}>Phone: {clientPhone}</p>}
+            </div>
+            <div style={{ borderTop: '1px dashed #333', margin: '8px 0' }}></div>
+          </>
         )}
 
-        {/* Services List */}
-        <div style={{ marginBottom: '15px' }}>
-          <div style={{ borderTop: '1px dashed #000', borderBottom: '1px dashed #000', padding: '5px 0' }}>
-            {services.map((service, index) => (
-              <div key={index} style={{ marginBottom: '5px', fontSize: '11px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                  <span>{service.name} x {service.quantity}</span>
-                  <span>{formatKES(service.price * service.quantity)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+        {/* Services Header */}
+        <div style={{ marginBottom: '6px' }}>
+          <p style={{ fontWeight: 'bold', fontSize: '11px', textAlign: 'center', marginBottom: '4px' }}>
+            SERVICES PROVIDED
+          </p>
         </div>
 
-        {/* Totals */}
-        <div style={{ marginBottom: '10px', fontSize: '11px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+        {/* Services List */}
+        <div style={{ marginBottom: '12px', borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '6px 0' }}>
+          {services.map((service, index) => (
+            <div 
+              key={index} 
+              style={{ 
+                marginBottom: index < services.length - 1 ? '6px' : '0',
+                fontSize: '10px',
+                paddingBottom: index < services.length - 1 ? '6px' : '0',
+                borderBottom: index < services.length - 1 ? '1px dashed #ccc' : 'none'
+              }}
+            >
+              <div style={{ marginBottom: '3px', fontWeight: 'bold' }}>
+                {service.name}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#555' }}>
+                <span>Qty: {service.quantity} × {formatKES(service.price)}</span>
+                <span style={{ fontWeight: 'bold', color: '#000' }}>
+                  {formatKES(service.price * service.quantity)}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Totals Section */}
+        <div style={{ marginBottom: '12px', fontSize: '11px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '10px' }}>
             <span>Subtotal:</span>
             <span>{formatKES(subtotal)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', fontSize: '10px' }}>
             <span>VAT (8%):</span>
             <span>{formatKES(tax)}</span>
           </div>
-          <div style={{ borderTop: '1px solid #000', paddingTop: '5px', marginTop: '5px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '13px' }}>
+          <div style={{ 
+            borderTop: '2px solid #000', 
+            borderBottom: '2px solid #000',
+            padding: '6px 0',
+            marginTop: '6px',
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            fontWeight: 'bold', 
+            fontSize: '13px' 
+          }}>
             <span>TOTAL:</span>
             <span>{formatKES(total)}</span>
           </div>
         </div>
 
         {/* Payment Method */}
-        <div style={{ marginBottom: '10px', fontSize: '11px', padding: '5px', backgroundColor: '#f0f0f0' }}>
-          <p style={{ margin: '3px 0' }}><strong>Payment Method:</strong> {paymentMethod}</p>
+        <div style={{ 
+          marginBottom: '12px', 
+          padding: '6px',
+          backgroundColor: '#f5f5f5',
+          border: '1px solid #ddd',
+          fontSize: '10px',
+          textAlign: 'center'
+        }}>
+          <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>Payment Method</div>
+          <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#006400' }}>
+            {paymentMethod?.toUpperCase() || 'CASH'}
+          </div>
         </div>
 
-        {/* Staff Commission */}
-        <div style={{ marginBottom: '15px', fontSize: '11px', padding: '5px', backgroundColor: '#e8f5e9' }}>
-          <p style={{ margin: '3px 0' }}><strong>Staff Commission:</strong> {formatKES(commission)}</p>
+        {/* Manager Signature Section */}
+        <div style={{ 
+          marginTop: '20px',
+          marginBottom: '12px',
+          padding: '8px 0',
+          borderTop: '1px dashed #333',
+          borderBottom: '1px dashed #333'
+        }}>
+          <div style={{ fontSize: '10px', marginBottom: '20px' }}>
+            <div style={{ marginBottom: '4px', fontWeight: 'bold' }}>Manager's Signature:</div>
+            <div style={{ 
+              height: '30px',
+              borderBottom: '1px solid #000',
+              marginBottom: '4px'
+            }}></div>
+            <div style={{ fontSize: '9px', color: '#666', textAlign: 'right' }}>
+              Date: ________________
+            </div>
+          </div>
         </div>
 
         {/* Divider */}
-        <div style={{ borderTop: '2px dashed #000', margin: '10px 0' }}></div>
+        <div style={{ borderTop: '2px solid #000', margin: '12px 0 8px 0' }}></div>
 
         {/* Footer */}
-        <div style={{ textAlign: 'center', marginTop: '15px', fontSize: '10px' }}>
-          <p style={{ margin: '5px 0' }}>Thank you for your business!</p>
-          <p style={{ margin: '5px 0' }}>Visit us again</p>
-          <p style={{ margin: '10px 0 0 0', fontSize: '9px' }}>Receipt #{receiptNumber}</p>
+        <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '9px', lineHeight: '1.4' }}>
+          <p style={{ margin: '4px 0', fontWeight: 'bold' }}>Thank you for choosing us!</p>
+          <p style={{ margin: '4px 0' }}>We appreciate your business</p>
+          <p style={{ margin: '8px 0 0 0', fontSize: '8px', color: '#666' }}>
+            Receipt #: {receiptNumber}
+          </p>
+          <p style={{ margin: '4px 0 0 0', fontSize: '8px', color: '#666' }}>
+            For inquiries: +254 700 000 000
+          </p>
         </div>
       </div>
     </div>
   )
 }
-

@@ -75,7 +75,51 @@ The API will be available at `http://localhost:5000`
 - **AppointmentService** - Services linked to appointments
 - **Payment** - Payment transactions
 
+## CLI Commands
+
+Flask CLI commands are available for managing the application:
+
+```bash
+# Set Flask app (if not using python app.py)
+export FLASK_APP=app.py
+
+# Initialize database - create all tables
+flask init-db
+
+# Seed demo staff users (for development/demo)
+flask seed-staff
+
+# Force reseed demo staff (removes existing and creates new)
+flask seed-staff --force
+
+# List all staff members
+flask list-staff
+
+# Show demo login credentials
+flask show-demo-login
+
+# Create a new staff member (interactive)
+flask create-staff
+
+# Reset database - DROP ALL TABLES (WARNING: Destructive!)
+flask reset-db
+```
+
+### Demo Staff Login Credentials
+
+For development/demo purposes, use these PINs at `/staff-login`:
+
+- **Jane Wanjiru** - PIN: `1234@` - Role: stylist
+- **Sarah Akinyi** - PIN: `5678!` - Role: stylist  
+- **Mary Nyambura** - PIN: `9012#` - Role: nail_technician
+- **Grace Muthoni** - PIN: `3456$` - Role: facial_specialist
+- **Lucy Wambui** - PIN: `7890%` - Role: receptionist
+
+Run `flask show-demo-login` to see current demo credentials.
+
 ## Development
 
 The database will be automatically created when you first run the application. The default database is SQLite (`pos_salon.db`).
+
+Demo staff users are automatically seeded on startup if they don't exist.
 
