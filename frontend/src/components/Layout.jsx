@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation } from "react-router-dom"
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
 import { 
   LayoutDashboard, 
   Calendar, 
@@ -6,13 +6,18 @@ import {
   Scissors, 
   UserCog, 
   CreditCard,
-  ShoppingCart
+  ShoppingCart,
+  LogOut,
+  User
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/context/AuthContext"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 
 const navigation = [
   { name: "POS", href: "/pos", icon: ShoppingCart },
-  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Appointments", href: "/appointments", icon: Calendar },
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Services", href: "/services", icon: Scissors },
@@ -22,6 +27,13 @@ const navigation = [
 
 export default function Layout() {
   const location = useLocation()
+  const navigate = useNavigate()
+  const { user, logout } = useAuth()
+
+  const handleLogout = () => {
+    logout()
+    navigate("/")
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,6 +65,27 @@ export default function Layout() {
                 )
               })}
             </nav>
+            
+            {/* User info and logout */}
+            <div className="border-t p-4 space-y-2">
+              {user && (
+                <div className="flex items-center gap-2 px-3 py-2 text-sm">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">{user.name}</span>
+                  <Badge variant="secondary" className="ml-auto text-xs">
+                    {user.role}
+                  </Badge>
+                </div>
+              )}
+              <Button
+                variant="ghost"
+                className="w-full justify-start gap-2"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            </div>
           </div>
         </aside>
 

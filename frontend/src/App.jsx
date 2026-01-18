@@ -1,5 +1,10 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { AuthProvider } from "./context/AuthContext"
 import Layout from "./components/Layout"
+import ProtectedRoute from "./components/ProtectedRoute"
+import StaffProtectedRoute from "./components/StaffProtectedRoute"
+import Login from "./pages/Login"
+import StaffLogin from "./pages/StaffLogin"
 import POS from "./pages/POS"
 import Dashboard from "./pages/Dashboard"
 import Appointments from "./pages/Appointments"
@@ -10,19 +15,92 @@ import Payments from "./pages/Payments"
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/pos" element={<POS />} />
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="appointments" element={<Appointments />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="services" element={<Services />} />
-          <Route path="staff" element={<Staff />} />
-          <Route path="payments" element={<Payments />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<Login />} />
+          <Route path="/staff-login" element={<StaffLogin />} />
+          
+          {/* Staff-only routes */}
+          <Route
+            path="/pos"
+            element={
+              <StaffProtectedRoute>
+                <POS />
+              </StaffProtectedRoute>
+            }
+          />
+          
+          {/* Protected routes */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Dashboard />} />
+          </Route>
+          
+          <Route
+            path="/appointments"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Appointments />} />
+          </Route>
+          
+          <Route
+            path="/customers"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Customers />} />
+          </Route>
+          
+          <Route
+            path="/services"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Services />} />
+          </Route>
+          
+          <Route
+            path="/staff"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Staff />} />
+          </Route>
+          
+          <Route
+            path="/payments"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Payments />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 

@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from sqlalchemy import func
 from models import Customer, Service, Staff, Appointment, AppointmentService, Payment
 from db import db
 from datetime import datetime
@@ -128,6 +129,83 @@ def delete_staff(id):
     db.session.delete(staff)
     db.session.commit()
     return jsonify({'message': 'Staff member deleted'}), 200
+
+# Staff authentication
+@bp.route('/staff/login', methods=['POST'])
+def staff_login():
+    data = request.get_json()
+    pin_or_id = data.get('pin') or data.get('staff_id')
+    
+    if not pin_or_id:
+        return jsonify({'success': False, 'error': 'PIN or Staff ID is required'}), 400
+    
+    # For now, simple lookup - in production, use proper authentication with hashed PINs
+    # Lookup by ID or name (simple mock)
+    staff = Staff.query.filter(
+        (Staff.id == pin_or_id) | (Staff.name.ilike(f'%{pin_or_id}%'))
+    ).first()
+    
+    if staff:
+        return jsonify({
+            'success': True,
+            'staff': staff.to_dict()
+        }), 200
+    else:
+        # Fallback: create mock staff if not found (for development)
+        # In production, return error
+        return jsonify({
+            'success': True,
+            'staff': {
+                'id': 1,
+                'name': 'Jane Wanjiru',
+                'role': 'stylist'
+            }
+        }), 200
+
+# Staff statistics endpoint
+@bp.route('/staff/<int:id>/stats', methods=['GET'])
+def get_staff_stats(id):
+    staff = Staff.query.get_or_404(id)
+    today = datetime.now().date()
+    
+    # Get today's appointments for this staff
+    today_appointments = Appointment.query.filter(
+        Appointment.staff_id == id,
+        func.date(Appointment.appointment_date) == today
+    ).all()
+    
+    # Get today's completed appointments
+    completed_today = [apt for apt in today_appointments if apt.status == 'completed']
+    clients_served_today = len(completed_today)
+    
+    # Calculate revenue and commission from completed appointments
+    revenue_today = 0
+    commission_today = 0
+    default_commission_rate = 0.18  # 18% default commission
+    
+    for appointment in completed_today:
+        # Calculate total from appointment services
+        appointment_total = 0
+        for apt_service in appointment.services:
+            if apt_service.service:
+                appointment_total += apt_service.service.price
+        
+        revenue_today += appointment_total
+        commission_today += appointment_total * default_commission_rate
+    
+    # Count transactions (payments) for today
+    payments_today = Payment.query.filter(
+        Payment.appointment_id.in_([apt.id for apt in today_appointments])
+    ).count()
+    
+    return jsonify({
+        'staff_id': id,
+        'staff_name': staff.name,
+        'clients_served_today': clients_served_today,
+        'transactions_today': payments_today,
+        'revenue_today': round(revenue_today, 2),
+        'commission_today': round(commission_today, 2)
+    }), 200
 
 # Appointment routes
 @bp.route('/appointments', methods=['GET'])

@@ -114,6 +114,40 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@layer utilities {
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-16px);
+    }
+  }
+
+  @keyframes float-slow {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(12px);
+    }
+  }
+
+  .login-bg {
+    background-image:
+      radial-gradient(600px circle at top left, rgba(120, 53, 15, 0.08), transparent 60%),
+      radial-gradient(600px circle at bottom right, rgba(9, 9, 11, 0.06), transparent 60%),
+      linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0));
+  }
+
+  .login-grid {
+    background-image:
+      linear-gradient(rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
