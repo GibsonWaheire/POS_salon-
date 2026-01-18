@@ -11,22 +11,12 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///pos
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
-# Enable CORS for all routes - allow all origins for development
-# This handles all CORS including preflight OPTIONS requests
-CORS(app, 
-     resources={
-         r"/api/*": {
-             "origins": "*",
-             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-             "allow_headers": ["Content-Type", "Authorization"]
-         }
-     })
-
 # Initialize db with app
 db.init_app(app)
 
 # Import models
 from models import *
+
 
 # Import routes
 from routes import bp
@@ -42,6 +32,17 @@ except ImportError:
 @app.route('/api/health')
 def health():
     return jsonify({'status': 'ok', 'message': 'Salon POS API is running'})
+
+# Enable CORS for all routes - MUST be after routes are registered
+# This handles all CORS including preflight OPTIONS requests
+# Using the simplest configuration that works for all cases
+CORS(app, 
+     origins="*",  # Allow all origins
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],  # All HTTP methods
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],  # All needed headers
+     supports_credentials=False,  # No credentials needed
+     max_age=3600  # Cache preflight requests for 1 hour
+     )
 
 
 def seed_demo_staff_if_needed():
