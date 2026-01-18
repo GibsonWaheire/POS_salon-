@@ -1,0 +1,38 @@
+{
+  "demo_staff": [
+    {
+      "id": 1,
+      "name": "Jane Wanjiru",
+      "phone": "+254 712 345 678",
+      "email": "jane.wanjiru@salon.demo",
+      "role": "stylist",
+      "pin": "1234@"
+    },
+    {
+      "id": 2,
+      "name": "Mary Nyambura",
+      "phone": "+254 734 567 890",
+      "email": "mary.nyambura@salon.demo",
+      "role": "nail_technician",
+      "pin": "9012#"
+    },
+    {
+      "id": 3,
+      "name": "Grace Muthoni",
+      "phone": "+254 745 678 901",
+      "email": "grace.muthoni@salon.demo",
+      "role": "facial_specialist",
+      "pin": "3456$"
+    },
+    {
+      "id": 4,
+      "name": "Lucy Wambui",
+      "phone": "+254 756 789 012",
+      "email": "lucy.wambui@salon.demo",
+      "role": "receptionist",
+      "pin": "7890%"
+    }
+  ],
+  "notes": "One user per role for demo purposes. PIN format: 4 digits + 1 special character"
+}
+

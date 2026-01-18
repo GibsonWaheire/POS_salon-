@@ -2,19 +2,29 @@
 Flask CLI commands for managing the Salon POS system
 """
 import click
+import json
+import os
 from flask import current_app
 from flask.cli import with_appcontext
 from models import Staff, Customer, Service, Appointment, Payment, db
 from datetime import datetime
 
-# Demo staff users data
-DEMO_STAFF = [
-    {'name': 'Jane Wanjiru', 'phone': '+254 712 345 678', 'email': 'jane.wanjiru@salon.demo', 'role': 'stylist', 'pin': '1234@'},
-    {'name': 'Sarah Akinyi', 'phone': '+254 723 456 789', 'email': 'sarah.akinyi@salon.demo', 'role': 'stylist', 'pin': '5678!'},
-    {'name': 'Mary Nyambura', 'phone': '+254 734 567 890', 'email': 'mary.nyambura@salon.demo', 'role': 'nail_technician', 'pin': '9012#'},
-    {'name': 'Grace Muthoni', 'phone': '+254 745 678 901', 'email': 'grace.muthoni@salon.demo', 'role': 'facial_specialist', 'pin': '3456$'},
-    {'name': 'Lucy Wambui', 'phone': '+254 756 789 012', 'email': 'lucy.wambui@salon.demo', 'role': 'receptionist', 'pin': '7890%'}
-]
+# Load demo staff from JSON file
+def load_demo_staff():
+    """Load demo staff data from JSON file"""
+    json_path = os.path.join(os.path.dirname(__file__), 'demo_staff.json')
+    try:
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+            return data.get('demo_staff', [])
+    except FileNotFoundError:
+        click.echo(f'Warning: demo_staff.json not found at {json_path}')
+        return []
+    except json.JSONDecodeError:
+        click.echo(f'Error: Invalid JSON in demo_staff.json')
+        return []
+
+DEMO_STAFF = load_demo_staff()
 
 @click.command('init-db')
 @with_appcontext
@@ -27,7 +37,14 @@ def init_db():
 @click.option('--force', is_flag=True, help='Force reseed even if staff exist')
 @with_appcontext
 def seed_staff(force):
-    """Seed demo staff users for development/demo"""
+    """Seed demo staff users for development/demo from demo_staff.json"""
+    # Reload demo staff from JSON file
+    demo_staff_list = load_demo_staff()
+    
+    if not demo_staff_list:
+        click.echo('Error: No demo staff data found in demo_staff.json')
+        return
+    
     if force:
         # Remove existing demo staff
         Staff.query.filter(Staff.email.like('%@salon.demo')).delete()
@@ -41,19 +58,21 @@ def seed_staff(force):
         return
     
     created_count = 0
-    for staff_data in DEMO_STAFF:
-        existing = Staff.query.filter_by(email=staff_data['email']).first()
+    for staff_data in demo_staff_list:
+        # Remove 'id' from staff_data as it's auto-generated
+        staff_data_clean = {k: v for k, v in staff_data.items() if k != 'id'}
+        existing = Staff.query.filter_by(email=staff_data_clean['email']).first()
         if not existing:
-            staff = Staff(**staff_data)
+            staff = Staff(**staff_data_clean)
             db.session.add(staff)
             created_count += 1
     
     db.session.commit()
     click.echo(f'✓ Created {created_count} demo staff users')
-    click.echo('\nDemo Staff Credentials:')
+    click.echo('\nDemo Staff Credentials (One per role):')
     click.echo('=' * 70)
-    for staff_data in DEMO_STAFF:
-        click.echo(f"Name: {staff_data['name']:<20} PIN: {staff_data['pin']:<10} Role: {staff_data['role']}")
+    for staff_data in demo_staff_list:
+        click.echo(f"ID: {staff_data.get('id', 'N/A'):<5} Name: {staff_data['name']:<20} PIN: {staff_data['pin']:<10} Role: {staff_data['role']}")
 
 @click.command('list-staff')
 @with_appcontext
@@ -125,22 +144,25 @@ def reset_db():
 @click.command('show-demo-login')
 @with_appcontext
 def show_demo_login():
-    """Show demo staff login credentials"""
-    demo_staff = Staff.query.filter(Staff.email.like('%@salon.demo')).all()
+    """Show demo staff login credentials from JSON file"""
+    # Load from JSON file to show what should be in database
+    demo_staff_list = load_demo_staff()
     
-    if not demo_staff:
-        click.echo('No demo staff found. Run "flask seed-staff" to create demo users.')
+    if not demo_staff_list:
+        click.echo('No demo staff data found in demo_staff.json')
         return
     
     click.echo('=' * 70)
     click.echo('DEMO STAFF LOGIN CREDENTIALS (For Development/Demo)')
+    click.echo('One user per role')
     click.echo('=' * 70)
-    click.echo(f'\n{"Name":<25} {"PIN":<10} {"Role":<20} {"ID"}')
+    click.echo(f'\n{"Staff ID":<10} {"Name":<25} {"PIN":<10} {"Role":<20}')
     click.echo('-' * 70)
-    for staff in demo_staff:
-        click.echo(f"{staff.name:<25} {staff.pin:<10} {staff.role or 'N/A':<20} {staff.id}")
+    for staff_data in demo_staff_list:
+        click.echo(f"{staff_data.get('id', 'N/A'):<10} {staff_data['name']:<25} {staff_data['pin']:<10} {staff_data['role']:<20}")
     click.echo('\n' + '=' * 70)
-    click.echo('Use these PINs to login at /staff-login')
+    click.echo('Use Staff ID + PIN to login at /staff-login')
+    click.echo('Example: Staff ID: 1, PIN: 1234@')
     click.echo('=' * 70)
 
 def register_commands(app):

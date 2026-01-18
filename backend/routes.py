@@ -135,42 +135,120 @@ def delete_staff(id):
 # Staff authentication
 @bp.route('/staff/login', methods=['POST'])
 def staff_login():
+    # #region agent log
+    import json
+    import os
+    try:
+        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"id":"log_staff_login_entry","timestamp":int(__import__('time').time()*1000),"location":"routes.py:137","message":"Staff login endpoint called","data":{"method":request.method},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,C,D"}) + '\n')
+    except: pass
+    # #endregion
     data = request.get_json()
     staff_id = data.get('staff_id')
     pin = data.get('pin')
     
+    # #region agent log
+    try:
+        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"id":"log_staff_login_data","timestamp":int(__import__('time').time()*1000),"location":"routes.py:142","message":"Received login data","data":{"staff_id":str(staff_id) if staff_id else None,"pin_length":len(pin) if pin else 0,"pin_preview":pin[:1]+"***" if pin and len(pin)>1 else None},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,C,D"}) + '\n')
+    except: pass
+    # #endregion
+    
     # Validate required fields
     if not staff_id:
+        # #region agent log
+        try:
+            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"id":"log_staff_login_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:145","message":"Validation failed: Staff ID missing","data":{},"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}) + '\n')
+        except: pass
+        # #endregion
         return jsonify({'success': False, 'error': 'Staff ID is required'}), 400
     
     if not pin:
+        # #region agent log
+        try:
+            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"id":"log_staff_login_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:149","message":"Validation failed: PIN missing","data":{},"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}) + '\n')
+        except: pass
+        # #endregion
         return jsonify({'success': False, 'error': 'PIN is required'}), 400
     
     # Validate PIN format: 5 characters, at least one digit and one special character
     if len(pin) != 5:
+        # #region agent log
+        try:
+            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"id":"log_staff_login_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:153","message":"Validation failed: PIN length incorrect","data":{"pin_length":len(pin)},"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}) + '\n')
+        except: pass
+        # #endregion
         return jsonify({'success': False, 'error': 'PIN must be exactly 5 characters'}), 400
     
     # Check if PIN contains at least one digit and one special character
     has_digit = bool(re.search(r'\d', pin))
     has_special = bool(re.search(r'[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?]', pin))
     
+    # #region agent log
+    try:
+        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"id":"log_staff_login_pin_check","timestamp":int(__import__('time').time()*1000),"location":"routes.py:157","message":"PIN format validation","data":{"has_digit":has_digit,"has_special":has_special},"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}) + '\n')
+    except: pass
+    # #endregion
+    
     if not (has_digit and has_special):
+        # #region agent log
+        try:
+            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"id":"log_staff_login_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:160","message":"Validation failed: PIN format invalid","data":{"has_digit":has_digit,"has_special":has_special},"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}) + '\n')
+        except: pass
+        # #endregion
         return jsonify({'success': False, 'error': 'PIN must contain at least one digit and one special character'}), 400
     
     # Convert staff_id to integer if it's numeric
     try:
         staff_id_int = int(staff_id)
-    except (ValueError, TypeError):
+        # #region agent log
+        try:
+            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"id":"log_staff_login_id_convert","timestamp":int(__import__('time').time()*1000),"location":"routes.py:165","message":"Staff ID converted to int","data":{"staff_id_original":str(staff_id),"staff_id_int":staff_id_int},"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}) + '\n')
+        except: pass
+        # #endregion
+    except (ValueError, TypeError) as e:
+        # #region agent log
+        try:
+            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"id":"log_staff_login_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:167","message":"Validation failed: Staff ID conversion error","data":{"error":str(e)},"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}) + '\n')
+        except: pass
+        # #endregion
         return jsonify({'success': False, 'error': 'Invalid Staff ID format'}), 400
     
     # Lookup staff by BOTH ID and PIN - both must match the same staff member
     # In production, compare hashed PIN using bcrypt or similar
+    # #region agent log
+    try:
+        all_staff_count = Staff.query.count()
+        staff_by_id = Staff.query.filter(Staff.id == staff_id_int).first()
+        staff_by_id_pin = Staff.query.filter(Staff.id == staff_id_int, Staff.pin == pin).first()
+        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"id":"log_staff_login_db_check","timestamp":int(__import__('time').time()*1000),"location":"routes.py:171","message":"Database lookup before query","data":{"total_staff_count":all_staff_count,"staff_by_id_exists":staff_by_id is not None,"staff_by_id_pin_exists":staff_by_id_pin is not None,"staff_id_searched":staff_id_int},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,E"}) + '\n')
+    except Exception as db_err:
+        try:
+            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"id":"log_staff_login_db_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:171","message":"Database error during lookup","data":{"error":str(db_err)},"sessionId":"debug-session","runId":"run1","hypothesisId":"E"}) + '\n')
+        except: pass
+    # #endregion
+    
     staff = Staff.query.filter(
         Staff.id == staff_id_int,
         Staff.pin == pin
     ).first()
     
     if staff:
+        # #region agent log
+        try:
+            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"id":"log_staff_login_success","timestamp":int(__import__('time').time()*1000),"location":"routes.py:175","message":"Staff login successful","data":{"staff_id":staff.id,"staff_name":staff.name,"staff_role":staff.role},"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}) + '\n')
+        except: pass
+        # #endregion
         # Return staff data without PIN for security
         staff_dict = staff.to_dict()
         staff_dict.pop('pin', None)  # Don't send PIN back to client
@@ -179,6 +257,12 @@ def staff_login():
             'staff': staff_dict
         }), 200
     else:
+        # #region agent log
+        try:
+            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"id":"log_staff_login_failed","timestamp":int(__import__('time').time()*1000),"location":"routes.py:184","message":"Staff login failed: no match found","data":{"staff_id_searched":staff_id_int},"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}) + '\n')
+        except: pass
+        # #endregion
         # Return generic error (don't reveal if Staff ID exists but PIN is wrong, or vice versa)
         return jsonify({
             'success': False,
