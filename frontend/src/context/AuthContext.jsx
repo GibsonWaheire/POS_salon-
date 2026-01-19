@@ -98,15 +98,15 @@ export function AuthProvider({ children }) {
       let response
       try {
         response = await fetch("http://localhost:5001/api/staff/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ 
-            staff_id: staffId.toString().trim(), 
-            pin: pin 
-          }),
-        })
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          staff_id: staffId.toString().trim(), 
+          pin: pin 
+        }),
+      })
       } catch (fetchErr) {
         // #region agent log
         fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.jsx:98',message:'Network error - fetch failed',data:{error:fetchErr.message,errorType:fetchErr.constructor.name,errorName:fetchErr.name},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});

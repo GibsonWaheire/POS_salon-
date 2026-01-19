@@ -328,31 +328,31 @@ export default function Staff() {
           {loading ? (
             <div className="text-center py-8">Loading staff...</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Phone</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Last Login</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {staff.length === 0 ? (
-                  <TableRow>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {staff.length === 0 ? (
+                <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground">
-                      No staff members found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  staff.map((member) => (
-                    <TableRow key={member.id}>
-                      <TableCell className="font-medium">{member.name}</TableCell>
-                      <TableCell>{member.phone || "-"}</TableCell>
-                      <TableCell>{member.email || "-"}</TableCell>
+                    No staff members found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                staff.map((member) => (
+                  <TableRow key={member.id}>
+                    <TableCell className="font-medium">{member.name}</TableCell>
+                    <TableCell>{member.phone || "-"}</TableCell>
+                    <TableCell>{member.email || "-"}</TableCell>
                       <TableCell>
                         <Select
                           value={member.role || "stylist"}
@@ -380,7 +380,7 @@ export default function Staff() {
                           ? new Date(member.last_login).toLocaleDateString()
                           : "Never"}
                       </TableCell>
-                      <TableCell className="text-right">
+                    <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
                             variant="ghost"
@@ -431,12 +431,12 @@ export default function Staff() {
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
           )}
         </CardContent>
       </Card>

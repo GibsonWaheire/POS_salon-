@@ -35,7 +35,6 @@ def health():
 
 # Enable CORS for all routes - MUST be after routes are registered
 # This handles all CORS including preflight OPTIONS requests
-# Using the simplest configuration that works for all cases
 CORS(app, 
      origins="*",  # Allow all origins
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],  # All HTTP methods
@@ -43,6 +42,39 @@ CORS(app,
      supports_credentials=False,  # No credentials needed
      max_age=3600  # Cache preflight requests for 1 hour
      )
+
+# Ensure CORS headers are always present, even in error responses
+@app.after_request
+def after_request(response):
+    """Add CORS headers to all responses, including errors"""
+    # Only add if not already present (CORS should have added them, but ensure they're there)
+    if 'Access-Control-Allow-Origin' not in response.headers:
+        response.headers['Access-Control-Allow-Origin'] = '*'
+    if 'Access-Control-Allow-Methods' not in response.headers:
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+    if 'Access-Control-Allow-Headers' not in response.headers:
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
+    return response
+
+# Error handler to ensure proper error responses with CORS
+@app.errorhandler(500)
+def handle_500(e):
+    """Handle 500 errors with CORS headers"""
+    from flask import make_response
+    import traceback
+    
+    # Log the error for debugging
+    print(f"500 Error: {str(e)}")
+    if app.debug:
+        traceback.print_exc()
+    
+    response = make_response(jsonify({
+        'error': 'Internal server error',
+        'message': str(e) if app.debug else 'An error occurred'
+    }), 500)
+    
+    # CORS headers will be added by after_request handler
+    return response
 
 
 def seed_demo_staff_if_needed():

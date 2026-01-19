@@ -68,8 +68,8 @@ export default function Dashboard() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
+      <div>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
             {isDemoMode ? (
               <span className="flex items-center gap-2">
@@ -128,42 +128,42 @@ export default function Dashboard() {
       ) : (
         <>
           {/* Key Metrics Cards */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Today's Sales Revenue</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
+          </CardHeader>
+          <CardContent>
                 <div className="text-2xl font-bold">{formatKES(stats.today_revenue)}</div>
                 <p className="text-xs text-muted-foreground">Total sales today</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Commission Owed</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
+          </CardHeader>
+          <CardContent>
                 <div className="text-2xl font-bold text-green-600">{formatKES(stats.total_commission)}</div>
                 <p className="text-xs text-muted-foreground">To be paid to staff</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Staff</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
+          </CardHeader>
+          <CardContent>
                 <div className="text-2xl font-bold">{stats.currently_logged_in.length}</div>
                 <p className="text-xs text-muted-foreground">Currently logged in</p>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Staff Members</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -235,8 +235,8 @@ export default function Dashboard() {
               <CardHeader>
                 <CardTitle>Staff Performance (Today)</CardTitle>
                 <CardDescription>Sales and commission by staff member</CardDescription>
-              </CardHeader>
-              <CardContent>
+          </CardHeader>
+          <CardContent>
                 {stats.staff_performance.length > 0 ? (
                   <div className="space-y-3">
                     {stats.staff_performance.map((perf) => (
@@ -261,13 +261,13 @@ export default function Dashboard() {
                 ) : (
                   <p className="text-sm text-muted-foreground">No sales today</p>
                 )}
-              </CardContent>
-            </Card>
-          </div>
-
+          </CardContent>
+        </Card>
+      </div>
+      
           {/* Recent Transactions */}
-          <Card>
-            <CardHeader>
+      <Card>
+        <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Recent Transactions</CardTitle>
@@ -278,8 +278,8 @@ export default function Dashboard() {
                   View All
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent>
+        </CardHeader>
+        <CardContent>
               {stats.recent_transactions.length > 0 ? (
                 <Table>
                   <TableHeader>
@@ -312,8 +312,8 @@ export default function Dashboard() {
               ) : (
                 <p className="text-sm text-muted-foreground">No recent transactions</p>
               )}
-            </CardContent>
-          </Card>
+        </CardContent>
+      </Card>
         </>
       )}
     </div>

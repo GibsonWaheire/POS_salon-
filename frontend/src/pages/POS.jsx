@@ -395,7 +395,7 @@ export default function POS() {
         const paymentResponse = await fetch("http://localhost:5001/api/payments", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+          body: JSON.stringify({
             appointment_id: appointment.id,
             amount: total,
             payment_method: method.toLowerCase().replace("-", "_"),
@@ -484,25 +484,25 @@ export default function POS() {
             return null
           })()}
           {/* #endregion */}
-          <ReceiptTemplate
-            receiptNumber={receiptNumber}
-            date={receiptDate}
-            time={receiptTime}
-            staffName={staff?.name || "Staff"}
-            clientName={clientName}
-            clientPhone={clientPhone}
-            services={currentSale.map(item => ({ 
-              name: item.name, 
-              price: item.price, 
-              quantity: item.quantity 
-            }))}
-            subtotal={subtotal}
-            tax={tax}
-            total={total}
+        <ReceiptTemplate
+          receiptNumber={receiptNumber}
+          date={receiptDate}
+          time={receiptTime}
+          staffName={staff?.name || "Staff"}
+          clientName={clientName}
+          clientPhone={clientPhone}
+          services={currentSale.map(item => ({ 
+            name: item.name, 
+            price: item.price, 
+            quantity: item.quantity 
+          }))}
+          subtotal={subtotal}
+          tax={tax}
+          total={total}
             paymentMethod={paymentMethod || "Cash"}
             transactionCode={transactionCode}
             kraPin="P051234567K"
-          />
+        />
         </>
       )}
 
@@ -730,15 +730,15 @@ export default function POS() {
                         </div>
                         <div className="flex items-center justify-between pt-2 border-t">
                           <div className="flex items-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => updateQuantity(item.id, -1)}
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => updateQuantity(item.id, -1)}
                             disabled={sessionLocked}
-                          >
-                            -
-                          </Button>
+                            >
+                              -
+                            </Button>
                             <span className="text-sm font-semibold w-8 text-center">{item.quantity}</span>
                             <Button
                               variant="outline"
