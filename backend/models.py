@@ -129,11 +129,112 @@ class AppointmentService(db.Model):
             'service': self.service.to_dict() if self.service else None
         }
 
+# Sale model for walk-in transactions (Kenyan salon flow - no appointments)
+class Sale(db.Model):
+    __tablename__ = 'sales'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sale_number = db.Column(db.String(50), unique=True)  # Sale ID like "SALE-20260119-001"
+    staff_id = db.Column(db.Integer, db.ForeignKey('staff.id'), nullable=False)
+    customer_id = db.Column(db.Integer, db.ForeignKey('customers.id'))  # Optional - for walk-ins
+    customer_name = db.Column(db.String(100))  # For walk-ins without customer record
+    customer_phone = db.Column(db.String(20))  # For walk-ins
+    status = db.Column(db.String(20), default='pending')  # pending, completed, cancelled
+    subtotal = db.Column(db.Float, default=0.0)
+    tax_amount = db.Column(db.Float, default=0.0)  # VAT amount
+    total_amount = db.Column(db.Float, default=0.0)
+    commission_amount = db.Column(db.Float, default=0.0)  # Finalized commission
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime)  # When sale was completed
+    
+    # Relationships
+    staff = db.relationship('Staff', backref='sales', lazy=True)
+    customer = db.relationship('Customer', backref='sales', lazy=True)
+    sale_services = db.relationship('SaleService', backref='sale', lazy=True, cascade='all, delete-orphan')
+    sale_products = db.relationship('SaleProduct', backref='sale', lazy=True, cascade='all, delete-orphan')
+    payment = db.relationship('Payment', backref='sale', uselist=False, lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sale_number': self.sale_number,
+            'staff_id': self.staff_id,
+            'customer_id': self.customer_id,
+            'customer_name': self.customer_name,
+            'customer_phone': self.customer_phone,
+            'status': self.status,
+            'subtotal': self.subtotal,
+            'tax_amount': self.tax_amount,
+            'total_amount': self.total_amount,
+            'commission_amount': self.commission_amount,
+            'notes': self.notes,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'staff': self.staff.to_dict() if self.staff else None,
+            'customer': self.customer.to_dict() if self.customer else None
+        }
+
+class SaleService(db.Model):
+    __tablename__ = 'sale_services'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=False)
+    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=False)
+    quantity = db.Column(db.Integer, default=1)
+    unit_price = db.Column(db.Float, nullable=False)  # Price at time of sale
+    total_price = db.Column(db.Float, nullable=False)  # unit_price * quantity
+    commission_rate = db.Column(db.Float, default=0.50)  # Commission rate at time of sale
+    commission_amount = db.Column(db.Float, default=0.0)  # Calculated commission
+    
+    # Relationships
+    service = db.relationship('Service', backref='sale_services', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sale_id': self.sale_id,
+            'service_id': self.service_id,
+            'quantity': self.quantity,
+            'unit_price': self.unit_price,
+            'total_price': self.total_price,
+            'commission_rate': self.commission_rate,
+            'commission_amount': self.commission_amount,
+            'service': self.service.to_dict() if self.service else None
+        }
+
+class SaleProduct(db.Model):
+    __tablename__ = 'sale_products'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
+    quantity = db.Column(db.Float, nullable=False)  # Can be fractional (e.g., 0.5 bottles)
+    unit_price = db.Column(db.Float, nullable=False)  # Selling price at time of sale
+    total_price = db.Column(db.Float, nullable=False)  # unit_price * quantity
+    stock_deducted = db.Column(db.Boolean, default=False)  # Whether stock was deducted
+    
+    # Relationships
+    product = db.relationship('Product', backref='sale_products', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'sale_id': self.sale_id,
+            'product_id': self.product_id,
+            'quantity': self.quantity,
+            'unit_price': self.unit_price,
+            'total_price': self.total_price,
+            'stock_deducted': self.stock_deducted,
+            'product': self.product.to_dict() if self.product else None
+        }
+
 class Payment(db.Model):
     __tablename__ = 'payments'
     
     id = db.Column(db.Integer, primary_key=True)
-    appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=False)
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=False)  # Changed from appointment_id
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'))  # Keep for backward compatibility
     amount = db.Column(db.Float, nullable=False)
     payment_method = db.Column(db.String(50))  # cash, card, m_pesa, airtel_money, etc.
     status = db.Column(db.String(20), default='pending')  # pending, completed, refunded
@@ -141,9 +242,13 @@ class Payment(db.Model):
     receipt_number = db.Column(db.String(50))  # Receipt number for tracking
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Keep appointment relationship for backward compatibility
+    appointment = db.relationship('Appointment', backref='payments', lazy=True)
+    
     def to_dict(self):
         return {
             'id': self.id,
+            'sale_id': self.sale_id,
             'appointment_id': self.appointment_id,
             'amount': self.amount,
             'payment_method': self.payment_method,
@@ -216,15 +321,20 @@ class ProductUsage(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
-    appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=False)
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'))  # Optional - for backward compatibility
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'))  # For sale-based transactions
     quantity_used = db.Column(db.Float, nullable=False)
     used_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    sale = db.relationship('Sale', backref='product_usage', lazy=True)
     
     def to_dict(self):
         return {
             'id': self.id,
             'product_id': self.product_id,
             'appointment_id': self.appointment_id,
+            'sale_id': self.sale_id,
             'quantity_used': self.quantity_used,
             'used_at': self.used_at.isoformat() if self.used_at else None
         }

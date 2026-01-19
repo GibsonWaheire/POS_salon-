@@ -42,89 +42,91 @@ const categories = [
 // Kenyan salon-specific services with 50% commission rate
 const services = [
   // Hair Services (1-20)
-  { id: 1, name: "Haircut & Style", price: 2000, duration: 45, category: "hair", commissionRate: 0.50 },
-  { id: 2, name: "Blowout", price: 1500, duration: 30, category: "hair", commissionRate: 0.50 },
-  { id: 3, name: "Color - Full Head", price: 5000, duration: 120, category: "hair", commissionRate: 0.50 },
-  { id: 4, name: "Highlights", price: 6000, duration: 150, category: "hair", commissionRate: 0.50 },
-  { id: 5, name: "Balayage", price: 7000, duration: 180, category: "hair", commissionRate: 0.50 },
-  { id: 6, name: "Deep Conditioning Treatment", price: 1200, duration: 20, category: "hair", commissionRate: 0.50 },
-  { id: 7, name: "Finger Wave (Kenyan Style)", price: 2500, duration: 60, category: "hair", commissionRate: 0.50 },
-  { id: 8, name: "Cornrows", price: 3000, duration: 90, category: "hair", commissionRate: 0.50 },
-  { id: 9, name: "Twists", price: 3500, duration: 120, category: "hair", commissionRate: 0.50 },
-  { id: 10, name: "Hair Wash & Conditioning", price: 800, duration: 25, category: "hair", commissionRate: 0.50 },
-  { id: 31, name: "Kenyan Braids", price: 4000, duration: 180, category: "hair", commissionRate: 0.50 },
-  { id: 32, name: "Box Braids", price: 5000, duration: 240, category: "hair", commissionRate: 0.50 },
-  { id: 33, name: "Senegalese Twists", price: 4500, duration: 200, category: "hair", commissionRate: 0.50 },
-  { id: 34, name: "Ghana Weaving", price: 6000, duration: 300, category: "hair", commissionRate: 0.50 },
-  { id: 35, name: "Crochet Braids", price: 5500, duration: 180, category: "hair", commissionRate: 0.50 },
-  { id: 36, name: "Hair Weaving", price: 8000, duration: 240, category: "hair", commissionRate: 0.50 },
-  { id: 37, name: "Hair Relaxing", price: 3500, duration: 120, category: "hair", commissionRate: 0.50 },
-  { id: 38, name: "Hair Rebonding", price: 10000, duration: 300, category: "hair", commissionRate: 0.50 },
-  { id: 39, name: "Keratin Treatment", price: 9000, duration: 240, category: "hair", commissionRate: 0.50 },
-  { id: 40, name: "Hair Extensions", price: 12000, duration: 360, category: "hair", commissionRate: 0.50 },
+  { id: 1, name: "Haircut & Style", price: 1000, duration: 45, category: "hair", commissionRate: 0.50 },
+  { id: 2, name: "Blowout", price: 750, duration: 30, category: "hair", commissionRate: 0.50 },
+  { id: 3, name: "Color - Full Head", price: 2500, duration: 120, category: "hair", commissionRate: 0.50 },
+  { id: 4, name: "Highlights", price: 3000, duration: 150, category: "hair", commissionRate: 0.50 },
+  { id: 5, name: "Balayage", price: 3500, duration: 180, category: "hair", commissionRate: 0.50 },
+  { id: 6, name: "Deep Conditioning Treatment", price: 600, duration: 20, category: "hair", commissionRate: 0.50 },
+  { id: 7, name: "Finger Wave (Kenyan Style)", price: 1250, duration: 60, category: "hair", commissionRate: 0.50 },
+  { id: 8, name: "Cornrows", price: 1500, duration: 90, category: "hair", commissionRate: 0.50 },
+  { id: 9, name: "Twists", price: 1750, duration: 120, category: "hair", commissionRate: 0.50 },
+  { id: 10, name: "Hair Wash & Conditioning", price: 400, duration: 25, category: "hair", commissionRate: 0.50 },
+  { id: 31, name: "Kenyan Braids", price: 2000, duration: 180, category: "hair", commissionRate: 0.50 },
+  { id: 32, name: "Box Braids", price: 2500, duration: 240, category: "hair", commissionRate: 0.50 },
+  { id: 33, name: "Senegalese Twists", price: 2250, duration: 200, category: "hair", commissionRate: 0.50 },
+  { id: 34, name: "Ghana Weaving", price: 3000, duration: 300, category: "hair", commissionRate: 0.50 },
+  { id: 35, name: "Crochet Braids", price: 2750, duration: 180, category: "hair", commissionRate: 0.50 },
+  { id: 36, name: "Hair Weaving", price: 4000, duration: 240, category: "hair", commissionRate: 0.50 },
+  { id: 37, name: "Hair Relaxing", price: 1750, duration: 120, category: "hair", commissionRate: 0.50 },
+  { id: 38, name: "Hair Rebonding", price: 5000, duration: 300, category: "hair", commissionRate: 0.50 },
+  { id: 39, name: "Keratin Treatment", price: 4500, duration: 240, category: "hair", commissionRate: 0.50 },
+  { id: 40, name: "Hair Extensions", price: 6000, duration: 360, category: "hair", commissionRate: 0.50 },
   
   // Nail Services (11-25)
-  { id: 11, name: "Classic Manicure", price: 1200, duration: 30, category: "nails", commissionRate: 0.50 },
-  { id: 12, name: "Gel Manicure", price: 1800, duration: 45, category: "nails", commissionRate: 0.50 },
-  { id: 13, name: "Classic Pedicure", price: 1500, duration: 45, category: "nails", commissionRate: 0.50 },
-  { id: 14, name: "Spa Pedicure", price: 2200, duration: 60, category: "nails", commissionRate: 0.50 },
-  { id: 15, name: "Nail Art (per nail)", price: 200, duration: 5, category: "nails", commissionRate: 0.50 },
-  { id: 16, name: "Gel Polish Removal", price: 500, duration: 15, category: "nails", commissionRate: 0.50 },
-  { id: 41, name: "Acrylic Nails - Full Set", price: 3500, duration: 90, category: "nails", commissionRate: 0.50 },
-  { id: 42, name: "Acrylic Nails - Fill", price: 2500, duration: 60, category: "nails", commissionRate: 0.50 },
-  { id: 43, name: "Dip Powder Manicure", price: 2800, duration: 75, category: "nails", commissionRate: 0.50 },
-  { id: 44, name: "French Manicure", price: 2000, duration: 50, category: "nails", commissionRate: 0.50 },
-  { id: 45, name: "French Pedicure", price: 2300, duration: 60, category: "nails", commissionRate: 0.50 },
-  { id: 46, name: "Paraffin Wax Treatment", price: 1800, duration: 45, category: "nails", commissionRate: 0.50 },
-  { id: 47, name: "Nail Repair", price: 800, duration: 30, category: "nails", commissionRate: 0.50 },
-  { id: 48, name: "Cuticle Treatment", price: 600, duration: 20, category: "nails", commissionRate: 0.50 },
-  { id: 49, name: "Hand Massage", price: 1000, duration: 30, category: "nails", commissionRate: 0.50 },
+  { id: 11, name: "Classic Manicure", price: 600, duration: 30, category: "nails", commissionRate: 0.50 },
+  { id: 12, name: "Gel Manicure", price: 900, duration: 45, category: "nails", commissionRate: 0.50 },
+  { id: 13, name: "Classic Pedicure", price: 750, duration: 45, category: "nails", commissionRate: 0.50 },
+  { id: 14, name: "Spa Pedicure", price: 1100, duration: 60, category: "nails", commissionRate: 0.50 },
+  { id: 15, name: "Nail Art (per nail)", price: 100, duration: 5, category: "nails", commissionRate: 0.50 },
+  { id: 16, name: "Gel Polish Removal", price: 250, duration: 15, category: "nails", commissionRate: 0.50 },
+  { id: 41, name: "Acrylic Nails - Full Set", price: 1750, duration: 90, category: "nails", commissionRate: 0.50 },
+  { id: 42, name: "Acrylic Nails - Fill", price: 1250, duration: 60, category: "nails", commissionRate: 0.50 },
+  { id: 43, name: "Dip Powder Manicure", price: 1400, duration: 75, category: "nails", commissionRate: 0.50 },
+  { id: 44, name: "French Manicure", price: 1000, duration: 50, category: "nails", commissionRate: 0.50 },
+  { id: 45, name: "French Pedicure", price: 1150, duration: 60, category: "nails", commissionRate: 0.50 },
+  { id: 46, name: "Paraffin Wax Treatment", price: 900, duration: 45, category: "nails", commissionRate: 0.50 },
+  { id: 47, name: "Nail Repair", price: 400, duration: 30, category: "nails", commissionRate: 0.50 },
+  { id: 48, name: "Cuticle Treatment", price: 300, duration: 20, category: "nails", commissionRate: 0.50 },
+  { id: 49, name: "Hand Massage", price: 500, duration: 30, category: "nails", commissionRate: 0.50 },
   
   // Facial & Skin Services (17-27)
-  { id: 17, name: "Classic Facial", price: 2800, duration: 60, category: "facial", commissionRate: 0.50 },
-  { id: 18, name: "Hydrafacial", price: 4500, duration: 75, category: "facial", commissionRate: 0.50 },
-  { id: 19, name: "Microdermabrasion", price: 3200, duration: 60, category: "facial", commissionRate: 0.50 },
-  { id: 20, name: "LED Light Therapy", price: 2000, duration: 30, category: "facial", commissionRate: 0.50 },
-  { id: 21, name: "Chemical Peel", price: 4000, duration: 45, category: "facial", commissionRate: 0.50 },
-  { id: 50, name: "Acne Treatment Facial", price: 3500, duration: 75, category: "facial", commissionRate: 0.50 },
-  { id: 51, name: "Anti-Aging Facial", price: 4500, duration: 90, category: "facial", commissionRate: 0.50 },
-  { id: 52, name: "Deep Cleansing Facial", price: 3000, duration: 60, category: "facial", commissionRate: 0.50 },
-  { id: 53, name: "Whitening Facial", price: 4000, duration: 75, category: "facial", commissionRate: 0.50 },
-  { id: 54, name: "Gold Facial", price: 5000, duration: 90, category: "facial", commissionRate: 0.50 },
-  { id: 55, name: "Diamond Facial", price: 5500, duration: 90, category: "facial", commissionRate: 0.50 },
-  { id: 56, name: "Oxygen Facial", price: 4200, duration: 75, category: "facial", commissionRate: 0.50 },
+  { id: 17, name: "Classic Facial", price: 1400, duration: 60, category: "facial", commissionRate: 0.50 },
+  { id: 18, name: "Hydrafacial", price: 2250, duration: 75, category: "facial", commissionRate: 0.50 },
+  { id: 19, name: "Microdermabrasion", price: 1600, duration: 60, category: "facial", commissionRate: 0.50 },
+  { id: 20, name: "LED Light Therapy", price: 1000, duration: 30, category: "facial", commissionRate: 0.50 },
+  { id: 21, name: "Chemical Peel", price: 2000, duration: 45, category: "facial", commissionRate: 0.50 },
+  { id: 50, name: "Acne Treatment Facial", price: 1750, duration: 75, category: "facial", commissionRate: 0.50 },
+  { id: 51, name: "Anti-Aging Facial", price: 2250, duration: 90, category: "facial", commissionRate: 0.50 },
+  { id: 52, name: "Deep Cleansing Facial", price: 1500, duration: 60, category: "facial", commissionRate: 0.50 },
+  { id: 53, name: "Whitening Facial", price: 2000, duration: 75, category: "facial", commissionRate: 0.50 },
+  { id: 54, name: "Gold Facial", price: 2500, duration: 90, category: "facial", commissionRate: 0.50 },
+  { id: 55, name: "Diamond Facial", price: 2750, duration: 90, category: "facial", commissionRate: 0.50 },
+  { id: 56, name: "Oxygen Facial", price: 2100, duration: 75, category: "facial", commissionRate: 0.50 },
   
   // Bridal Packages (22-30)
-  { id: 22, name: "Bridal Package - Full", price: 25000, duration: 300, category: "bridal", commissionRate: 0.50 },
-  { id: 23, name: "Bridal Package - Hair & Makeup", price: 15000, duration: 180, category: "bridal", commissionRate: 0.50 },
-  { id: 24, name: "Bridal Package - Makeup Only", price: 8000, duration: 120, category: "bridal", commissionRate: 0.50 },
-  { id: 25, name: "Bridal Trial", price: 5000, duration: 90, category: "bridal", commissionRate: 0.50 },
-  { id: 57, name: "Bridal Hair Only", price: 10000, duration: 150, category: "bridal", commissionRate: 0.50 },
-  { id: 58, name: "Bridal Makeup - Basic", price: 6000, duration: 90, category: "bridal", commissionRate: 0.50 },
-  { id: 59, name: "Bridal Makeup - Premium", price: 12000, duration: 120, category: "bridal", commissionRate: 0.50 },
-  { id: 60, name: "Bridal Package - Plus", price: 35000, duration: 420, category: "bridal", commissionRate: 0.50 },
-  { id: 61, name: "Pre-Wedding Package", price: 20000, duration: 240, category: "bridal", commissionRate: 0.50 },
+  { id: 22, name: "Bridal Package - Full", price: 12500, duration: 300, category: "bridal", commissionRate: 0.50 },
+  { id: 23, name: "Bridal Package - Hair & Makeup", price: 7500, duration: 180, category: "bridal", commissionRate: 0.50 },
+  { id: 24, name: "Bridal Package - Makeup Only", price: 4000, duration: 120, category: "bridal", commissionRate: 0.50 },
+  { id: 25, name: "Bridal Trial", price: 2500, duration: 90, category: "bridal", commissionRate: 0.50 },
+  { id: 57, name: "Bridal Hair Only", price: 5000, duration: 150, category: "bridal", commissionRate: 0.50 },
+  { id: 58, name: "Bridal Makeup - Basic", price: 3000, duration: 90, category: "bridal", commissionRate: 0.50 },
+  { id: 59, name: "Bridal Makeup - Premium", price: 6000, duration: 120, category: "bridal", commissionRate: 0.50 },
+  { id: 60, name: "Bridal Package - Plus", price: 17500, duration: 420, category: "bridal", commissionRate: 0.50 },
+  { id: 61, name: "Pre-Wedding Package", price: 10000, duration: 240, category: "bridal", commissionRate: 0.50 },
   
   // Threading (26-35)
-  { id: 26, name: "Eyebrow Threading", price: 500, duration: 15, category: "threading", commissionRate: 0.50 },
-  { id: 27, name: "Upper Lip Threading", price: 300, duration: 10, category: "threading", commissionRate: 0.50 },
-  { id: 28, name: "Chin Threading", price: 400, duration: 10, category: "threading", commissionRate: 0.50 },
-  { id: 29, name: "Full Face Threading", price: 1500, duration: 30, category: "threading", commissionRate: 0.50 },
-  { id: 30, name: "Sideburns Threading", price: 500, duration: 10, category: "threading", commissionRate: 0.50 },
-  { id: 62, name: "Forehead Threading", price: 400, duration: 10, category: "threading", commissionRate: 0.50 },
-  { id: 63, name: "Cheek Threading", price: 500, duration: 10, category: "threading", commissionRate: 0.50 },
-  { id: 64, name: "Neck Threading", price: 600, duration: 15, category: "threading", commissionRate: 0.50 },
-  { id: 65, name: "Arm Threading", price: 1200, duration: 30, category: "threading", commissionRate: 0.50 },
-  { id: 66, name: "Leg Threading", price: 2000, duration: 45, category: "threading", commissionRate: 0.50 },
-  { id: 67, name: "Underarm Threading", price: 800, duration: 20, category: "threading", commissionRate: 0.50 },
-  { id: 68, name: "Bikini Threading", price: 1500, duration: 30, category: "threading", commissionRate: 0.50 },
-  { id: 69, name: "Full Body Threading", price: 8000, duration: 180, category: "threading", commissionRate: 0.50 },
-  { id: 70, name: "Eyebrow Shaping", price: 600, duration: 20, category: "threading", commissionRate: 0.50 },
+  { id: 26, name: "Eyebrow Threading", price: 250, duration: 15, category: "threading", commissionRate: 0.50 },
+  { id: 27, name: "Upper Lip Threading", price: 150, duration: 10, category: "threading", commissionRate: 0.50 },
+  { id: 28, name: "Chin Threading", price: 200, duration: 10, category: "threading", commissionRate: 0.50 },
+  { id: 29, name: "Full Face Threading", price: 750, duration: 30, category: "threading", commissionRate: 0.50 },
+  { id: 30, name: "Sideburns Threading", price: 250, duration: 10, category: "threading", commissionRate: 0.50 },
+  { id: 62, name: "Forehead Threading", price: 200, duration: 10, category: "threading", commissionRate: 0.50 },
+  { id: 63, name: "Cheek Threading", price: 250, duration: 10, category: "threading", commissionRate: 0.50 },
+  { id: 64, name: "Neck Threading", price: 300, duration: 15, category: "threading", commissionRate: 0.50 },
+  { id: 65, name: "Arm Threading", price: 600, duration: 30, category: "threading", commissionRate: 0.50 },
+  { id: 66, name: "Leg Threading", price: 1000, duration: 45, category: "threading", commissionRate: 0.50 },
+  { id: 67, name: "Underarm Threading", price: 400, duration: 20, category: "threading", commissionRate: 0.50 },
+  { id: 68, name: "Bikini Threading", price: 750, duration: 30, category: "threading", commissionRate: 0.50 },
+  { id: 69, name: "Full Body Threading", price: 4000, duration: 180, category: "threading", commissionRate: 0.50 },
+  { id: 70, name: "Eyebrow Shaping", price: 300, duration: 20, category: "threading", commissionRate: 0.50 },
 ]
 
 const formatKES = (amount) => {
   return `KES ${amount.toLocaleString('en-KE')}`
 }
+
+const defaultCommissionRate = 0.50 // 50% commission rate for Kenyan salons
 
 export default function POS() {
   const { staff, staffLogout } = useAuth()
@@ -144,7 +146,8 @@ export default function POS() {
   const [showTransactionInput, setShowTransactionInput] = useState(false)
   const [staffStats, setStaffStats] = useState({
     clients_served_today: 0,
-    commission_today: 0
+    commission_today: 0,
+    commission_weekly: 0
   })
   const [loadingStats, setLoadingStats] = useState(true)
   const [recentTransactions, setRecentTransactions] = useState([])
@@ -154,6 +157,14 @@ export default function POS() {
     if (staff?.id) {
       fetchStaffStats()
       fetchRecentTransactions()
+      
+      // Auto-refresh stats every 30 seconds to stay in sync
+      const interval = setInterval(() => {
+        fetchStaffStats()
+        fetchRecentTransactions()
+      }, 30000)
+      
+      return () => clearInterval(interval)
     }
   }, [staff])
 
@@ -166,7 +177,8 @@ export default function POS() {
         const data = await response.json()
         setStaffStats({
           clients_served_today: data.clients_served_today || 0,
-          commission_today: data.commission_today || 0
+          commission_today: data.commission_today || 0,
+          commission_weekly: data.commission_weekly || 0
         })
       }
     } catch (err) {
@@ -179,10 +191,11 @@ export default function POS() {
   const fetchRecentTransactions = async () => {
     if (!staff?.id) return
     try {
-      const response = await fetch(`http://localhost:5001/api/staff/${staff.id}/commission-history?limit=10`)
+      // Fetch recent completed sales for this staff
+      const response = await fetch(`http://localhost:5001/api/sales?staff_id=${staff.id}&status=completed&limit=10`)
       if (response.ok) {
         const data = await response.json()
-        setRecentTransactions(data.transactions?.slice(0, 10) || [])
+        setRecentTransactions(data.slice(0, 10) || [])
       }
     } catch (err) {
       console.error("Failed to fetch recent transactions:", err)
@@ -296,45 +309,100 @@ export default function POS() {
     return sum + (item.price * item.quantity * commissionRate)
   }, 0)
 
-  const handlePrintReceipt = () => {
+  const handlePrintReceipt = async () => {
     if (currentSale.length === 0) {
       alert("Please add items to the sale first")
       return
     }
 
-    // Generate receipt number
-    const receiptNum = `RCP-${Date.now().toString().slice(-6)}`
-    setReceiptNumber(receiptNum)
-    setShowReceipt(true)
+    if (!paymentMethod) {
+      alert("Please select a payment method first")
+      return
+    }
+
+    // Lock session immediately to prevent further entries
+    setSessionLocked(true)
     
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:290',message:'Receipt print triggered',data:{receiptNumber:receiptNum,itemsCount:currentSale.length,subtotal:currentSale.reduce((sum, item) => sum + (item.price * item.quantity), 0),staffName:staff?.name,clientName,clientPhone,paymentMethod:paymentMethod || 'Not set'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'receipt-data'})}).catch(()=>{});
-    // #endregion
-    
-    // Trigger print after a short delay to ensure receipt is rendered
-    setTimeout(() => {
-      window.print()
-      setReceiptPrinted(true)
+    try {
+      // STEP 1: Create Sale (walk-in transaction)
+      const saleResponse = await fetch("http://localhost:5001/api/sales", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          staff_id: staff?.id,
+          customer_name: clientName || null,
+          customer_phone: clientPhone || null,
+          services: currentSale.map(item => ({
+            service_id: item.id,
+            quantity: item.quantity,
+            commission_rate: item.commissionRate || defaultCommissionRate
+          })),
+          products: [] // Products can be added later if needed
+        })
+      })
+
+      if (!saleResponse.ok) {
+        const errorData = await saleResponse.json()
+        throw new Error(errorData.error || "Failed to create sale")
+      }
+
+      const saleData = await saleResponse.json()
+      const saleId = saleData.id
       
-      // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:302',message:'Receipt printed - initiating logout',data:{receiptNumber:receiptNum},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'logout-after-print'})}).catch(()=>{});
-      // #endregion
+      // STEP 2: Complete Sale (deducts stock, finalizes commission, creates payment)
+      const receiptNum = `RCP-${Date.now().toString().slice(-6)}`
+      setReceiptNumber(receiptNum)
       
-      // Lock session immediately to prevent further entries
-      setSessionLocked(true)
+      const completeResponse = await fetch(`http://localhost:5001/api/sales/${saleId}/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          payment_method: paymentMethod,
+          transaction_code: paymentMethod === "M-Pesa" ? transactionCode : null,
+          receipt_number: receiptNum
+        })
+      })
+
+      if (!completeResponse.ok) {
+        const errorData = await completeResponse.json()
+        throw new Error(errorData.error || "Failed to complete sale")
+      }
+
+      const completedSale = await completeResponse.json()
       
-      // Log out after receipt is printed - wait a bit for print dialog to close
+      // Wait a moment to ensure database commit
+      await new Promise(resolve => setTimeout(resolve, 300))
+      
+      // Refresh stats to show the new transaction
+      await fetchStaffStats()
+      await fetchRecentTransactions()
+      
+      // STEP 3: Show receipt and print
+      setShowReceipt(true)
+      
+      // Trigger print after a short delay to ensure receipt is rendered
       setTimeout(() => {
-        // Clear all sale data first
-        clearSale()
-        // Log out and redirect to login
-        staffLogout()
-        navigate("/staff-login")
-      }, 2000) // 2 second delay to allow print dialog to close
-    }, 100)
+        window.print()
+        setReceiptPrinted(true)
+        
+        // STEP 4: Auto-logout after receipt is printed
+        setTimeout(() => {
+          // Clear all sale data first
+          clearSale()
+          // Log out and redirect to login
+          staffLogout()
+          navigate("/staff-login")
+        }, 5000) // 5 second delay to allow print dialog to close
+      }, 100)
+    } catch (err) {
+      console.error("Failed to save transaction:", err)
+      alert(`Error saving transaction: ${err.message}\nPlease try again.`)
+      setSessionLocked(false) // Unlock session on error
+    }
   }
 
-  const handlePayment = async (method) => {
+  const handlePayment = (method) => {
+    // Just set the payment method - transaction will be saved when receipt is printed
     if (sessionLocked) {
       alert("Session ended. Please log in again.")
       return
@@ -345,94 +413,23 @@ export default function POS() {
       return
     }
     
-    if (!receiptPrinted) {
-      alert("Please print receipt before completing payment")
-      return
-    }
-    
     // Set payment method for receipt display
     setPaymentMethod(method)
     
-    // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:309',message:'Payment initiated',data:{method,receiptNumber,total,subtotal:currentSale.reduce((sum, item) => sum + (item.price * item.quantity), 0),itemsCount:currentSale.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'receipt-data'})}).catch(()=>{});
-    // #endregion
-    
-    try {
-      // Create customer if name or phone provided
-      let customerId = null
-      if (clientName || clientPhone) {
-        const customerResponse = await fetch("http://localhost:5001/api/customers", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: clientName || "Walk-in Customer",
-            phone: clientPhone || null
-          })
-        })
-        if (customerResponse.ok) {
-          const customer = await customerResponse.json()
-          customerId = customer.id
-        }
-      }
-
-      // Create appointment with staff_id
-      const appointmentResponse = await fetch("http://localhost:5001/api/appointments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer_id: customerId || 1,
-          staff_id: staff?.id,
-          appointment_date: new Date().toISOString(),
-          status: "completed",
-          service_ids: currentSale.map(item => item.id)
-        })
-      })
-
-      if (appointmentResponse.ok) {
-        const appointment = await appointmentResponse.json()
-        
-        // Create payment with staff_id
-        const paymentResponse = await fetch("http://localhost:5001/api/payments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            appointment_id: appointment.id,
-            amount: total,
-            payment_method: method.toLowerCase().replace("-", "_"),
-            status: "completed",
-            receipt_number: receiptNumber,
-            transaction_code: method === "M-Pesa" ? transactionCode : null
-          })
-        })
-        
-        // #region agent log
-        if (paymentResponse.ok) {
-          const paymentData = await paymentResponse.json()
-          fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:355',message:'Payment saved to backend',data:{paymentId:paymentData.id,appointmentId:appointment.id,amount:total,paymentMethod:method,receiptNumber},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'receipt-data'})}).catch(()=>{});
-        }
-        // #endregion
-
-        // Clear sale first
-        clearSale()
-        
-        // Small delay to ensure backend has committed transaction
-        await new Promise(resolve => setTimeout(resolve, 500))
-        
-        // Refresh staff stats after payment
-        await fetchStaffStats()
-        await fetchRecentTransactions()
-        
-        alert(`Payment via ${method} successful!\nAmount: ${formatKES(total)}\nYour Commission: ${formatKES(totalCommission)}`)
+    // If M-Pesa, show transaction code input dialog
+    if (method === "M-Pesa") {
+      const code = prompt("Enter M-Pesa transaction code:")
+      if (code) {
+        setTransactionCode(code)
       } else {
-        throw new Error("Failed to create appointment")
+        setPaymentMethod("") // Cancel if no code provided
+        return
       }
-    } catch (err) {
-      console.error("Payment error:", err)
-      alert(`Payment via ${method} successful!\nAmount: ${formatKES(total)}\nYour Commission: ${formatKES(totalCommission)}`)
-      await fetchStaffStats()
-      await fetchRecentTransactions()
-      clearSale()
+    } else {
+      setTransactionCode("") // Clear transaction code for non-M-Pesa payments
     }
+    
+    // Payment method is now set - transaction will be saved when receipt is printed
   }
 
   const handleLogout = () => {
@@ -515,6 +512,7 @@ export default function POS() {
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-blue-600" />
                 <span className="font-medium">Today: {loadingStats ? "..." : staffStats.clients_served_today} Clients</span>
+                <span className="text-xs text-muted-foreground ml-2">| Weekly Commission: {loadingStats ? "..." : formatKES(Math.round(staffStats.commission_weekly))}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Coins className="h-4 w-4 text-green-600" />
@@ -767,7 +765,7 @@ export default function POS() {
                   <span className="font-semibold">{formatKES(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">VAT (8%)</span>
+                  <span className="text-muted-foreground">VAT (16%)</span>
                   <span className="font-semibold">{formatKES(tax)}</span>
                 </div>
                 <div className="bg-green-50 p-3 rounded border border-green-200">
@@ -826,27 +824,27 @@ export default function POS() {
               </Button>
             )}
 
-            {/* Payment Buttons */}
-            {currentSale.length > 0 && (
+            {/* Payment Method Selection - Must be selected before printing */}
+            {currentSale.length > 0 && !receiptPrinted && (
               <>
-                {!receiptPrinted && (
-                  <p className="text-xs text-red-600 text-center mb-2">Please print receipt before payment</p>
-                )}
+                <p className="text-xs text-center mb-2 text-muted-foreground">Select payment method, then print receipt</p>
                 <Button 
                   className="w-full h-14 text-base font-semibold bg-green-600 hover:bg-green-700 text-white"
                   onClick={() => handlePayment("M-Pesa")}
-                  disabled={!receiptPrinted || sessionLocked}
+                  disabled={sessionLocked}
+                  variant={paymentMethod === "M-Pesa" ? "default" : "outline"}
                 >
                   <Phone className="h-5 w-5 mr-2" />
-                  M-Pesa Payment
+                  {paymentMethod === "M-Pesa" ? "✓ M-Pesa Selected" : "Select M-Pesa"}
                 </Button>
                 <Button 
                   className="w-full h-14 text-base font-semibold bg-gray-800 hover:bg-gray-900 text-white" 
                   onClick={() => handlePayment("Cash")}
-                  disabled={!receiptPrinted || sessionLocked}
+                  disabled={sessionLocked}
+                  variant={paymentMethod === "Cash" ? "default" : "outline"}
                 >
                   <Wallet className="h-5 w-5 mr-2" />
-                  Cash Payment
+                  {paymentMethod === "Cash" ? "✓ Cash Selected" : "Select Cash"}
                 </Button>
               </>
             )}
