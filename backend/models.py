@@ -98,7 +98,7 @@ class Appointment(db.Model):
     
     # Relationships
     services = db.relationship('AppointmentService', backref='appointment', lazy=True, cascade='all, delete-orphan')
-    payment = db.relationship('Payment', backref='appointment', uselist=False, lazy=True)
+    payment = db.relationship('Payment', foreign_keys='Payment.appointment_id', backref='appointment', uselist=False, lazy=True)
     
     def to_dict(self):
         return {
@@ -153,7 +153,7 @@ class Sale(db.Model):
     customer = db.relationship('Customer', backref='sales', lazy=True)
     sale_services = db.relationship('SaleService', backref='sale', lazy=True, cascade='all, delete-orphan')
     sale_products = db.relationship('SaleProduct', backref='sale', lazy=True, cascade='all, delete-orphan')
-    payment = db.relationship('Payment', backref='sale', uselist=False, lazy=True)
+    payment = db.relationship('Payment', foreign_keys='Payment.sale_id', backref='sale', uselist=False, lazy=True)
     
     def to_dict(self):
         return {
@@ -233,7 +233,7 @@ class Payment(db.Model):
     __tablename__ = 'payments'
     
     id = db.Column(db.Integer, primary_key=True)
-    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=False)  # Changed from appointment_id
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'))  # Made nullable for backward compatibility
     appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'))  # Keep for backward compatibility
     amount = db.Column(db.Float, nullable=False)
     payment_method = db.Column(db.String(50))  # cash, card, m_pesa, airtel_money, etc.
@@ -242,8 +242,8 @@ class Payment(db.Model):
     receipt_number = db.Column(db.String(50))  # Receipt number for tracking
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
-    # Keep appointment relationship for backward compatibility
-    appointment = db.relationship('Appointment', backref='payments', lazy=True)
+    # Relationships are defined on Appointment and Sale models with backrefs
+    # No need to define them here to avoid conflicts
     
     def to_dict(self):
         return {

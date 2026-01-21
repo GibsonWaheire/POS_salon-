@@ -457,30 +457,6 @@ export default function POS() {
       {/* Receipt for Printing */}
       {showReceipt && currentSale.length > 0 && (
         <>
-          {/* #region agent log */}
-          {(() => {
-            const receiptData = {
-              receiptNumber,
-              date: receiptDate,
-              time: receiptTime,
-              staffName: staff?.name || "Staff",
-              clientName,
-              clientPhone,
-              servicesCount: currentSale.length,
-              services: currentSale.map(item => ({ 
-                name: item.name, 
-                price: item.price, 
-                quantity: item.quantity 
-              })),
-              subtotal,
-              tax,
-              total,
-              paymentMethod: paymentMethod || "Cash"
-            }
-            fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:412',message:'Receipt rendered with data',data:receiptData,timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'receipt-data'})}).catch(()=>{});
-            return null
-          })()}
-          {/* #endregion */}
         <ReceiptTemplate
           receiptNumber={receiptNumber}
           date={receiptDate}

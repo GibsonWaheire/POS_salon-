@@ -1482,13 +1482,25 @@ def create_sale():
     if not staff_id:
         return jsonify({'error': 'Staff ID is required'}), 400
     
-    # Generate unique sale number: SALE-YYYYMMDD-XXX
-    today = datetime.now().strftime('%Y%m%d')
+    # Generate unique sale number: SALE-YYYYMMDD-HHMMSS-XXX
+    # Use timestamp to ensure uniqueness even with concurrent requests
+    now = datetime.now()
+    today = now.strftime('%Y%m%d')
+    time_part = now.strftime('%H%M%S')
     # Get count of sales today to generate sequence number
     today_sales_count = Sale.query.filter(
         func.date(Sale.created_at) == date.today()
     ).count()
-    sale_number = f"SALE-{today}-{today_sales_count + 1:03d}"
+    # Add timestamp to ensure uniqueness
+    sale_number = f"SALE-{today}-{time_part}-{today_sales_count + 1:03d}"
+    
+    # Ensure uniqueness by checking if sale_number already exists (retry if needed)
+    max_retries = 5
+    retry_count = 0
+    while Sale.query.filter_by(sale_number=sale_number).first() and retry_count < max_retries:
+        today_sales_count += 1
+        sale_number = f"SALE-{today}-{time_part}-{today_sales_count + 1:03d}"
+        retry_count += 1
     
     # Create or get customer if name/phone provided
     customer_id = None
@@ -1578,7 +1590,11 @@ def create_sale():
     sale.total_amount = total_amount
     sale.commission_amount = commission_amount
     
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to create sale: {str(e)}'}), 500
     
     return jsonify(sale.to_dict()), 201
 
