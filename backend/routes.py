@@ -492,6 +492,15 @@ def get_staff_stats(id):
     ).all()
     commission_weekly = sum(sale.commission_amount for sale in week_sales)
     
+    # #region agent log
+    import json
+    import os
+    try:
+        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"id":"log_staff_stats_calc","timestamp":int(__import__('time').time()*1000),"location":"routes.py:493","message":"Staff stats calculation","data":{"staff_id":id,"today":today.isoformat(),"week_start":week_start.isoformat(),"week_sales_count":len(week_sales),"commission_weekly":commission_weekly,"today_sales_count":len(today_sales),"commission_today":commission_today},"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}) + '\n')
+    except: pass
+    # #endregion
+    
     return jsonify({
         'staff_id': id,
         'staff_name': staff.name,
@@ -505,42 +514,177 @@ def get_staff_stats(id):
 # Staff commission history endpoint
 @bp.route('/staff/<int:id>/commission-history', methods=['GET'])
 def get_staff_commission_history(id):
+    try:
+        staff = Staff.query.get_or_404(id)
+        
+        # Get query parameters for filtering
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        payment_method = request.args.get('payment_method')
+        
+        # Get all completed sales for this staff
+        query = Sale.query.filter(
+            Sale.staff_id == id,
+            Sale.status == 'completed'
+        )
+        
+        # Apply date filters
+        if start_date:
+            try:
+                start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
+                query = query.filter(Sale.created_at >= start_dt)
+            except (ValueError, AttributeError) as e:
+                # #region agent log
+                import json
+                import os
+                try:
+                    with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                        f.write(json.dumps({"id":"log_date_parse_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:532","message":"Date parse error for start_date","data":{"start_date":start_date,"error":str(e)},"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}) + '\n')
+                except: pass
+                # #endregion
+                return jsonify({'error': f'Invalid start_date format: {start_date}'}), 400
+        
+        if end_date:
+            try:
+                end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
+                query = query.filter(Sale.created_at <= end_dt)
+            except (ValueError, AttributeError) as e:
+                # #region agent log
+                import json
+                import os
+                try:
+                    with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                        f.write(json.dumps({"id":"log_date_parse_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:540","message":"Date parse error for end_date","data":{"end_date":end_date,"error":str(e)},"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}) + '\n')
+                except: pass
+                # #endregion
+                return jsonify({'error': f'Invalid end_date format: {end_date}'}), 400
+        
+        sales = query.order_by(Sale.created_at.desc()).all()
+        
+        # Filter by payment method if specified
+        if payment_method:
+            # Get sale IDs that have payments with the specified payment method
+            sale_ids_with_payment = [p.sale_id for p in Payment.query.filter_by(
+                payment_method=payment_method
+            ).all() if p.sale_id]
+            sales = [sale for sale in sales if sale.id in sale_ids_with_payment]
+        
+        # Build commission history
+        history = []
+        
+        for sale in sales:
+            try:
+                # Get payment for this sale - use relationship first, fallback to query
+                payment = sale.payment if hasattr(sale, 'payment') and sale.payment else Payment.query.filter_by(sale_id=sale.id).first()
+                
+                # Get services from sale
+                services_list = []
+                for sale_service in sale.sale_services:
+                    # Use service relationship if available, otherwise use SaleService data
+                    if sale_service.service:
+                        # Service relationship exists - use it
+                        services_list.append({
+                            'name': sale_service.service.name,
+                            'price': sale_service.total_price
+                        })
+                    else:
+                        # Service relationship is None - use SaleService data directly
+                        # Try to get service name from Service table by service_id
+                        service = Service.query.get(sale_service.service_id)
+                        if service:
+                            services_list.append({
+                                'name': service.name,
+                                'price': sale_service.total_price
+                            })
+                        else:
+                            # Fallback: use service_id as identifier if service doesn't exist
+                            services_list.append({
+                                'name': f'Service #{sale_service.service_id}',
+                                'price': sale_service.total_price
+                            })
+                
+                # Safely access customer data
+                customer_name = sale.customer_name
+                if not customer_name and sale.customer:
+                    customer_name = sale.customer.name
+                if not customer_name:
+                    customer_name = 'Walk-in'
+                
+                customer_phone = sale.customer_phone
+                if not customer_phone and sale.customer:
+                    customer_phone = sale.customer.phone
+                
+                history.append({
+                    'id': sale.id,
+                    'date': sale.created_at.strftime('%Y-%m-%d') if sale.created_at else None,
+                    'time': sale.created_at.strftime('%H:%M') if sale.created_at else None,
+                    'datetime': sale.created_at.isoformat() if sale.created_at else None,
+                    'client_name': customer_name,
+                    'client_phone': customer_phone,
+                    'services': services_list,
+                    'total_amount': round(sale.subtotal, 2) if sale.subtotal else 0,
+                    'tax': round(sale.tax_amount, 2) if sale.tax_amount else 0,
+                    'grand_total': round(sale.total_amount, 2) if sale.total_amount else 0,
+                    'commission': round(sale.commission_amount, 2) if sale.commission_amount else 0,
+                    'payment_method': payment.payment_method if payment else None,
+                    'payment_status': payment.status if payment else None,
+                    'receipt_number': payment.receipt_number if payment else f"RCP-{sale.sale_number}"
+                })
+            except Exception as e:
+                # #region agent log
+                import json
+                import os
+                import traceback
+                try:
+                    with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                        f.write(json.dumps({"id":"log_sale_processing_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:578","message":"Error processing sale","data":{"sale_id":sale.id if sale else None,"error":str(e),"traceback":traceback.format_exc()},"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}) + '\n')
+                except: pass
+                # #endregion
+                # Skip this sale and continue with others
+                continue
+        
+        return jsonify({
+            'staff_id': id,
+            'staff_name': staff.name,
+            'transactions': history,
+            'total_count': len(history),
+            'total_commission': round(sum(t['commission'] for t in history), 2)
+        }), 200
+    except Exception as e:
+        # #region agent log
+        import json
+        import os
+        import traceback
+        try:
+            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"id":"log_commission_history_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:590","message":"Commission history endpoint error","data":{"staff_id":id,"error":str(e),"traceback":traceback.format_exc()},"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}) + '\n')
+        except: pass
+        # #endregion
+        import traceback
+        print(f"Error in get_staff_commission_history: {str(e)}")
+        traceback.print_exc()
+        return jsonify({'error': str(e), 'message': 'Failed to fetch commission history'}), 500
+
+# Staff weekly transactions endpoint
+@bp.route('/staff/<int:id>/weekly-transactions', methods=['GET'])
+def get_staff_weekly_transactions(id):
+    """Get weekly transaction list for a staff member"""
     staff = Staff.query.get_or_404(id)
     
-    # Get query parameters for filtering
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    payment_method = request.args.get('payment_method')
+    from datetime import timedelta
+    today = datetime.now().date()
+    week_start = today - timedelta(days=6)  # Last 7 days including today
     
-    # Get all completed sales for this staff
-    query = Sale.query.filter(
+    # Get all completed sales for this staff in the last 7 days
+    sales = Sale.query.filter(
         Sale.staff_id == id,
-        Sale.status == 'completed'
-    )
+        Sale.status == 'completed',
+        func.date(Sale.created_at) >= week_start
+    ).order_by(Sale.created_at.desc()).all()
     
-    # Apply date filters
-    if start_date:
-        start_dt = datetime.fromisoformat(start_date)
-        query = query.filter(Sale.created_at >= start_dt)
-    if end_date:
-        end_dt = datetime.fromisoformat(end_date)
-        query = query.filter(Sale.created_at <= end_dt)
-    
-    sales = query.order_by(Sale.created_at.desc()).all()
-    
-    # Filter by payment method if specified
-    if payment_method:
-        sale_ids_with_payment = [p.sale_id for p in Payment.query.filter_by(
-            payment_method=payment_method
-        ).all() if p.sale_id]
-        sales = [sale for sale in sales if sale.id in sale_ids_with_payment]
-    
-    # Build commission history
-    history = []
-    
+    transactions = []
     for sale in sales:
-        # Get payment for this sale
-        payment = Payment.query.filter_by(sale_id=sale.id).first()
+        payment = sale.payment if hasattr(sale, 'payment') and sale.payment else Payment.query.filter_by(sale_id=sale.id).first()
         
         # Get services from sale
         services_list = []
@@ -551,17 +695,18 @@ def get_staff_commission_history(id):
                     'price': sale_service.total_price
                 })
         
-        history.append({
+        transactions.append({
             'id': sale.id,
+            'sale_number': sale.sale_number,
             'date': sale.created_at.strftime('%Y-%m-%d') if sale.created_at else None,
             'time': sale.created_at.strftime('%H:%M') if sale.created_at else None,
             'datetime': sale.created_at.isoformat() if sale.created_at else None,
             'client_name': sale.customer_name or (sale.customer.name if sale.customer else 'Walk-in'),
             'client_phone': sale.customer_phone or (sale.customer.phone if sale.customer else None),
             'services': services_list,
-            'total_amount': round(sale.subtotal, 2),
+            'subtotal': round(sale.subtotal, 2),
             'tax': round(sale.tax_amount, 2),
-            'grand_total': round(sale.total_amount, 2),
+            'total_amount': round(sale.total_amount, 2),
             'commission': round(sale.commission_amount, 2),
             'payment_method': payment.payment_method if payment else None,
             'payment_status': payment.status if payment else None,
@@ -571,9 +716,12 @@ def get_staff_commission_history(id):
     return jsonify({
         'staff_id': id,
         'staff_name': staff.name,
-        'transactions': history,
-        'total_count': len(history),
-        'total_commission': round(sum(t['commission'] for t in history), 2)
+        'week_start': week_start.isoformat(),
+        'week_end': today.isoformat(),
+        'transactions': transactions,
+        'total_count': len(transactions),
+        'total_revenue': round(sum(t['subtotal'] for t in transactions), 2),
+        'total_commission': round(sum(t['commission'] for t in transactions), 2)
     }), 200
 
 # Dashboard statistics endpoint
@@ -608,28 +756,28 @@ def get_dashboard_stats():
     currently_logged_in = [log.staff_id for log in active_logins]
     active_staff_list = Staff.query.filter(Staff.id.in_(currently_logged_in)).all() if currently_logged_in else []
     
-    # Recent transactions (last 10 completed payments from sales)
-    recent_payments = Payment.query.join(Sale).filter(
-        Payment.status == 'completed',
-        Payment.sale_id.isnot(None)
-    ).order_by(Payment.created_at.desc()).limit(10).all()
+    # Recent transactions (last 10 completed sales with payments)
+    recent_sales = Sale.query.filter(
+        Sale.status == 'completed'
+    ).order_by(Sale.created_at.desc()).limit(10).all()
     
     recent_transactions = []
-    for payment in recent_payments:
-        sale = payment.sale
+    for sale in recent_sales:
+        payment = sale.payment  # Access payment through relationship
         staff = sale.staff if sale else None
         # Use sale commission amount
         commission = sale.commission_amount if sale else 0
-        recent_transactions.append({
-            'id': payment.id,
-            'staff_name': staff.name if staff else 'N/A',
-            'staff_id': staff.id if staff else None,
-            'amount': round(payment.amount, 2),
-            'commission': round(commission, 2),
-            'payment_method': payment.payment_method,
-            'created_at': payment.created_at.isoformat() if payment.created_at else None,
-            'sale_id': payment.sale_id
-        })
+        if payment:  # Only include sales that have payments
+            recent_transactions.append({
+                'id': payment.id,
+                'staff_name': staff.name if staff else 'N/A',
+                'staff_id': staff.id if staff else None,
+                'amount': round(payment.amount, 2),
+                'commission': round(commission, 2),
+                'payment_method': payment.payment_method,
+                'created_at': payment.created_at.isoformat() if payment.created_at else None,
+                'sale_id': sale.id
+            })
     
     # Staff performance summary (today's sales and commission per staff)
     staff_performance = []
@@ -1077,30 +1225,32 @@ def get_daily_sales_report():
     else:
         target_date = date.today()
     
-    # Get all completed payments for the date (from sales)
+    # Get all completed sales for the date
     start_datetime = datetime.combine(target_date, datetime.min.time())
     end_datetime = datetime.combine(target_date, datetime.max.time())
     
-    payments = Payment.query.join(Sale).filter(
-        Payment.status == 'completed',
-        Payment.sale_id.isnot(None),
+    sales = Sale.query.filter(
+        Sale.status == 'completed',
         Sale.created_at >= start_datetime,
         Sale.created_at <= end_datetime
     ).all()
     
-    # Calculate totals from sales (use subtotal for commission calculation)
-    total_revenue = sum(p.amount for p in payments)
-    # Commission from sales
-    total_commission = sum(p.sale.commission_amount for p in payments if p.sale)
+    # Calculate totals from sales
+    total_revenue = sum(sale.total_amount for sale in sales)
+    total_commission = sum(sale.commission_amount for sale in sales)
     
-    # Payment method breakdown
+    # Payment method breakdown - get from payments
     payment_methods = {}
-    for payment in payments:
-        method = payment.payment_method or 'cash'
-        payment_methods[method] = payment_methods.get(method, 0) + payment.amount
+    payments_list = []
+    for sale in sales:
+        payment = sale.payment if hasattr(sale, 'payment') and sale.payment else Payment.query.filter_by(sale_id=sale.id).first()
+        if payment:
+            method = payment.payment_method or 'cash'
+            payment_methods[method] = payment_methods.get(method, 0) + payment.amount
+            payments_list.append(payment)
     
     # Transaction count
-    transaction_count = len(payments)
+    transaction_count = len(sales)
     
     # VAT calculation (16%)
     vat_rate = 0.16
@@ -1116,7 +1266,7 @@ def get_daily_sales_report():
         'total_commission': round(total_commission, 2),
         'transaction_count': transaction_count,
         'payment_methods': {k: round(v, 2) for k, v in payment_methods.items()},
-        'payments': [p.to_dict() for p in payments]
+        'payments': [p.to_dict() for p in payments_list]
     }), 200
 
 @bp.route('/reports/commission-payout', methods=['GET'])
@@ -1203,15 +1353,14 @@ def get_financial_summary():
     else:
         end_dt = datetime.combine(date.today(), datetime.max.time())
     
-    # Revenue from completed payments (from sales)
-    payments = Payment.query.join(Sale).filter(
-        Payment.status == 'completed',
-        Payment.sale_id.isnot(None),
+    # Revenue from completed sales
+    sales = Sale.query.filter(
+        Sale.status == 'completed',
         Sale.created_at >= start_dt,
         Sale.created_at <= end_dt
     ).all()
     
-    total_revenue = sum(p.amount for p in payments)
+    total_revenue = sum(sale.total_amount for sale in sales)
     vat_rate = 0.16
     vat_amount = total_revenue * vat_rate / (1 + vat_rate)
     revenue_before_vat = total_revenue - vat_amount
@@ -1231,7 +1380,7 @@ def get_financial_summary():
         expenses_by_category[category] = expenses_by_category.get(category, 0) + expense.amount
     
     # Commission from sales
-    total_commission = sum(p.sale.commission_amount for p in payments if p.sale)
+    total_commission = sum(sale.commission_amount for sale in sales)
     
     # Profit calculation
     gross_profit = revenue_before_vat - total_commission
@@ -1282,18 +1431,19 @@ def get_tax_report():
         else:
             end_dt = datetime(today.year, today.month + 1, 1) - timedelta(days=1)
     
-    # Get all completed payments (from sales)
-    payments = Payment.query.join(Sale).filter(
-        Payment.status == 'completed',
-        Payment.sale_id.isnot(None),
+    # Get all completed sales for the month
+    sales = Sale.query.filter(
+        Sale.status == 'completed',
         Sale.created_at >= start_dt,
         Sale.created_at <= end_dt
     ).all()
     
-    total_revenue = sum(p.amount for p in payments)
+    total_revenue = sum(sale.total_amount for sale in sales)
     vat_rate = 0.16
     vat_amount = total_revenue * vat_rate / (1 + vat_rate)
     revenue_before_vat = total_revenue - vat_amount
+    
+    transaction_count = len(sales)
     
     return jsonify({
         'period': {
@@ -1307,7 +1457,7 @@ def get_tax_report():
             'vat_collected': round(vat_amount, 2),
             'vat_rate': vat_rate
         },
-        'transaction_count': len(payments),
+        'transaction_count': transaction_count,
         'kra_pin': 'P051234567K'  # Should be configurable
     }), 200
 
@@ -1436,24 +1586,64 @@ def create_sale():
     for service_data in services:
         service_id = service_data.get('service_id') or service_data.get('id')
         quantity = service_data.get('quantity', 1)
+        service_name = service_data.get('name')
+        service_price = service_data.get('price')
+        commission_rate = service_data.get('commission_rate', 0.50)
         
+        # Get or create Service record
         service = Service.query.get(service_id)
-        if service:
-            unit_price = service.price
-            total_price = unit_price * quantity
-            commission_rate = service_data.get('commission_rate', 0.50)
-            commission_amount = total_price * commission_rate
-            
-            sale_service = SaleService(
-                sale_id=sale.id,
-                service_id=service_id,
-                quantity=quantity,
-                unit_price=unit_price,
-                total_price=total_price,
-                commission_rate=commission_rate,
-                commission_amount=commission_amount
-            )
-            db.session.add(sale_service)
+        if not service:
+            # Service doesn't exist in database - create it with frontend data
+            if service_name and service_price is not None:
+                # Get duration from frontend if provided, default to 30 minutes
+                duration = service_data.get('duration', 30)
+                try:
+                    # Try to create service with the specified ID
+                    # SQLite allows inserting with specific ID if it doesn't conflict
+                    service = Service(
+                        id=service_id,  # Try to use the ID from frontend
+                        name=service_name,
+                        price=service_price,
+                        duration=duration
+                    )
+                    db.session.add(service)
+                    db.session.flush()  # Flush to get the service ID
+                except Exception:
+                    # If setting ID fails (e.g., ID already exists or auto-increment issue),
+                    # create without ID and let database assign it
+                    db.session.rollback()
+                    # Try to find by name to avoid duplicates
+                    existing_service = Service.query.filter_by(name=service_name).first()
+                    if existing_service:
+                        service = existing_service
+                    else:
+                        service = Service(
+                            name=service_name,
+                            price=service_price,
+                            duration=duration
+                        )
+                        db.session.add(service)
+                        db.session.flush()
+            else:
+                # If no name/price provided, skip this service
+                continue
+        
+        # Use price from frontend if provided, otherwise use database price
+        unit_price = service_price if service_price is not None else service.price
+        total_price = unit_price * quantity
+        commission_amount = total_price * commission_rate
+        
+        # Always create SaleService record
+        sale_service = SaleService(
+            sale_id=sale.id,
+            service_id=service.id,
+            quantity=quantity,
+            unit_price=unit_price,
+            total_price=total_price,
+            commission_rate=commission_rate,
+            commission_amount=commission_amount
+        )
+        db.session.add(sale_service)
     
     # Add products to sale (stock NOT deducted yet)
     products = data.get('products', [])
@@ -1605,10 +1795,25 @@ def get_sales():
     
     sales = query.order_by(Sale.created_at.desc()).limit(limit).all()
     
+    # #region agent log
+    import json
+    import os
+    try:
+        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"id":"log_get_sales_entry","timestamp":int(__import__('time').time()*1000),"location":"routes.py:1648","message":"get_sales endpoint called","data":{"staff_id":staff_id,"status":status,"limit":limit,"sales_count":len(sales)},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,D,E"}) + '\n')
+    except: pass
+    # #endregion
+    
     # Include payment information in response
     result = []
     for sale in sales:
         sale_dict = sale.to_dict()
+        # #region agent log
+        try:
+            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"id":"log_sale_to_dict","timestamp":int(__import__('time').time()*1000),"location":"routes.py:1672","message":"Sale to_dict result","data":{"sale_id":sale.id,"total_amount":sale_dict.get('total_amount'),"commission_amount":sale_dict.get('commission_amount'),"keys":list(sale_dict.keys())},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,D,E"}) + '\n')
+        except: pass
+        # #endregion
         # Add payment information if available
         if sale.payment:
             sale_dict['payment_method'] = sale.payment.payment_method
@@ -1618,6 +1823,19 @@ def get_sales():
         sale_dict['commission'] = sale.commission_amount
         sale_dict['client_name'] = sale.customer_name
         sale_dict['time'] = sale.created_at.strftime('%H:%M') if sale.created_at else ''
+        # #region agent log
+        try:
+            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+                f.write(json.dumps({"id":"log_sale_final_dict","timestamp":int(__import__('time').time()*1000),"location":"routes.py:1683","message":"Final sale dict before return","data":{"sale_id":sale.id,"grand_total":sale_dict.get('grand_total'),"commission":sale_dict.get('commission'),"total_amount":sale_dict.get('total_amount'),"commission_amount":sale_dict.get('commission_amount')},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,D,E"}) + '\n')
+        except: pass
+        # #endregion
         result.append(sale_dict)
+    
+    # #region agent log
+    try:
+        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
+            f.write(json.dumps({"id":"log_get_sales_return","timestamp":int(__import__('time').time()*1000),"location":"routes.py:1685","message":"Returning sales list","data":{"result_count":len(result),"first_sale":result[0] if result else None},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,D,E"}) + '\n')
+    except: pass
+    # #endregion
     
     return jsonify(result)

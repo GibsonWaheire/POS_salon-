@@ -27,6 +27,7 @@ import {
   Printer,
   History,
   Clock,
+  CheckCircle2,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
@@ -157,6 +158,7 @@ export default function POS() {
   const [showReceipt, setShowReceipt] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState("")
   const [sessionLocked, setSessionLocked] = useState(false)
+  const [transactionSaved, setTransactionSaved] = useState(false)
   const [transactionCode, setTransactionCode] = useState("")
   const [showTransactionInput, setShowTransactionInput] = useState(false)
   const [staffStats, setStaffStats] = useState({
@@ -185,18 +187,34 @@ export default function POS() {
 
   const fetchStaffStats = async () => {
     if (!staff?.id) return
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:188',message:'fetchStaffStats entry',data:{staffId:staff?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     setLoadingStats(true)
     try {
       const response = await fetch(`http://localhost:5001/api/staff/${staff.id}/stats`)
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:193',message:'Staff stats API response',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       if (response.ok) {
         const data = await response.json()
-        setStaffStats({
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:196',message:'Raw staff stats data',data:{commission_weekly:data.commission_weekly,commission_today:data.commission_today,clients_served_today:data.clients_served_today,allKeys:Object.keys(data)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
+        const stats = {
           clients_served_today: data.clients_served_today || 0,
           commission_today: data.commission_today || 0,
           commission_weekly: data.commission_weekly || 0
-        })
+        }
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:201',message:'Setting staffStats state',data:stats,timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
+        setStaffStats(stats)
       }
     } catch (err) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:207',message:'fetchStaffStats error',data:{error:err.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       console.error("Failed to fetch staff stats:", err)
     } finally {
       setLoadingStats(false)
@@ -205,30 +223,45 @@ export default function POS() {
 
   const fetchRecentTransactions = async () => {
     if (!staff?.id) return
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:208',message:'fetchRecentTransactions entry',data:{staffId:staff?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
+    // #endregion
     try {
       // Fetch recent completed sales for this staff
       const response = await fetch(`http://localhost:5001/api/sales?staff_id=${staff.id}&status=completed&limit=10`)
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:212',message:'API response received',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
+      // #endregion
       if (response.ok) {
         const data = await response.json()
         // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:205',message:'Recent transactions API response',data:{dataLength:data.length,firstItem:data[0]||null,firstItemKeys:data[0]?Object.keys(data[0]):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,C'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:215',message:'Raw API data before transform',data:{dataLength:data.length,firstSale:data[0]?{id:data[0].id,grand_total:data[0].grand_total,total_amount:data[0].total_amount,commission:data[0].commission,commission_amount:data[0].commission_amount,keys:Object.keys(data[0]||{})}:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
         // #endregion
         // Transform API response to match frontend expectations
-        const transformedData = data.map(sale => ({
-          ...sale,
-          grand_total: sale.grand_total ?? sale.total_amount ?? 0,
-          commission: sale.commission ?? sale.commission_amount ?? 0,
-          client_name: sale.client_name ?? sale.customer_name ?? 'Walk-in',
-          time: sale.time ?? (sale.created_at ? new Date(sale.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }) : ''),
-          payment_method: sale.payment_method ?? sale.payment?.payment_method ?? null
-        }))
+        const transformedData = data.map(sale => {
+          const transformed = {
+            ...sale,
+            grand_total: sale.grand_total ?? sale.total_amount ?? 0,
+            commission: sale.commission ?? sale.commission_amount ?? 0,
+            client_name: sale.client_name ?? sale.customer_name ?? 'Walk-in',
+            time: sale.time ?? (sale.created_at ? new Date(sale.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }) : ''),
+            payment_method: sale.payment_method ?? sale.payment?.payment_method ?? null
+          }
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:223',message:'After transformation',data:{saleId:sale.id,originalGrandTotal:sale.grand_total,originalTotalAmount:sale.total_amount,transformedGrandTotal:transformed.grand_total,originalCommission:sale.commission,originalCommissionAmount:sale.commission_amount,transformedCommission:transformed.commission},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
+          // #endregion
+          return transformed
+        })
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:230',message:'Setting recentTransactions state',data:{transformedLength:transformedData.length,firstTransformed:transformedData[0]?{id:transformedData[0].id,grand_total:transformedData[0].grand_total,commission:transformedData[0].commission}:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
+        // #endregion
         setRecentTransactions(transformedData.slice(0, 10) || [])
       }
     } catch (err) {
-      console.error("Failed to fetch recent transactions:", err)
       // #region agent log
-      fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:217',message:'Failed to fetch recent transactions',data:{error:err.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:234',message:'fetchRecentTransactions error',data:{error:err.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
       // #endregion
+      console.error("Failed to fetch recent transactions:", err)
     }
   }
 
@@ -329,6 +362,8 @@ export default function POS() {
     setReceiptNumber("")
     setShowReceipt(false)
     setPaymentMethod("")
+    setTransactionSaved(false)
+    setSessionLocked(false)
   }
 
   const subtotal = currentSale.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0)
@@ -364,6 +399,9 @@ export default function POS() {
           customer_phone: clientPhone || null,
           services: currentSale.map(item => ({
             service_id: item.id,
+            name: item.name,
+            price: item.price,
+            duration: item.duration || 30,
             quantity: item.quantity,
             commission_rate: item.commissionRate || defaultCommissionRate
           })),
@@ -400,6 +438,9 @@ export default function POS() {
 
       const completedSale = await completeResponse.json()
       
+      // Transaction is now saved to database
+      setTransactionSaved(true)
+      
       // Wait a moment to ensure database commit
       await new Promise(resolve => setTimeout(resolve, 300))
       
@@ -412,22 +453,28 @@ export default function POS() {
       
       // Trigger print after a short delay to ensure receipt is rendered
       setTimeout(() => {
-        window.print()
-        setReceiptPrinted(true)
+        // Save original document title
+        const originalTitle = document.title
         
-        // STEP 4: Auto-logout after receipt is printed
+        // Set document title to receipt number for PDF filename
+        document.title = receiptNum
+        
+        // Trigger print dialog
+        window.print()
+        
+        // Restore original title after a short delay
         setTimeout(() => {
-          // Clear all sale data first
-          clearSale()
-          // Log out and redirect to login
-          staffLogout()
-          navigate("/staff-login")
-        }, 5000) // 5 second delay to allow print dialog to close
+          document.title = originalTitle
+        }, 500)
+        
+        setReceiptPrinted(true)
+        // Show success popup - no automatic logout
       }, 100)
     } catch (err) {
       console.error("Failed to save transaction:", err)
       alert(`Error saving transaction: ${err.message}\nPlease try again.`)
       setSessionLocked(false) // Unlock session on error
+      setTransactionSaved(false) // Reset transaction saved state
     }
   }
 
@@ -463,8 +510,19 @@ export default function POS() {
   }
 
   const handleLogout = () => {
+    // Clear all sale data before logout
+    clearSale()
+    setTransactionSaved(false)
+    setSessionLocked(false)
     staffLogout()
     navigate("/staff-login")
+  }
+
+  const handleDismissSuccessModal = () => {
+    // Dismiss the modal but keep session active
+    setSessionLocked(false)
+    // Don't clear transactionSaved - keep it for reference
+    // User can continue working
   }
 
   const now = new Date()
@@ -473,13 +531,60 @@ export default function POS() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Session Locked Overlay */}
-      {sessionLocked && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 max-w-md mx-4 text-center">
-            <h2 className="text-xl font-bold mb-2 text-red-600">Session Ended</h2>
-            <p className="text-gray-700 mb-4">Receipt has been printed. You will be logged out automatically.</p>
-            <p className="text-sm text-gray-500">Redirecting to login...</p>
+      {/* Transaction Saved Success Popup */}
+      {sessionLocked && transactionSaved && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+          onClick={handleDismissSuccessModal}
+        >
+          <div 
+            className="bg-white rounded-lg p-8 max-w-md mx-4 text-center shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-center mb-4">
+              <div className="rounded-full bg-green-100 p-3">
+                <CheckCircle2 className="h-12 w-12 text-green-600" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold mb-2 text-green-600">Transaction Saved Successfully</h2>
+            <p className="text-gray-700 mb-4">
+              Your transaction has been recorded in the database.
+            </p>
+            <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+              <div className="flex justify-between mb-2">
+                <span className="text-sm text-gray-600">Receipt Number:</span>
+                <span className="text-sm font-semibold">{receiptNumber}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span className="text-sm text-gray-600">Total Amount:</span>
+                <span className="text-sm font-semibold">{formatKES(total)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600">Payment Method:</span>
+                <span className="text-sm font-semibold capitalize">{paymentMethod || "Cash"}</span>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <Button 
+                onClick={handleDismissSuccessModal}
+                variant="outline"
+                className="flex-1"
+                size="lg"
+              >
+                Continue Working
+              </Button>
+              <Button 
+                onClick={handleLogout}
+                className="flex-1 bg-primary hover:bg-primary/90 text-white text-lg py-6 font-semibold"
+                size="lg"
+              >
+                <LogOut className="h-5 w-5 mr-2" />
+                Logout
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500 mt-4">
+              Click outside or "Continue Working" to dismiss, or logout when ready
+            </p>
           </div>
         </div>
       )}
@@ -518,7 +623,12 @@ export default function POS() {
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-blue-600" />
                 <span className="font-medium">Today: {loadingStats ? "..." : staffStats.clients_served_today} Clients</span>
-                <span className="text-xs text-muted-foreground ml-2">| Weekly Commission: {loadingStats ? "..." : formatKES(Math.round(staffStats.commission_weekly || 0))}</span>
+                <span className="text-xs text-muted-foreground ml-2">| Weekly Commission: {loadingStats ? "..." : (() => {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:573',message:'Rendering weekly commission',data:{commission_weekly:staffStats.commission_weekly,staffStats},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                  // #endregion
+                  return formatKES(Math.round(staffStats.commission_weekly || 0));
+                })()}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Coins className="h-4 w-4 text-green-600" />
@@ -809,6 +919,14 @@ export default function POS() {
                           <div className="text-muted-foreground">{txn.time || (txn.created_at ? new Date(txn.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }) : '')} • {txn.payment_method?.toUpperCase()}</div>
                         </div>
                         <div className="text-right">
+                          {/* #region agent log */}
+                          {(() => {
+                            const grandTotal = txn.grand_total ?? txn.total_amount ?? 0;
+                            const commission = txn.commission ?? txn.commission_amount ?? 0;
+                            fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:863',message:'Rendering transaction amounts',data:{txnId:txn.id,grandTotal,totalAmount:txn.total_amount,commission,commissionAmount:txn.commission_amount,hasGrandTotal:txn.hasOwnProperty('grand_total'),hasTotalAmount:txn.hasOwnProperty('total_amount'),hasCommission:txn.hasOwnProperty('commission'),hasCommissionAmount:txn.hasOwnProperty('commission_amount'),allKeys:Object.keys(txn)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                            return null;
+                          })()}
+                          {/* #endregion */}
                           <div className="font-semibold">{formatKES(txn.grand_total ?? txn.total_amount ?? 0)}</div>
                           <div className="text-green-600 text-xs">{formatKES(txn.commission ?? txn.commission_amount ?? 0)}</div>
                         </div>

@@ -19,7 +19,7 @@ export default function ReceiptTemplate({
   }
 
   return (
-    <div className="hidden print-only">
+    <div className="receipt-print-only">
       <div 
         className="receipt-container"
         style={{
@@ -45,25 +45,24 @@ export default function ReceiptTemplate({
               body * {
                 visibility: hidden;
               }
-              .print-only,
-              .print-only * {
+              .receipt-print-only,
+              .receipt-print-only * {
                 visibility: visible;
               }
-              .print-only {
+              .receipt-print-only {
                 position: absolute;
                 left: 0;
                 top: 0;
                 width: 80mm;
+                display: block !important;
               }
               .no-print {
                 display: none !important;
               }
             }
             @media screen {
-              .print-only {
-                display: block;
-                border: 1px dashed #ccc;
-                margin: 20px auto;
+              .receipt-print-only {
+                display: none !important;
               }
             }
           `}
