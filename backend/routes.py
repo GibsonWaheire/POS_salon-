@@ -323,121 +323,42 @@ def get_staff_performance(id):
 # Staff authentication
 @bp.route('/staff/login', methods=['POST'])
 def staff_login():
-    # #region agent log
-    import json
-    import os
-    try:
-        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"id":"log_staff_login_entry","timestamp":int(__import__('time').time()*1000),"location":"routes.py:137","message":"Staff login endpoint called","data":{"method":request.method},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,C,D"}) + '\n')
-    except: pass
-    # #endregion
     data = request.get_json()
     staff_id = data.get('staff_id')
     pin = data.get('pin')
     
-    # #region agent log
-    try:
-        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"id":"log_staff_login_data","timestamp":int(__import__('time').time()*1000),"location":"routes.py:142","message":"Received login data","data":{"staff_id":str(staff_id) if staff_id else None,"pin_length":len(pin) if pin else 0,"pin_preview":pin[:1]+"***" if pin and len(pin)>1 else None},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,C,D"}) + '\n')
-    except: pass
-    # #endregion
-    
     # Validate required fields
     if not staff_id:
-        # #region agent log
-        try:
-            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"id":"log_staff_login_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:145","message":"Validation failed: Staff ID missing","data":{},"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}) + '\n')
-        except: pass
-        # #endregion
         return jsonify({'success': False, 'error': 'Staff ID is required'}), 400
     
     if not pin:
-        # #region agent log
-        try:
-            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"id":"log_staff_login_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:149","message":"Validation failed: PIN missing","data":{},"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}) + '\n')
-        except: pass
-        # #endregion
         return jsonify({'success': False, 'error': 'PIN is required'}), 400
     
     # Validate PIN format: 5 characters, at least one digit and one special character
     if len(pin) != 5:
-        # #region agent log
-        try:
-            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"id":"log_staff_login_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:153","message":"Validation failed: PIN length incorrect","data":{"pin_length":len(pin)},"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}) + '\n')
-        except: pass
-        # #endregion
         return jsonify({'success': False, 'error': 'PIN must be exactly 5 characters'}), 400
     
     # Check if PIN contains at least one digit and one special character
     has_digit = bool(re.search(r'\d', pin))
     has_special = bool(re.search(r'[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?]', pin))
     
-    # #region agent log
-    try:
-        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"id":"log_staff_login_pin_check","timestamp":int(__import__('time').time()*1000),"location":"routes.py:157","message":"PIN format validation","data":{"has_digit":has_digit,"has_special":has_special},"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}) + '\n')
-    except: pass
-    # #endregion
-    
     if not (has_digit and has_special):
-        # #region agent log
-        try:
-            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"id":"log_staff_login_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:160","message":"Validation failed: PIN format invalid","data":{"has_digit":has_digit,"has_special":has_special},"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}) + '\n')
-        except: pass
-        # #endregion
         return jsonify({'success': False, 'error': 'PIN must contain at least one digit and one special character'}), 400
     
     # Convert staff_id to integer if it's numeric
     try:
         staff_id_int = int(staff_id)
-        # #region agent log
-        try:
-            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"id":"log_staff_login_id_convert","timestamp":int(__import__('time').time()*1000),"location":"routes.py:165","message":"Staff ID converted to int","data":{"staff_id_original":str(staff_id),"staff_id_int":staff_id_int},"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}) + '\n')
-        except: pass
-        # #endregion
     except (ValueError, TypeError) as e:
-        # #region agent log
-        try:
-            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"id":"log_staff_login_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:167","message":"Validation failed: Staff ID conversion error","data":{"error":str(e)},"sessionId":"debug-session","runId":"run1","hypothesisId":"D"}) + '\n')
-        except: pass
-        # #endregion
         return jsonify({'success': False, 'error': 'Invalid Staff ID format'}), 400
     
     # Lookup staff by BOTH ID and PIN - both must match the same staff member
     # In production, compare hashed PIN using bcrypt or similar
-    # #region agent log
-    try:
-        all_staff_count = Staff.query.count()
-        staff_by_id = Staff.query.filter(Staff.id == staff_id_int).first()
-        staff_by_id_pin = Staff.query.filter(Staff.id == staff_id_int, Staff.pin == pin).first()
-        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"id":"log_staff_login_db_check","timestamp":int(__import__('time').time()*1000),"location":"routes.py:171","message":"Database lookup before query","data":{"total_staff_count":all_staff_count,"staff_by_id_exists":staff_by_id is not None,"staff_by_id_pin_exists":staff_by_id_pin is not None,"staff_id_searched":staff_id_int},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,E"}) + '\n')
-    except Exception as db_err:
-        try:
-            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"id":"log_staff_login_db_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:171","message":"Database error during lookup","data":{"error":str(db_err)},"sessionId":"debug-session","runId":"run1","hypothesisId":"E"}) + '\n')
-        except: pass
-    # #endregion
-    
     staff = Staff.query.filter(
         Staff.id == staff_id_int,
         Staff.pin == pin
     ).first()
     
     if staff:
-        # #region agent log
-        try:
-            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"id":"log_staff_login_success","timestamp":int(__import__('time').time()*1000),"location":"routes.py:175","message":"Staff login successful","data":{"staff_id":staff.id,"staff_name":staff.name,"staff_role":staff.role},"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}) + '\n')
-        except: pass
-        # #endregion
-        
         # Log login event
         ip_address = request.remote_addr
         login_time = datetime.utcnow()
@@ -474,12 +395,6 @@ def staff_login():
             'demo_session_expires_at': demo_session_expires_at.isoformat() if demo_session_expires_at else None
         }), 200
     else:
-        # #region agent log
-        try:
-            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"id":"log_staff_login_failed","timestamp":int(__import__('time').time()*1000),"location":"routes.py:184","message":"Staff login failed: no match found","data":{"staff_id_searched":staff_id_int},"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}) + '\n')
-        except: pass
-        # #endregion
         # Return generic error (don't reveal if Staff ID exists but PIN is wrong, or vice versa)
         return jsonify({
             'success': False,
@@ -683,15 +598,6 @@ def get_staff_stats(id):
     ).all()
     commission_weekly = sum(sale.commission_amount for sale in week_sales)
     
-    # #region agent log
-    import json
-    import os
-    try:
-        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"id":"log_staff_stats_calc","timestamp":int(__import__('time').time()*1000),"location":"routes.py:493","message":"Staff stats calculation","data":{"staff_id":id,"today":today.isoformat(),"week_start":week_start.isoformat(),"week_sales_count":len(week_sales),"commission_weekly":commission_weekly,"today_sales_count":len(today_sales),"commission_today":commission_today},"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}) + '\n')
-    except: pass
-    # #endregion
-    
     return jsonify({
         'staff_id': id,
         'staff_name': staff.name,
@@ -729,14 +635,6 @@ def get_staff_commission_history(id):
                 start_dt = datetime.fromisoformat(start_date.replace('Z', '+00:00'))
                 query = query.filter(Sale.created_at >= start_dt)
             except (ValueError, AttributeError) as e:
-                # #region agent log
-                import json
-                import os
-                try:
-                    with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                        f.write(json.dumps({"id":"log_date_parse_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:532","message":"Date parse error for start_date","data":{"start_date":start_date,"error":str(e)},"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}) + '\n')
-                except: pass
-                # #endregion
                 return jsonify({'error': f'Invalid start_date format: {start_date}'}), 400
         
         if end_date:
@@ -744,14 +642,6 @@ def get_staff_commission_history(id):
                 end_dt = datetime.fromisoformat(end_date.replace('Z', '+00:00'))
                 query = query.filter(Sale.created_at <= end_dt)
             except (ValueError, AttributeError) as e:
-                # #region agent log
-                import json
-                import os
-                try:
-                    with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                        f.write(json.dumps({"id":"log_date_parse_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:540","message":"Date parse error for end_date","data":{"end_date":end_date,"error":str(e)},"sessionId":"debug-session","runId":"run1","hypothesisId":"A"}) + '\n')
-                except: pass
-                # #endregion
                 return jsonify({'error': f'Invalid end_date format: {end_date}'}), 400
         
         sales = query.order_by(Sale.created_at.desc()).all()
@@ -826,15 +716,6 @@ def get_staff_commission_history(id):
                     'receipt_number': payment.receipt_number if payment else f"RCP-{sale.sale_number}"
                 })
             except Exception as e:
-                # #region agent log
-                import json
-                import os
-                import traceback
-                try:
-                    with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                        f.write(json.dumps({"id":"log_sale_processing_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:578","message":"Error processing sale","data":{"sale_id":sale.id if sale else None,"error":str(e),"traceback":traceback.format_exc()},"sessionId":"debug-session","runId":"run1","hypothesisId":"B"}) + '\n')
-                except: pass
-                # #endregion
                 # Skip this sale and continue with others
                 continue
         
@@ -846,15 +727,6 @@ def get_staff_commission_history(id):
             'total_commission': round(sum(t['commission'] for t in history), 2)
         }), 200
     except Exception as e:
-        # #region agent log
-        import json
-        import os
-        import traceback
-        try:
-            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"id":"log_commission_history_error","timestamp":int(__import__('time').time()*1000),"location":"routes.py:590","message":"Commission history endpoint error","data":{"staff_id":id,"error":str(e),"traceback":traceback.format_exc()},"sessionId":"debug-session","runId":"run1","hypothesisId":"C"}) + '\n')
-        except: pass
-        # #endregion
         import traceback
         print(f"Error in get_staff_commission_history: {str(e)}")
         traceback.print_exc()
@@ -2050,25 +1922,10 @@ def get_sales():
     
     sales = query.order_by(Sale.created_at.desc()).limit(limit).all()
     
-    # #region agent log
-    import json
-    import os
-    try:
-        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"id":"log_get_sales_entry","timestamp":int(__import__('time').time()*1000),"location":"routes.py:1648","message":"get_sales endpoint called","data":{"staff_id":staff_id,"status":status,"limit":limit,"sales_count":len(sales)},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,D,E"}) + '\n')
-    except: pass
-    # #endregion
-    
     # Include payment information in response
     result = []
     for sale in sales:
         sale_dict = sale.to_dict()
-        # #region agent log
-        try:
-            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"id":"log_sale_to_dict","timestamp":int(__import__('time').time()*1000),"location":"routes.py:1672","message":"Sale to_dict result","data":{"sale_id":sale.id,"total_amount":sale_dict.get('total_amount'),"commission_amount":sale_dict.get('commission_amount'),"keys":list(sale_dict.keys())},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,D,E"}) + '\n')
-        except: pass
-        # #endregion
         # Add payment information if available
         if sale.payment:
             sale_dict['payment_method'] = sale.payment.payment_method
@@ -2078,19 +1935,6 @@ def get_sales():
         sale_dict['commission'] = sale.commission_amount
         sale_dict['client_name'] = sale.customer_name
         sale_dict['time'] = sale.created_at.strftime('%H:%M') if sale.created_at else ''
-        # #region agent log
-        try:
-            with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-                f.write(json.dumps({"id":"log_sale_final_dict","timestamp":int(__import__('time').time()*1000),"location":"routes.py:1683","message":"Final sale dict before return","data":{"sale_id":sale.id,"grand_total":sale_dict.get('grand_total'),"commission":sale_dict.get('commission'),"total_amount":sale_dict.get('total_amount'),"commission_amount":sale_dict.get('commission_amount')},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,D,E"}) + '\n')
-        except: pass
-        # #endregion
         result.append(sale_dict)
-    
-    # #region agent log
-    try:
-        with open('/Users/apple/Desktop/sites/POS_salon/.cursor/debug.log', 'a') as f:
-            f.write(json.dumps({"id":"log_get_sales_return","timestamp":int(__import__('time').time()*1000),"location":"routes.py:1685","message":"Returning sales list","data":{"result_count":len(result),"first_sale":result[0] if result else None},"sessionId":"debug-session","runId":"run1","hypothesisId":"A,B,D,E"}) + '\n')
-    except: pass
-    # #endregion
     
     return jsonify(result)
