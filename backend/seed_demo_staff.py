@@ -49,14 +49,15 @@ def seed_demo_staff():
     with app.app_context():
         # Check if demo staff already exist
         existing_staff = Staff.query.filter(
-            Staff.email.like('%@salon.demo')
+            Staff.email.like('%@salon.demo'),
+            Staff.is_demo == True
         ).all()
         
-        if existing_staff:
+        if existing_staff and len(existing_staff) == len(DEMO_STAFF):
             print(f"Demo staff already exists ({len(existing_staff)} users). Skipping seed.")
             print("Existing demo staff:")
             for staff in existing_staff:
-                print(f"  - ID: {staff.id}, Name: {staff.name}, PIN: {staff.pin}")
+                print(f"  - ID: {staff.id}, Name: {staff.name}, PIN: {staff.pin}, Demo: {staff.is_demo}")
             return
         
         # Create demo staff
@@ -70,7 +71,8 @@ def seed_demo_staff():
                     phone=staff_data['phone'],
                     email=staff_data['email'],
                     role=staff_data['role'],
-                    pin=staff_data['pin']
+                    pin=staff_data['pin'],
+                    is_demo=True  # Mark as demo staff
                 )
                 db.session.add(staff)
                 created_count += 1

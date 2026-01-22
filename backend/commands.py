@@ -48,11 +48,17 @@ def seed_staff(force):
     
     if force:
         # Remove existing demo staff
-        Staff.query.filter(Staff.email.like('%@salon.demo')).delete()
+        Staff.query.filter(
+            Staff.email.like('%@salon.demo'),
+            Staff.is_demo == True
+        ).delete()
         db.session.commit()
         click.echo('Removed existing demo staff')
     
-    existing_count = Staff.query.filter(Staff.email.like('%@salon.demo')).count()
+    existing_count = Staff.query.filter(
+        Staff.email.like('%@salon.demo'),
+        Staff.is_demo == True
+    ).count()
     
     if existing_count > 0 and not force:
         click.echo(f'Demo staff already exists ({existing_count} users). Use --force to reseed.')
