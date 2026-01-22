@@ -124,8 +124,14 @@ const services = [
 ]
 
 const formatKES = (amount) => {
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:125',message:'formatKES called',data:{amount,amountType:typeof amount,isUndefined:amount===undefined,isNull:amount===null,isNaN:Number.isNaN(amount)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B'})}).catch(()=>{});
+  // #endregion
   // Handle undefined, null, NaN, or non-numeric values
   if (amount === undefined || amount === null || Number.isNaN(amount) || amount === '') {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:130',message:'formatKES received invalid value',data:{amount,amountType:typeof amount},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
     return 'KES 0'
   }
   // Convert to number if it's a string
@@ -181,20 +187,36 @@ export default function POS() {
 
   const fetchStaffStats = async () => {
     if (!staff?.id) return
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:188',message:'fetchStaffStats entry',data:{staffId:staff?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     setLoadingStats(true)
     try {
       const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
       const response = await fetch(`http://localhost:5001/api/staff/${staff.id}/stats?demo_mode=${demoModeParam}`)
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:193',message:'Staff stats API response',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
       if (response.ok) {
         const data = await response.json()
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:196',message:'Raw staff stats data',data:{commission_weekly:data.commission_weekly,commission_today:data.commission_today,clients_served_today:data.clients_served_today,allKeys:Object.keys(data)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         const stats = {
           clients_served_today: data.clients_served_today || 0,
           commission_today: data.commission_today || 0,
           commission_weekly: data.commission_weekly || 0
         }
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:201',message:'Setting staffStats state',data:stats,timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
         setStaffStats(stats)
       }
-    } catch (err) {      console.error("Failed to fetch staff stats:", err)
+    } catch (err) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:207',message:'fetchStaffStats error',data:{error:err.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      console.error("Failed to fetch staff stats:", err)
     } finally {
       setLoadingStats(false)
     }
@@ -202,13 +224,22 @@ export default function POS() {
 
   const fetchRecentTransactions = async () => {
     if (!staff?.id) return
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:208',message:'fetchRecentTransactions entry',data:{staffId:staff?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
+    // #endregion
     try {
       // Fetch recent completed sales for this staff
       // Add demo_mode parameter: true for demo users, use demoMode for others
       const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
       const response = await fetch(`http://localhost:5001/api/sales?staff_id=${staff.id}&status=completed&limit=10&demo_mode=${demoModeParam}`)
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:212',message:'API response received',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
+      // #endregion
       if (response.ok) {
         const data = await response.json()
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:215',message:'Raw API data before transform',data:{dataLength:data.length,firstSale:data[0]?{id:data[0].id,grand_total:data[0].grand_total,total_amount:data[0].total_amount,commission:data[0].commission,commission_amount:data[0].commission_amount,keys:Object.keys(data[0]||{})}:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
+        // #endregion
         // Transform API response to match frontend expectations
         const transformedData = data.map(sale => {
           const transformed = {
@@ -218,10 +249,21 @@ export default function POS() {
             client_name: sale.client_name ?? sale.customer_name ?? 'Walk-in',
             time: sale.time ?? (sale.created_at ? new Date(sale.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }) : ''),
             payment_method: sale.payment_method ?? sale.payment?.payment_method ?? null
-          }          return transformed
-        })        setRecentTransactions(transformedData.slice(0, 10) || [])
+          }
+          // #region agent log
+          fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:223',message:'After transformation',data:{saleId:sale.id,originalGrandTotal:sale.grand_total,originalTotalAmount:sale.total_amount,transformedGrandTotal:transformed.grand_total,originalCommission:sale.commission,originalCommissionAmount:sale.commission_amount,transformedCommission:transformed.commission},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
+          // #endregion
+          return transformed
+        })
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:230',message:'Setting recentTransactions state',data:{transformedLength:transformedData.length,firstTransformed:transformedData[0]?{id:transformedData[0].id,grand_total:transformedData[0].grand_total,commission:transformedData[0].commission}:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
+        // #endregion
+        setRecentTransactions(transformedData.slice(0, 10) || [])
       }
     } catch (err) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:234',message:'fetchRecentTransactions error',data:{error:err.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
+      // #endregion
       console.error("Failed to fetch recent transactions:", err)
     }
   }
@@ -585,6 +627,9 @@ export default function POS() {
                 <Users className="h-4 w-4 text-blue-600" />
                 <span className="font-medium">Today: {loadingStats ? "..." : staffStats.clients_served_today} Clients</span>
                 <span className="text-xs text-muted-foreground ml-2">| Weekly Commission: {loadingStats ? "..." : (() => {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:573',message:'Rendering weekly commission',data:{commission_weekly:staffStats.commission_weekly,staffStats},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+                  // #endregion
                   return formatKES(Math.round(staffStats.commission_weekly || 0));
                 })()}</span>
               </div>
@@ -865,20 +910,33 @@ export default function POS() {
               <div className="bg-white p-4 rounded border">
                 <h3 className="text-sm font-semibold mb-3">Recent Transactions</h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {recentTransactions.slice(0, 5).map((txn) => {                    return (
-                    <div key={txn.id} className="text-xs border-b pb-2 last:border-0">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="font-medium">{txn.client_name || txn.customer_name}</div>
-                          <div className="text-muted-foreground">{txn.time || (txn.created_at ? new Date(txn.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }) : '')} • {txn.payment_method?.toUpperCase()}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-semibold">{formatKES(txn.grand_total ?? txn.total_amount ?? 0)}</div>
-                          <div className="text-green-600 text-xs">{formatKES(txn.commission ?? txn.commission_amount ?? 0)}</div>
+                  {recentTransactions.slice(0, 5).map((txn) => {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:770',message:'Rendering transaction',data:{txnId:txn.id,grandTotal:txn.grand_total,commission:txn.commission,hasGrandTotal:txn.hasOwnProperty('grand_total'),hasCommission:txn.hasOwnProperty('commission'),txnKeys:Object.keys(txn)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                    // #endregion
+                    return (
+                      <div key={txn.id} className="text-xs border-b pb-2 last:border-0">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="font-medium">{txn.client_name || txn.customer_name}</div>
+                            <div className="text-muted-foreground">{txn.time || (txn.created_at ? new Date(txn.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }) : '')} • {txn.payment_method?.toUpperCase()}</div>
+                          </div>
+                          <div className="text-right">
+                            {/* #region agent log */}
+                            {(() => {
+                              const grandTotal = txn.grand_total ?? txn.total_amount ?? 0;
+                              const commission = txn.commission ?? txn.commission_amount ?? 0;
+                              fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:863',message:'Rendering transaction amounts',data:{txnId:txn.id,grandTotal,totalAmount:txn.total_amount,commission,commissionAmount:txn.commission_amount,hasGrandTotal:txn.hasOwnProperty('grand_total'),hasTotalAmount:txn.hasOwnProperty('total_amount'),hasCommission:txn.hasOwnProperty('commission'),hasCommissionAmount:txn.hasOwnProperty('commission_amount'),allKeys:Object.keys(txn)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                              return null;
+                            })()}
+                            {/* #endregion */}
+                            <div className="font-semibold">{formatKES(txn.grand_total ?? txn.total_amount ?? 0)}</div>
+                            <div className="text-green-600 text-xs">{formatKES(txn.commission ?? txn.commission_amount ?? 0)}</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )})}
+                    )
+                  })}
                 </div>
               </div>
             )}

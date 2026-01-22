@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Label } from "@/components/ui/label"
+import { Switch } from "@/components/ui/switch"
 import { Users, DollarSign, TrendingUp, Clock, UserPlus, FileText, Eye } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 
@@ -13,7 +15,10 @@ const formatKES = (amount) => {
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const { demoMode } = useAuth()
+  const { demoMode, setDemoMode } = useAuth()
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.jsx:16',message:'useAuth hook result',data:{demoMode:demoMode,hasSetDemoMode:typeof setDemoMode!=='undefined'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   const [stats, setStats] = useState({
     today_revenue: 0,
     total_commission: 0,
@@ -51,7 +56,10 @@ export default function Dashboard() {
   }
 
   const handleDemoModeToggle = (checked) => {
-    setIsDemoMode(checked)
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.jsx:56',message:'Before setDemoMode call',data:{checked:checked,setDemoModeDefined:typeof setDemoMode!=='undefined',demoModeValue:demoMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    setDemoMode(checked)
     localStorage.setItem('dashboard_demo_mode', checked.toString())
     fetchDashboardStats() // Refresh data immediately
   }
@@ -62,7 +70,10 @@ export default function Dashboard() {
       <div>
         <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
-            {isDemoMode ? (
+            {/* #region agent log */}
+            {(()=>{fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.jsx:70',message:'Checking demoMode at render',data:{demoModeValue:demoMode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});return null})()}
+            {/* #endregion */}
+            {demoMode ? (
               <span className="flex items-center gap-2">
                 <Eye className="h-4 w-4 text-blue-500" />
                 Demo Mode - Showing sample data for demonstration
@@ -80,10 +91,10 @@ export default function Dashboard() {
             </Label>
             <Switch
               id="demo-mode"
-              checked={isDemoMode}
+              checked={(()=>{const val=demoMode;fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Dashboard.jsx:90',message:'Switch checked prop evaluation',data:{demoModeValue:val},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});return val})()}
               onCheckedChange={handleDemoModeToggle}
             />
-            {isDemoMode && (
+            {demoMode && (
               <Badge variant="secondary" className="ml-2">
                 DEMO
               </Badge>
@@ -100,7 +111,7 @@ export default function Dashboard() {
         </div>
       </div>
       
-      {isDemoMode && (
+      {demoMode && (
         <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
           <div className="flex items-center">
             <Eye className="h-5 w-5 text-blue-500 mr-2" />

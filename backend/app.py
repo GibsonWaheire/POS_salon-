@@ -84,6 +84,34 @@ def handle_500(e):
     
     return response
 
+# Catch all exceptions to ensure CORS headers are always present
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Handle all exceptions with CORS headers"""
+    from flask import make_response
+    import traceback
+    
+    # Log the error for debugging
+    print(f"Exception: {str(e)}")
+    if app.debug:
+        traceback.print_exc()
+    
+    # If it's already a 500 error, let the specific handler deal with it
+    if hasattr(e, 'code') and e.code == 500:
+        return handle_500(e)
+    
+    response = make_response(jsonify({
+        'error': 'An error occurred',
+        'message': str(e) if app.debug else 'An error occurred'
+    }), 500)
+    
+    # Ensure CORS headers are present
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
+    
+    return response
+
 
 def seed_demo_staff_if_needed():
     """Seed demo staff users on startup if they don't exist"""
