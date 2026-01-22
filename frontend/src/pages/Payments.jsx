@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { useAuth } from "@/context/AuthContext"
 
 const formatKES = (amount) => {
   return `KES ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -10,15 +11,18 @@ const formatKES = (amount) => {
 export default function Payments() {
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
+  const { demoMode, isDemoUser } = useAuth()
 
   useEffect(() => {
     fetchPayments()
-  }, [])
+  }, [demoMode, isDemoUser])
 
   const fetchPayments = async () => {
     setLoading(true)
     try {
-      const response = await fetch("http://localhost:5001/api/payments")
+      // Add demo_mode parameter
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      const response = await fetch(`http://localhost:5001/api/payments?demo_mode=${demoModeParam}`)
       if (response.ok) {
         const data = await response.json()
         setPayments(data)

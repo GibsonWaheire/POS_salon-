@@ -8,6 +8,9 @@ export function AuthProvider({ children }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [staff, setStaff] = useState(null)
   const [isStaffAuthenticated, setIsStaffAuthenticated] = useState(false)
+  const [isDemoUser, setIsDemoUser] = useState(false)
+  const [demoSessionExpiresAt, setDemoSessionExpiresAt] = useState(null)
+  const [demoMode, setDemoMode] = useState(false) // For admin/manager toggle
 
   // Check localStorage on mount (only for manager/admin, NOT for staff)
   useEffect(() => {
@@ -23,6 +26,42 @@ export function AuthProvider({ children }) {
     localStorage.removeItem("salon_staff")
     localStorage.removeItem("salon_staff_auth")
   }, [])
+
+  // Auto-logout timer for demo users
+  useEffect(() => {
+    if (!isDemoUser || !demoSessionExpiresAt) return
+
+    const checkSession = async () => {
+      if (!staff?.login_log_id && !staff?.id) return
+
+      try {
+        const url = staff.login_log_id
+          ? `http://localhost:5001/api/staff/check-session?login_log_id=${staff.login_log_id}`
+          : `http://localhost:5001/api/staff/check-session?staff_id=${staff.id}`
+        
+        const response = await fetch(url)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.expired) {
+            // Session expired - auto logout
+            alert("Demo session expired. Logging out...")
+            await staffLogout()
+            window.location.href = "/staff-login"
+          }
+        }
+      } catch (err) {
+        console.error("Failed to check session:", err)
+      }
+    }
+
+    // Check every minute
+    const interval = setInterval(checkSession, 60000)
+    
+    // Also check immediately
+    checkSession()
+
+    return () => clearInterval(interval)
+  }, [isDemoUser, demoSessionExpiresAt, staff])
 
   const login = (email, password) => {
     // TODO: Replace with actual API call
@@ -101,8 +140,18 @@ export function AuthProvider({ children }) {
         const staffData = {
           ...data.staff,
           role: "staff",
-          login_log_id: data.login_log_id // Store login log ID for logout tracking
+          login_log_id: data.login_log_id, // Store login log ID for logout tracking
+          isDemo: data.is_demo || false // Store demo flag
         }
+        
+        // Store demo session info
+        setIsDemoUser(data.is_demo || false)
+        if (data.demo_session_expires_at) {
+          setDemoSessionExpiresAt(new Date(data.demo_session_expires_at))
+        } else {
+          setDemoSessionExpiresAt(null)
+        }
+        
         // Store in memory only, NOT in localStorage for security
         setStaff(staffData)
         setIsStaffAuthenticated(true)
@@ -142,6 +191,10 @@ export function AuthProvider({ children }) {
       }
     }
     
+    // Reset demo state
+    setIsDemoUser(false)
+    setDemoSessionExpiresAt(null)
+    
     setStaff(null)
     setIsStaffAuthenticated(false)
     // Clear any staff data from localStorage (shouldn't be there, but clean up anyway)
@@ -161,7 +214,11 @@ export function AuthProvider({ children }) {
       staff,
       isStaffAuthenticated,
       staffLogin,
-      staffLogout
+      staffLogout,
+      isDemoUser,
+      demoSessionExpiresAt,
+      demoMode,
+      setDemoMode
     }}>
       {children}
     </AuthContext.Provider>

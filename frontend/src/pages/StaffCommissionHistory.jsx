@@ -24,7 +24,7 @@ const formatDate = (dateStr) => {
 }
 
 export default function StaffCommissionHistory() {
-  const { staff } = useAuth()
+  const { staff, demoMode, isDemoUser } = useAuth()
   const navigate = useNavigate()
   const [transactions, setTransactions] = useState([])
   const [filteredTransactions, setFilteredTransactions] = useState([])
@@ -76,6 +76,9 @@ export default function StaffCommissionHistory() {
       if (startDate) params.append('start_date', startDate)
       if (endDate) params.append('end_date', endDate)
       if (paymentMethod !== "all") params.append('payment_method', paymentMethod)
+      // Add demo_mode parameter
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      params.append('demo_mode', demoModeParam)
       
       if (params.toString()) url += `?${params.toString()}`
       

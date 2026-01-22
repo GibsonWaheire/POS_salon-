@@ -4,9 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Switch } from "@/components/ui/switch"
-import { Label } from "@/components/ui/label"
 import { Users, DollarSign, TrendingUp, Clock, UserPlus, FileText, Eye } from "lucide-react"
+import { useAuth } from "@/context/AuthContext"
 
 const formatKES = (amount) => {
   return `KES ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -14,11 +13,7 @@ const formatKES = (amount) => {
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const [isDemoMode, setIsDemoMode] = useState(() => {
-    // Check localStorage for saved preference, default to false (real mode)
-    const saved = localStorage.getItem('dashboard_demo_mode')
-    return saved === 'true'
-  })
+  const { demoMode } = useAuth()
   const [stats, setStats] = useState({
     today_revenue: 0,
     total_commission: 0,
@@ -33,21 +28,17 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchDashboardStats()
-    // Auto-refresh every 30 seconds only in real mode
-    if (!isDemoMode) {
-      const interval = setInterval(fetchDashboardStats, 30000)
-      return () => clearInterval(interval)
-    }
-  }, [isDemoMode])
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchDashboardStats, 30000)
+    return () => clearInterval(interval)
+  }, [demoMode])
 
   const fetchDashboardStats = async () => {
     setLoading(true)
     try {
-      const endpoint = isDemoMode 
-        ? "http://localhost:5001/api/dashboard/stats/demo"
-        : "http://localhost:5001/api/dashboard/stats"
-      
-      const response = await fetch(endpoint)
+      // Use demo_mode parameter instead of separate endpoint
+      const demoModeParam = demoMode ? 'true' : 'false'
+      const response = await fetch(`http://localhost:5001/api/dashboard/stats?demo_mode=${demoModeParam}`)
       if (response.ok) {
         const data = await response.json()
         setStats(data)

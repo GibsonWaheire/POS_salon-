@@ -145,7 +145,7 @@ const formatKES = (amount) => {
 const defaultCommissionRate = 0.50 // 50% commission rate for Kenyan salons
 
 export default function POS() {
-  const { staff, staffLogout } = useAuth()
+  const { staff, staffLogout, isDemoUser, demoMode } = useAuth()
   const navigate = useNavigate()
   const receiptPrintRef = useRef(null)
   const [selectedCategory, setSelectedCategory] = useState("all")
@@ -228,7 +228,9 @@ export default function POS() {
     // #endregion
     try {
       // Fetch recent completed sales for this staff
-      const response = await fetch(`http://localhost:5001/api/sales?staff_id=${staff.id}&status=completed&limit=10`)
+      // Add demo_mode parameter: true for demo users, use demoMode for others
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      const response = await fetch(`http://localhost:5001/api/sales?staff_id=${staff.id}&status=completed&limit=10&demo_mode=${demoModeParam}`)
       // #region agent log
       fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:212',message:'API response received',data:{ok:response.ok,status:response.status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B,D,E'})}).catch(()=>{});
       // #endregion

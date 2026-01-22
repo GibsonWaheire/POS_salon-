@@ -7,12 +7,14 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { FileText, Download, Calendar, TrendingUp, DollarSign, Receipt } from "lucide-react"
+import { useAuth } from "@/context/AuthContext"
 
 const formatKES = (amount) => {
   return `KES ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 }
 
 export default function Reports() {
+  const { demoMode, isDemoUser } = useAuth()
   const [dailyReport, setDailyReport] = useState(null)
   const [commissionReport, setCommissionReport] = useState(null)
   const [financialSummary, setFinancialSummary] = useState(null)
@@ -30,7 +32,8 @@ export default function Reports() {
   const fetchDailyReport = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`http://localhost:5001/api/reports/daily-sales?date=${dailyDate}`)
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      const response = await fetch(`http://localhost:5001/api/reports/daily-sales?date=${dailyDate}&demo_mode=${demoModeParam}`)
       if (response.ok) {
         const data = await response.json()
         setDailyReport(data)
@@ -45,7 +48,8 @@ export default function Reports() {
   const fetchCommissionReport = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`http://localhost:5001/api/reports/commission-payout?start_date=${commissionStartDate}&end_date=${commissionEndDate}`)
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      const response = await fetch(`http://localhost:5001/api/reports/commission-payout?start_date=${commissionStartDate}&end_date=${commissionEndDate}&demo_mode=${demoModeParam}`)
       if (response.ok) {
         const data = await response.json()
         setCommissionReport(data)
@@ -60,7 +64,8 @@ export default function Reports() {
   const fetchFinancialSummary = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`http://localhost:5001/api/reports/financial-summary?start_date=${financialStartDate}&end_date=${financialEndDate}`)
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      const response = await fetch(`http://localhost:5001/api/reports/financial-summary?start_date=${financialStartDate}&end_date=${financialEndDate}&demo_mode=${demoModeParam}`)
       if (response.ok) {
         const data = await response.json()
         setFinancialSummary(data)
@@ -75,7 +80,8 @@ export default function Reports() {
   const fetchTaxReport = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`http://localhost:5001/api/reports/tax-report?month=${taxMonth}`)
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      const response = await fetch(`http://localhost:5001/api/reports/tax-report?month=${taxMonth}&demo_mode=${demoModeParam}`)
       if (response.ok) {
         const data = await response.json()
         setTaxReport(data)

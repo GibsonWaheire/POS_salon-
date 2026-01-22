@@ -13,6 +13,7 @@ class Customer(db.Model):
     total_spent = db.Column(db.Float, default=0.0)
     last_visit = db.Column(db.DateTime)
     preferences = db.Column(db.Text)  # JSON string for preferences
+    is_demo = db.Column(db.Boolean, default=False)  # Marks demo customer records
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -65,6 +66,8 @@ class Staff(db.Model):
     role = db.Column(db.String(50))  # e.g., 'stylist', 'receptionist', 'manager'
     pin = db.Column(db.String(255))  # Hashed PIN in production (5 chars: 4 digits + 1 special char)
     is_active = db.Column(db.Boolean, default=True)
+    is_demo = db.Column(db.Boolean, default=False)  # Marks demo staff accounts
+    demo_mode_preference = db.Column(db.Boolean, default=False)  # Admin/manager toggle preference
     last_login = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -80,6 +83,8 @@ class Staff(db.Model):
             'email': self.email,
             'role': self.role,
             'is_active': self.is_active,
+            'is_demo': self.is_demo,
+            'demo_mode_preference': self.demo_mode_preference,
             'last_login': self.last_login.isoformat() if self.last_login else None,
             'created_at': self.created_at.isoformat() if self.created_at else None
             # PIN is intentionally excluded from to_dict() for security
@@ -145,6 +150,7 @@ class Sale(db.Model):
     total_amount = db.Column(db.Float, default=0.0)
     commission_amount = db.Column(db.Float, default=0.0)  # Finalized commission
     notes = db.Column(db.Text)
+    is_demo = db.Column(db.Boolean, default=False)  # Marks demo sale records
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed_at = db.Column(db.DateTime)  # When sale was completed
     
@@ -266,6 +272,7 @@ class StaffLoginLog(db.Model):
     login_time = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     logout_time = db.Column(db.DateTime)
     session_duration = db.Column(db.Integer)  # Duration in seconds
+    demo_session_expires_at = db.Column(db.DateTime, nullable=True)  # For 5-minute auto-logout of demo users
     ip_address = db.Column(db.String(45))  # IPv6 max length
     
     def to_dict(self):
@@ -275,6 +282,7 @@ class StaffLoginLog(db.Model):
             'login_time': self.login_time.isoformat() if self.login_time else None,
             'logout_time': self.logout_time.isoformat() if self.logout_time else None,
             'session_duration': self.session_duration,
+            'demo_session_expires_at': self.demo_session_expires_at.isoformat() if self.demo_session_expires_at else None,
             'ip_address': self.ip_address
         }
 
@@ -350,6 +358,7 @@ class Expense(db.Model):
     receipt_number = db.Column(db.String(50))  # Receipt/invoice number
     paid_by = db.Column(db.String(100))  # Who paid
     created_by = db.Column(db.Integer, db.ForeignKey('staff.id'))  # Staff who recorded
+    is_demo = db.Column(db.Boolean, default=False)  # Marks demo expense records
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def to_dict(self):

@@ -7,26 +7,79 @@ import re
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
+# Helper function to determine demo filter based on user context
+def get_demo_filter(user=None, request_obj=None):
+    """
+    Returns SQLAlchemy filter condition for demo/live data based on user context.
+    
+    Args:
+        user: Staff object or dict with is_demo flag
+        request_obj: Flask request object to check demo_mode parameter
+    
+    Returns:
+        dict: Filter condition {'is_demo': True/False}
+    """
+    # Check if user is a demo user
+    is_demo_user = False
+    if user:
+        if isinstance(user, Staff):
+            is_demo_user = user.is_demo if hasattr(user, 'is_demo') else False
+        elif isinstance(user, dict):
+            is_demo_user = user.get('is_demo', False)
+        elif hasattr(user, 'is_demo'):
+            is_demo_user = user.is_demo
+    
+    # If demo user, only show demo data
+    if is_demo_user:
+        return {'is_demo': True}
+    
+    # Check request parameter for demo mode toggle (for admin/manager)
+    if request_obj:
+        demo_mode = request_obj.args.get('demo_mode', '').lower()
+        if demo_mode == 'true':
+            return {'is_demo': True}
+    
+    # Otherwise show live data (not demo)
+    return {'is_demo': False}
+
 # Customer routes
 @bp.route('/customers', methods=['GET'])
 def get_customers():
-    customers = Customer.query.all()
+    # Get demo filter from request
+    demo_filter = get_demo_filter(None, request)
+    customers = Customer.query.filter(Customer.is_demo == demo_filter['is_demo']).all()
     return jsonify([customer.to_dict() for customer in customers])
 
 @bp.route('/customers', methods=['POST'])
 def create_customer():
     try:
         data = request.get_json()
-        # Check if customer with same phone already exists
+        # Get demo filter - check if staff_id provided or use request parameter
+        staff_id = data.get('staff_id')
+        is_demo = False
+        if staff_id:
+            staff = Staff.query.get(staff_id)
+            if staff and hasattr(staff, 'is_demo') and staff.is_demo:
+                is_demo = True
+        else:
+            # Check request parameter for demo mode
+            demo_filter = get_demo_filter(None, request)
+            is_demo = demo_filter['is_demo']
+        
+        # Check if customer with same phone already exists (same demo status)
         if data.get('phone'):
-            existing = Customer.query.filter_by(phone=data.get('phone')).first()
+            existing = Customer.query.filter_by(
+                phone=data.get('phone'),
+                is_demo=is_demo
+            ).first()
             if existing:
                 return jsonify({'error': 'Customer with this phone number already exists', 'customer': existing.to_dict()}), 200
         
         customer = Customer(
             name=data.get('name'),
             phone=data.get('phone'),
-            email=data.get('email')
+            email=data.get('email'),
+            is_demo=is_demo
         )
         db.session.add(customer)
         db.session.commit()
@@ -387,15 +440,26 @@ def staff_login():
         
         # Log login event
         ip_address = request.remote_addr
+        login_time = datetime.utcnow()
+        
+        # Check if this is a demo user
+        is_demo_user = staff.is_demo if hasattr(staff, 'is_demo') else False
+        
+        # Set demo session expiration (5 minutes from now)
+        demo_session_expires_at = None
+        if is_demo_user:
+            demo_session_expires_at = login_time + timedelta(minutes=5)
+        
         login_log = StaffLoginLog(
             staff_id=staff.id,
-            login_time=datetime.utcnow(),
-            ip_address=ip_address
+            login_time=login_time,
+            ip_address=ip_address,
+            demo_session_expires_at=demo_session_expires_at
         )
         db.session.add(login_log)
         
         # Update staff last_login
-        staff.last_login = datetime.utcnow()
+        staff.last_login = login_time
         
         db.session.commit()
         
@@ -405,7 +469,9 @@ def staff_login():
         return jsonify({
             'success': True,
             'staff': staff_dict,
-            'login_log_id': login_log.id  # Include login log ID for logout tracking
+            'login_log_id': login_log.id,  # Include login log ID for logout tracking
+            'is_demo': is_demo_user,  # Include demo flag
+            'demo_session_expires_at': demo_session_expires_at.isoformat() if demo_session_expires_at else None
         }), 200
     else:
         # #region agent log
@@ -423,7 +489,7 @@ def staff_login():
 # Staff logout endpoint
 @bp.route('/staff/logout', methods=['POST'])
 def staff_logout():
-    """Log staff logout event"""
+    """Log staff logout event and cleanup demo data if demo user"""
     data = request.get_json()
     login_log_id = data.get('login_log_id')
     staff_id = data.get('staff_id')
@@ -451,13 +517,133 @@ def staff_logout():
                 duration = (logout_time - login_log.login_time).total_seconds()
                 login_log.session_duration = int(duration)
             
+            # Get staff to check if demo user
+            staff = Staff.query.get(login_log.staff_id)
+            is_demo_user = staff.is_demo if staff and hasattr(staff, 'is_demo') and staff.is_demo else False
+            
+            # Cleanup demo data if demo user
+            if is_demo_user and staff:
+                # Delete all demo sales created by this staff
+                demo_sales = Sale.query.filter(
+                    Sale.staff_id == staff.id,
+                    Sale.is_demo == True
+                ).all()
+                
+                for sale in demo_sales:
+                    # Delete related SaleServices
+                    SaleService.query.filter_by(sale_id=sale.id).delete()
+                    # Delete related SaleProducts
+                    SaleProduct.query.filter_by(sale_id=sale.id).delete()
+                    # Delete related ProductUsage
+                    ProductUsage.query.filter_by(sale_id=sale.id).delete()
+                    # Delete related Payments
+                    Payment.query.filter_by(sale_id=sale.id).delete()
+                    # Delete the sale
+                    db.session.delete(sale)
+                
+                # Delete demo customers created during this session
+                # (customers created by this staff in demo mode)
+                demo_customers = Customer.query.filter(
+                    Customer.is_demo == True
+                ).all()
+                # Only delete customers that have no non-demo sales
+                for customer in demo_customers:
+                    non_demo_sales = Sale.query.filter(
+                        Sale.customer_id == customer.id,
+                        Sale.is_demo == False
+                    ).count()
+                    if non_demo_sales == 0:
+                        db.session.delete(customer)
+                
+                # Delete demo expenses created by this staff
+                Expense.query.filter(
+                    Expense.created_by == staff.id,
+                    Expense.is_demo == True
+                ).delete()
+                
+                # Note: We don't reset product stock changes as products are shared
+                # Demo product modifications would affect live data
+            
             db.session.commit()
-            return jsonify({'success': True, 'message': 'Logout logged successfully'}), 200
+            return jsonify({
+                'success': True, 
+                'message': 'Logout logged successfully',
+                'demo_data_cleaned': is_demo_user
+            }), 200
         else:
             return jsonify({'success': False, 'error': 'No active login session found'}), 404
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# Staff session check endpoint (for demo auto-logout)
+@bp.route('/staff/check-session', methods=['GET'])
+def check_staff_session():
+    """Check if demo session has expired"""
+    login_log_id = request.args.get('login_log_id', type=int)
+    staff_id = request.args.get('staff_id', type=int)
+    
+    if not login_log_id and not staff_id:
+        return jsonify({'error': 'login_log_id or staff_id is required'}), 400
+    
+    try:
+        if login_log_id:
+            login_log = StaffLoginLog.query.filter_by(id=login_log_id).first()
+        else:
+            login_log = StaffLoginLog.query.filter_by(
+                staff_id=staff_id,
+                logout_time=None
+            ).order_by(StaffLoginLog.login_time.desc()).first()
+        
+        if not login_log:
+            return jsonify({'expired': True, 'error': 'Session not found'}), 404
+        
+        # Check if demo session has expired
+        if login_log.demo_session_expires_at:
+            now = datetime.utcnow()
+            if now >= login_log.demo_session_expires_at:
+                return jsonify({
+                    'expired': True,
+                    'expires_at': login_log.demo_session_expires_at.isoformat()
+                }), 200
+            else:
+                return jsonify({
+                    'expired': False,
+                    'expires_at': login_log.demo_session_expires_at.isoformat(),
+                    'seconds_remaining': int((login_log.demo_session_expires_at - now).total_seconds())
+                }), 200
+        
+        # Not a demo session
+        return jsonify({'expired': False, 'is_demo': False}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Staff toggle demo mode endpoint (for admin/manager)
+@bp.route('/staff/<int:id>/toggle-demo-mode', methods=['POST'])
+def toggle_demo_mode(id):
+    """Toggle demo mode preference for admin/manager"""
+    staff = Staff.query.get_or_404(id)
+    
+    # Only allow toggle for admin/manager roles
+    if staff.role not in ['admin', 'manager']:
+        return jsonify({'error': 'Only admin and manager can toggle demo mode'}), 403
+    
+    data = request.get_json()
+    demo_mode = data.get('demo_mode')
+    
+    if demo_mode is None:
+        # Toggle current preference
+        staff.demo_mode_preference = not (staff.demo_mode_preference or False)
+    else:
+        staff.demo_mode_preference = bool(demo_mode)
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'demo_mode': staff.demo_mode_preference,
+        'staff': staff.to_dict()
+    }), 200
 
 # Staff statistics endpoint
 @bp.route('/staff/<int:id>/stats', methods=['GET'])
@@ -465,11 +651,15 @@ def get_staff_stats(id):
     staff = Staff.query.get_or_404(id)
     today = datetime.now().date()
     
-    # Get today's completed sales
+    # Get demo filter based on staff and request
+    demo_filter = get_demo_filter(staff, request)
+    
+    # Get today's completed sales (filtered by demo status)
     today_sales = Sale.query.filter(
         Sale.staff_id == id,
         func.date(Sale.created_at) == today,
-        Sale.status == 'completed'
+        Sale.status == 'completed',
+        Sale.is_demo == demo_filter['is_demo']
     ).all()
     
     # Calculate from sales
@@ -484,11 +674,12 @@ def get_staff_stats(id):
     from datetime import timedelta
     week_start = today - timedelta(days=6)  # Include today, so 6 days back
     
-    # Sales
+    # Sales (filtered by demo status)
     week_sales = Sale.query.filter(
         Sale.staff_id == id,
         func.date(Sale.created_at) >= week_start,
-        Sale.status == 'completed'
+        Sale.status == 'completed',
+        Sale.is_demo == demo_filter['is_demo']
     ).all()
     commission_weekly = sum(sale.commission_amount for sale in week_sales)
     
@@ -527,6 +718,10 @@ def get_staff_commission_history(id):
             Sale.staff_id == id,
             Sale.status == 'completed'
         )
+        
+        # Apply demo filter
+        demo_filter = get_demo_filter(staff, request)
+        query = query.filter(Sale.is_demo == demo_filter['is_demo'])
         
         # Apply date filters
         if start_date:
@@ -676,10 +871,12 @@ def get_staff_weekly_transactions(id):
     week_start = today - timedelta(days=6)  # Last 7 days including today
     
     # Get all completed sales for this staff in the last 7 days
+    demo_filter = get_demo_filter(staff, request)
     sales = Sale.query.filter(
         Sale.staff_id == id,
         Sale.status == 'completed',
-        func.date(Sale.created_at) >= week_start
+        func.date(Sale.created_at) >= week_start,
+        Sale.is_demo == demo_filter['is_demo']
     ).order_by(Sale.created_at.desc()).all()
     
     transactions = []
@@ -732,10 +929,14 @@ def get_dashboard_stats():
     
     today = date.today()
     
+    # Get demo filter from request (admin/manager use query parameter)
+    demo_filter = get_demo_filter(None, request)
+    
     # Today's sales revenue (from completed sales - subtotal before VAT)
     today_sales = Sale.query.filter(
         func.date(Sale.created_at) == today,
-        Sale.status == 'completed'
+        Sale.status == 'completed',
+        Sale.is_demo == demo_filter['is_demo']
     ).all()
     
     today_revenue = sum(sale.subtotal for sale in today_sales)
@@ -743,9 +944,13 @@ def get_dashboard_stats():
     # Total commission to be paid today (from sales)
     total_commission = sum(sale.commission_amount for sale in today_sales)
     
-    # Active staff count (staff with is_active=True)
-    active_staff_count = Staff.query.filter(Staff.is_active == True).count()
-    total_staff_count = Staff.query.count()
+    # Active staff count (staff with is_active=True, exclude demo staff if not in demo mode)
+    if demo_filter['is_demo']:
+        active_staff_count = Staff.query.filter(Staff.is_active == True, Staff.is_demo == True).count()
+        total_staff_count = Staff.query.filter(Staff.is_demo == True).count()
+    else:
+        active_staff_count = Staff.query.filter(Staff.is_active == True, Staff.is_demo == False).count()
+        total_staff_count = Staff.query.filter(Staff.is_demo == False).count()
     
     # Staff currently logged in (staff with active login sessions in last 2 hours)
     two_hours_ago = datetime.utcnow() - timedelta(hours=2)
@@ -756,9 +961,16 @@ def get_dashboard_stats():
     currently_logged_in = [log.staff_id for log in active_logins]
     active_staff_list = Staff.query.filter(Staff.id.in_(currently_logged_in)).all() if currently_logged_in else []
     
+    # Filter active staff by demo status
+    if not demo_filter['is_demo']:
+        active_staff_list = [s for s in active_staff_list if not (hasattr(s, 'is_demo') and s.is_demo)]
+    else:
+        active_staff_list = [s for s in active_staff_list if hasattr(s, 'is_demo') and s.is_demo]
+    
     # Recent transactions (last 10 completed sales with payments)
     recent_sales = Sale.query.filter(
-        Sale.status == 'completed'
+        Sale.status == 'completed',
+        Sale.is_demo == demo_filter['is_demo']
     ).order_by(Sale.created_at.desc()).limit(10).all()
     
     recent_transactions = []
@@ -786,6 +998,12 @@ def get_dashboard_stats():
     for staff_id in staff_ids:
         staff = Staff.query.get(staff_id)
         if staff:
+            # Skip if staff demo status doesn't match filter
+            if demo_filter['is_demo'] and not (hasattr(staff, 'is_demo') and staff.is_demo):
+                continue
+            if not demo_filter['is_demo'] and (hasattr(staff, 'is_demo') and staff.is_demo):
+                continue
+            
             staff_sales = [sale for sale in today_sales if sale.staff_id == staff_id]
             staff_revenue = sum(sale.subtotal for sale in staff_sales)
             staff_commission = sum(sale.commission_amount for sale in staff_sales)
@@ -1001,8 +1219,12 @@ def get_dashboard_stats_demo():
 @bp.route('/payments', methods=['GET'])
 def get_payments():
     """Get all payments - only sale-based payments"""
+    # Get demo filter from request
+    demo_filter = get_demo_filter(None, request)
+    
     payments = Payment.query.filter(
-        Payment.sale_id.isnot(None)
+        Payment.sale_id.isnot(None),
+        Payment.is_demo == demo_filter['is_demo']
     ).order_by(Payment.created_at.desc()).all()
     
     # Include sale and staff information
@@ -1288,11 +1510,15 @@ def get_commission_payout_report():
     else:
         end_dt = datetime.combine(date.today(), datetime.max.time())
     
+    # Get demo filter from request
+    demo_filter = get_demo_filter(None, request)
+    
     # Get completed sales in date range
     query = Sale.query.filter(
         Sale.status == 'completed',
         Sale.created_at >= start_dt,
-        Sale.created_at <= end_dt
+        Sale.created_at <= end_dt,
+        Sale.is_demo == demo_filter['is_demo']
     )
     
     if staff_id:
@@ -1353,11 +1579,15 @@ def get_financial_summary():
     else:
         end_dt = datetime.combine(date.today(), datetime.max.time())
     
+    # Get demo filter from request
+    demo_filter = get_demo_filter(None, request)
+    
     # Revenue from completed sales
     sales = Sale.query.filter(
         Sale.status == 'completed',
         Sale.created_at >= start_dt,
-        Sale.created_at <= end_dt
+        Sale.created_at <= end_dt,
+        Sale.is_demo == demo_filter['is_demo']
     ).all()
     
     total_revenue = sum(sale.total_amount for sale in sales)
@@ -1368,7 +1598,8 @@ def get_financial_summary():
     # Expenses
     expenses = Expense.query.filter(
         Expense.expense_date >= start_dt,
-        Expense.expense_date <= end_dt
+        Expense.expense_date <= end_dt,
+        Expense.is_demo == demo_filter['is_demo']
     ).all()
     
     total_expenses = sum(e.amount for e in expenses)
@@ -1431,11 +1662,15 @@ def get_tax_report():
         else:
             end_dt = datetime(today.year, today.month + 1, 1) - timedelta(days=1)
     
+    # Get demo filter from request
+    demo_filter = get_demo_filter(None, request)
+    
     # Get all completed sales for the month
     sales = Sale.query.filter(
         Sale.status == 'completed',
         Sale.created_at >= start_dt,
-        Sale.created_at <= end_dt
+        Sale.created_at <= end_dt,
+        Sale.is_demo == demo_filter['is_demo']
     ).all()
     
     total_revenue = sum(sale.total_amount for sale in sales)
@@ -1551,24 +1786,32 @@ def create_sale():
     
     # Create or get customer if name/phone provided
     customer_id = None
+    # Get staff to check demo status
+    staff = Staff.query.get(staff_id)
+    is_demo_user = staff.is_demo if staff and hasattr(staff, 'is_demo') and staff.is_demo else False
+    
     if data.get('customer_name') or data.get('customer_phone'):
-        # Try to find existing customer by phone
+        # Try to find existing customer by phone (only if same demo status)
         if data.get('customer_phone'):
-            existing_customer = Customer.query.filter_by(phone=data.get('customer_phone')).first()
+            existing_customer = Customer.query.filter_by(
+                phone=data.get('customer_phone'),
+                is_demo=is_demo_user
+            ).first()
             if existing_customer:
                 customer_id = existing_customer.id
             else:
-                # Create new customer
+                # Create new customer with demo flag
                 new_customer = Customer(
                     name=data.get('customer_name') or "Walk-in Customer",
                     phone=data.get('customer_phone'),
-                    email=data.get('customer_email')
+                    email=data.get('customer_email'),
+                    is_demo=is_demo_user
                 )
                 db.session.add(new_customer)
                 db.session.flush()
                 customer_id = new_customer.id
     
-    # Create sale
+    # Create sale with demo flag
     sale = Sale(
         sale_number=sale_number,
         staff_id=staff_id,
@@ -1576,7 +1819,8 @@ def create_sale():
         customer_name=data.get('customer_name'),
         customer_phone=data.get('customer_phone'),
         status='pending',
-        notes=data.get('notes')
+        notes=data.get('notes'),
+        is_demo=is_demo_user
     )
     db.session.add(sale)
     db.session.flush()
@@ -1725,7 +1969,7 @@ def complete_sale(id):
         # STEP 2: Generate receipt number
         receipt_number = data.get('receipt_number') or f"RCP-{sale.sale_number.replace('SALE-', '')}"
         
-        # STEP 3: Create payment
+        # STEP 3: Create payment with demo flag matching sale
         payment = Payment(
             sale_id=sale.id,
             appointment_id=None,  # Explicitly set to None for sale-based payments
@@ -1733,7 +1977,8 @@ def complete_sale(id):
             payment_method=payment_method.lower().replace("-", "_"),
             status='completed',
             transaction_code=transaction_code,
-            receipt_number=receipt_number
+            receipt_number=receipt_number,
+            is_demo=sale.is_demo if hasattr(sale, 'is_demo') else False
         )
         db.session.add(payment)
         
@@ -1786,6 +2031,16 @@ def get_sales():
     
     if staff_id:
         query = query.filter(Sale.staff_id == staff_id)
+        # Get staff to check demo status
+        staff = Staff.query.get(staff_id)
+        demo_filter = get_demo_filter(staff, request)
+    else:
+        # No staff_id, use request parameter
+        demo_filter = get_demo_filter(None, request)
+    
+    # Apply demo filter
+    query = query.filter(Sale.is_demo == demo_filter['is_demo'])
+    
     if status:
         query = query.filter(Sale.status == status)
     if start_date:

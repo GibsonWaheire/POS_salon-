@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import DemoModeToggle from "@/components/DemoModeToggle"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -79,6 +80,8 @@ export default function Layout() {
                   </Badge>
                 </div>
               )}
+              {/* Demo Mode Toggle for admin/manager */}
+              <DemoModeToggle />
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-2"
