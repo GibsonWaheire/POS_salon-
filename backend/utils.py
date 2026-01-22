@@ -134,11 +134,14 @@ def calculate_gross_pay(earnings_items):
         float: Total gross pay
     """
     total = 0.0
+    if not earnings_items:
+        return total
     for item in earnings_items:
-        if not item.is_percentage:
-            total += item.amount
-        # Note: Percentage-based earnings would need a base amount to calculate from
-        # For now, we assume all earnings are fixed amounts
+        if hasattr(item, 'amount') and item.amount is not None:
+            if not item.is_percentage:
+                total += float(item.amount)
+            # Note: Percentage-based earnings would need a base amount to calculate from
+            # For now, we assume all earnings are fixed amounts
     return round(total, 2)
 
 
@@ -155,17 +158,20 @@ def calculate_total_deductions(deduction_items, gross_pay=None, base_pay=None):
         float: Total deductions
     """
     total = 0.0
+    if not deduction_items:
+        return total
     for item in deduction_items:
-        if item.is_percentage:
-            if item.percentage_of == 'gross_pay' and gross_pay:
-                calculated_amount = gross_pay * (item.amount / 100.0)
-                total += calculated_amount
-            elif item.percentage_of == 'base_pay' and base_pay:
-                calculated_amount = base_pay * (item.amount / 100.0)
-                total += calculated_amount
-            # If percentage_of is not recognized or base is None, skip
-        else:
-            total += item.amount
+        if hasattr(item, 'amount') and item.amount is not None:
+            if item.is_percentage:
+                if item.percentage_of == 'gross_pay' and gross_pay:
+                    calculated_amount = gross_pay * (item.amount / 100.0)
+                    total += calculated_amount
+                elif item.percentage_of == 'base_pay' and base_pay:
+                    calculated_amount = base_pay * (item.amount / 100.0)
+                    total += calculated_amount
+                # If percentage_of is not recognized or base is None, skip
+            else:
+                total += float(item.amount)
     return round(total, 2)
 
 
@@ -180,4 +186,6 @@ def calculate_net_pay(gross_pay, total_deductions):
     Returns:
         float: Net pay (gross_pay - total_deductions)
     """
+    gross_pay = float(gross_pay) if gross_pay is not None else 0.0
+    total_deductions = float(total_deductions) if total_deductions is not None else 0.0
     return round(gross_pay - total_deductions, 2)

@@ -492,6 +492,7 @@ class CommissionPayment(db.Model):
     # Relationships
     staff = db.relationship('Staff', backref='commission_payments', lazy=True)
     payer = db.relationship('User', backref='commission_payments_made', lazy=True)
+    items = db.relationship('CommissionPaymentItem', backref='commission_payment', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         # Get earnings and deductions items
@@ -549,7 +550,6 @@ class CommissionPaymentItem(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
-    commission_payment = db.relationship('CommissionPayment', backref='items', lazy=True, cascade='all, delete-orphan')
     sale = db.relationship('Sale', backref='commission_items', lazy=True)
     sale_service = db.relationship('SaleService', backref='commission_items', lazy=True)
     

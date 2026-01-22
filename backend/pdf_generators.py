@@ -174,9 +174,9 @@ def generate_commission_receipt_pdf(payment, staff, payer=None):
     
     # Receipt Number and Pay Period Section
     receipt_header_data = [
-        ['<b>Receipt Number:</b>', payment.receipt_number],
-        ['<b>Pay Period:</b>', f"{payment.period_start.strftime('%d %B %Y') if payment.period_start else 'N/A'} to {payment.period_end.strftime('%d %B %Y') if payment.period_end else 'N/A'}"],
-        ['<b>Payment Date:</b>', payment.payment_date.strftime('%d %B %Y') if payment.payment_date else 'N/A'],
+        ['Receipt Number:', payment.receipt_number],
+        ['Pay Period:', f"{payment.period_start.strftime('%d %B %Y') if payment.period_start else 'N/A'} to {payment.period_end.strftime('%d %B %Y') if payment.period_end else 'N/A'}"],
+        ['Payment Date:', payment.payment_date.strftime('%d %B %Y') if payment.payment_date else 'N/A'],
     ]
     
     receipt_header_table = Table(receipt_header_data, colWidths=[2.5*inch, 4*inch])
@@ -197,9 +197,9 @@ def generate_commission_receipt_pdf(payment, staff, payer=None):
     # Employee Information Section
     elements.append(Paragraph("EMPLOYEE INFORMATION", styles_dict['section']))
     staff_data = [
-        ['<b>Full Name:</b>', staff.name if staff else f'Staff ID {payment.staff_id}'],
-        ['<b>Staff ID:</b>', str(payment.staff_id)],
-        ['<b>Position/Role:</b>', (staff.role.replace('_', ' ').title() if staff and staff.role else 'N/A')],
+        ['Full Name:', staff.name if staff else f'Staff ID {payment.staff_id}'],
+        ['Staff ID:', str(payment.staff_id)],
+        ['Position/Role:', (staff.role.replace('_', ' ').title() if staff and staff.role else 'N/A')],
     ]
     
     staff_table = Table(staff_data, colWidths=[2.5*inch, 4*inch])
@@ -223,7 +223,7 @@ def generate_commission_receipt_pdf(payment, staff, payer=None):
     earnings_items = [item for item in payment.items if item.item_type == 'earning'] if hasattr(payment, 'items') else []
     earnings_items.sort(key=lambda x: x.display_order)
     
-    earnings_table_data = [['<b>Item Name</b>', '<b>Amount (KES)</b>']]
+    earnings_table_data = [['Item Name', 'Amount (KES)']]
     
     for item in earnings_items:
         item_name = item.item_name
@@ -234,7 +234,7 @@ def generate_commission_receipt_pdf(payment, staff, payer=None):
     
     # Add gross pay row
     gross_pay = payment.gross_pay if payment.gross_pay is not None else sum(item.amount for item in earnings_items)
-    earnings_table_data.append(['<b>Gross Pay</b>', f"<b>{gross_pay:,.2f}</b>"])
+    earnings_table_data.append(['Gross Pay', f"{gross_pay:,.2f}"])
     
     earnings_table = Table(earnings_table_data, colWidths=[4.5*inch, 2*inch])
     earnings_table.setStyle(TableStyle([
@@ -262,7 +262,7 @@ def generate_commission_receipt_pdf(payment, staff, payer=None):
     deductions_items = [item for item in payment.items if item.item_type == 'deduction'] if hasattr(payment, 'items') else []
     deductions_items.sort(key=lambda x: x.display_order)
     
-    deductions_table_data = [['<b>Item Name</b>', '<b>Amount (KES)</b>']]
+    deductions_table_data = [['Item Name', 'Amount (KES)']]
     
     # Calculate actual deduction amounts for percentage-based deductions
     for item in deductions_items:
@@ -283,7 +283,7 @@ def generate_commission_receipt_pdf(payment, staff, payer=None):
     
     # Add total deductions row
     total_deductions = payment.total_deductions if payment.total_deductions is not None else 0.0
-    deductions_table_data.append(['<b>Total Deductions</b>', f"<b>{total_deductions:,.2f}</b>"])
+    deductions_table_data.append(['Total Deductions', f"{total_deductions:,.2f}"])
     
     deductions_table = Table(deductions_table_data, colWidths=[4.5*inch, 2*inch])
     deductions_table.setStyle(TableStyle([
@@ -310,10 +310,10 @@ def generate_commission_receipt_pdf(payment, staff, payer=None):
     net_pay = payment.net_pay if payment.net_pay is not None else (gross_pay - total_deductions)
     
     summary_data = [
-        ['<b>Gross Pay:</b>', f"KES {gross_pay:,.2f}"],
-        ['<b>Total Deductions:</b>', f"KES {total_deductions:,.2f}"],
-        ['<b>Net Pay:</b>', f"<b>KES {net_pay:,.2f}</b>"],
-        ['<b>Amount in Words:</b>', _amount_in_words(net_pay)],
+        ['Gross Pay:', f"KES {gross_pay:,.2f}"],
+        ['Total Deductions:', f"KES {total_deductions:,.2f}"],
+        ['Net Pay:', f"KES {net_pay:,.2f}"],
+        ['Amount in Words:', _amount_in_words(net_pay)],
     ]
     
     summary_table = Table(summary_data, colWidths=[2.5*inch, 4*inch])
@@ -339,11 +339,11 @@ def generate_commission_receipt_pdf(payment, staff, payer=None):
     elements.append(Paragraph("PAYMENT DETAILS", styles_dict['section']))
     
     payment_details_data = [
-        ['<b>Payment Method:</b>', (payment.payment_method or 'N/A').upper().replace('_', ' ')],
+        ['Payment Method:', (payment.payment_method or 'N/A').upper().replace('_', ' ')],
     ]
     
     if payment.transaction_reference:
-        payment_details_data.append(['<b>Transaction Reference:</b>', payment.transaction_reference])
+        payment_details_data.append(['Transaction Reference:', payment.transaction_reference])
     
     payment_details_table = Table(payment_details_data, colWidths=[2.5*inch, 4*inch])
     payment_details_table.setStyle(TableStyle([
@@ -361,13 +361,13 @@ def generate_commission_receipt_pdf(payment, staff, payer=None):
     # Notes section if exists
     if payment.notes:
         elements.append(Spacer(1, 0.2*inch))
-        notes_para = Paragraph(f"<b>Additional Notes:</b><br/>{payment.notes}", styles_dict['normal'])
+        notes_para = Paragraph(f"Additional Notes:\n{payment.notes}", styles_dict['normal'])
         elements.append(notes_para)
     
     elements.append(Spacer(1, 0.4*inch))
     
     # Signature Section with proper formatting
-    signature_header = Paragraph("<b>AUTHORIZATION & ACKNOWLEDGMENT</b>", styles_dict['section'])
+    signature_header = Paragraph("AUTHORIZATION & ACKNOWLEDGMENT", styles_dict['section'])
     elements.append(signature_header)
     elements.append(Spacer(1, 0.15*inch))
     
@@ -375,13 +375,13 @@ def generate_commission_receipt_pdf(payment, staff, payer=None):
         ['', ''],
         ['', ''],
         ['_________________________', '_________________________'],
-        ['<b>Employee Signature</b>', '<b>Authorized Signatory</b>'],
+        ['Employee Signature', 'Authorized Signatory'],
         ['', ''],
     ]
     
     if payer:
-        signature_data.append(['', f'<b>Name:</b> {payer.name}'])
-        signature_data.append(['', f'<b>Position:</b> {(payer.role.upper() if payer.role else "MANAGER")}'])
+        signature_data.append(['', f'Name: {payer.name}'])
+        signature_data.append(['', f'Position: {(payer.role.upper() if payer.role else "MANAGER")}'])
     
     signature_table = Table(signature_data, colWidths=[3*inch, 3*inch])
     signature_table.setStyle(TableStyle([
@@ -399,7 +399,7 @@ def generate_commission_receipt_pdf(payment, staff, payer=None):
     elements.append(Spacer(1, 0.3*inch))
     
     # Terms and Conditions Section
-    elements.append(Paragraph("<b>TERMS & CONDITIONS:</b>", styles_dict['terms']))
+    elements.append(Paragraph("TERMS & CONDITIONS:", styles_dict['terms']))
     terms_text = """
     • This payslip serves as proof of payment for the stated period.
     • All amounts are in Kenyan Shillings (KES).

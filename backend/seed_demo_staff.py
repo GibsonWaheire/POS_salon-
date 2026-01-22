@@ -12,35 +12,40 @@ DEMO_STAFF = [
         'phone': '+254 712 345 678',
         'email': 'jane.wanjiru@salon.demo',
         'role': 'stylist',
-        'pin': '1234@'  # 4 digits + special char
+        'pin': '1234@',  # 4 digits + special char
+        'base_pay': 50000.00
     },
     {
         'name': 'Sarah Akinyi',
         'phone': '+254 723 456 789',
         'email': 'sarah.akinyi@salon.demo',
         'role': 'stylist',
-        'pin': '5678!'  # 4 digits + special char
+        'pin': '5678!',  # 4 digits + special char
+        'base_pay': 52000.00
     },
     {
         'name': 'Mary Nyambura',
         'phone': '+254 734 567 890',
         'email': 'mary.nyambura@salon.demo',
         'role': 'nail_technician',
-        'pin': '9012#'  # 4 digits + special char
+        'pin': '9012#',  # 4 digits + special char
+        'base_pay': 45000.00
     },
     {
         'name': 'Grace Muthoni',
         'phone': '+254 745 678 901',
         'email': 'grace.muthoni@salon.demo',
         'role': 'facial_specialist',
-        'pin': '3456$'  # 4 digits + special char
+        'pin': '3456$',  # 4 digits + special char
+        'base_pay': 48000.00
     },
     {
         'name': 'Lucy Wambui',
         'phone': '+254 756 789 012',
         'email': 'lucy.wambui@salon.demo',
         'role': 'receptionist',
-        'pin': '7890%'  # 4 digits + special char
+        'pin': '7890%',  # 4 digits + special char
+        'base_pay': 35000.00
     }
 ]
 
@@ -72,6 +77,7 @@ def seed_demo_staff():
                     email=staff_data['email'],
                     role=staff_data['role'],
                     pin=staff_data['pin'],
+                    base_pay=staff_data.get('base_pay'),
                     is_demo=True  # Mark as demo staff
                 )
                 db.session.add(staff)

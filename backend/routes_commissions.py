@@ -219,6 +219,7 @@ def create_commission_payment():
         # Create commission payment (without calculated fields first)
         payment = CommissionPayment(
             staff_id=staff_id,
+            amount_paid=0.0,  # Temporary value, will be updated after calculations
             base_pay=base_pay,
             payment_date=datetime.utcnow(),
             period_start=period_start_date,
@@ -278,6 +279,10 @@ def create_commission_payment():
         gross_pay = calculate_gross_pay(earnings_items)
         total_deductions = calculate_total_deductions(deductions_items, gross_pay=gross_pay, base_pay=base_pay)
         net_pay = calculate_net_pay(gross_pay, total_deductions)
+        
+        # Ensure net_pay is never None
+        if net_pay is None:
+            net_pay = 0.0
         
         # Update payment with calculated values
         payment.gross_pay = gross_pay
