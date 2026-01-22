@@ -12,7 +12,7 @@ from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = 'add_professional_commission_structure'
-down_revision = 'add_user_model'
+down_revision = 'add_commission_payment'
 branch_labels = None
 depends_on = None
 

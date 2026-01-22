@@ -156,8 +156,11 @@ def seed_demo_staff_if_needed():
 
 if __name__ == '__main__':
     with app.app_context():
-        # Database migrations are handled by Flask-Migrate
-        # Run 'flask db upgrade' to apply migrations
+        # Seed demo staff if needed
         seed_demo_staff_if_needed()
+    
+    print(f"\n🚀 Starting Flask server on http://0.0.0.0:5001")
+    print(f"📡 API available at http://localhost:5001/api")
+    print(f"💡 Note: Run 'flask db upgrade' to apply database migrations")
     app.run(debug=True, port=5001, host='0.0.0.0')
 

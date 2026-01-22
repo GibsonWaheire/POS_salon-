@@ -127,9 +127,6 @@ export function AuthProvider({ children }) {
       const hasSpecial = /[!@#$%^&*()_+\-=\[\]{};\':"\\|,.<>\/?]/.test(pin)
       
       if (!hasDigit || !hasSpecial) {
-        // #region agent log
-        fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'AuthContext.jsx:64',message:'Client validation failed: PIN format invalid',data:{hasDigit,hasSpecial},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
         return { success: false, error: "PIN must contain at least one digit and one special character" }
       }
       
