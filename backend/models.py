@@ -1,5 +1,6 @@
 from db import db
 from datetime import datetime
+import bcrypt
 
 class Customer(db.Model):
     __tablename__ = 'customers'
@@ -45,6 +46,7 @@ class Service(db.Model):
     
     # Relationships
     appointment_services = db.relationship('AppointmentService', backref='service', lazy=True)
+    price_history = db.relationship('ServicePriceHistory', backref='service', lazy=True, cascade='all, delete-orphan', order_by='ServicePriceHistory.changed_at.desc()')
     
     def to_dict(self):
         return {
@@ -54,6 +56,32 @@ class Service(db.Model):
             'price': self.price,
             'duration': self.duration,
             'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+class ServicePriceHistory(db.Model):
+    """Track all price changes for services to maintain commission integrity"""
+    __tablename__ = 'service_price_history'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    service_id = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=False)
+    old_price = db.Column(db.Float, nullable=False)  # Price before change
+    new_price = db.Column(db.Float, nullable=False)  # Price after change
+    changed_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    changed_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # User who made the change
+    notes = db.Column(db.Text)  # Optional notes about the change
+    
+    # Relationships
+    user = db.relationship('User', backref='service_price_changes', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'service_id': self.service_id,
+            'old_price': self.old_price,
+            'new_price': self.new_price,
+            'changed_at': self.changed_at.isoformat() if self.changed_at else None,
+            'changed_by': self.changed_by,
+            'notes': self.notes
         }
 
 class Staff(db.Model):
@@ -399,6 +427,82 @@ class Shift(db.Model):
             'clock_out': self.clock_out.isoformat() if self.clock_out else None,
             'status': self.status,
             'notes': self.notes,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+class User(db.Model):
+    """User model for admin/manager authentication"""
+    __tablename__ = 'users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(100), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='manager')  # admin or manager
+    is_active = db.Column(db.Boolean, default=True)
+    is_demo = db.Column(db.Boolean, default=False)  # Marks demo user accounts
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime)
+    
+    def set_password(self, password):
+        """Hash and set password"""
+        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    def check_password(self, password):
+        """Check if provided password matches hash"""
+        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'email': self.email,
+            'name': self.name,
+            'role': self.role,
+            'is_active': self.is_active,
+            'is_demo': self.is_demo,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'last_login': self.last_login.isoformat() if self.last_login else None
+            # password_hash is intentionally excluded
+        }
+
+class CommissionPayment(db.Model):
+    """Track commission payments made to staff"""
+    __tablename__ = 'commission_payments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    staff_id = db.Column(db.Integer, db.ForeignKey('staff.id'), nullable=False)
+    amount_paid = db.Column(db.Float, nullable=False)
+    payment_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    period_start = db.Column(db.Date, nullable=False)  # Start date of commission period
+    period_end = db.Column(db.Date, nullable=False)  # End date of commission period
+    payment_method = db.Column(db.String(50))  # cash, m_pesa, bank_transfer, etc.
+    transaction_reference = db.Column(db.String(100))  # M-Pesa code, bank reference, etc.
+    receipt_number = db.Column(db.String(50), unique=True)  # Unique receipt number
+    paid_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Manager/admin who made payment
+    notes = db.Column(db.Text)  # Additional notes
+    is_demo = db.Column(db.Boolean, default=False)  # Marks demo commission payments
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    staff = db.relationship('Staff', backref='commission_payments', lazy=True)
+    payer = db.relationship('User', backref='commission_payments_made', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'staff_id': self.staff_id,
+            'staff_name': self.staff.name if self.staff else None,
+            'amount_paid': self.amount_paid,
+            'payment_date': self.payment_date.isoformat() if self.payment_date else None,
+            'period_start': self.period_start.isoformat() if self.period_start else None,
+            'period_end': self.period_end.isoformat() if self.period_end else None,
+            'payment_method': self.payment_method,
+            'transaction_reference': self.transaction_reference,
+            'receipt_number': self.receipt_number,
+            'paid_by': self.paid_by,
+            'payer_name': self.payer.name if self.payer else None,
+            'notes': self.notes,
+            'is_demo': self.is_demo,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

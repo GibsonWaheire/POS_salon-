@@ -179,6 +179,11 @@ export default function Reports() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">{formatKES(dailyReport.total_revenue)}</div>
+                        {dailyReport.services_revenue !== undefined && dailyReport.products_revenue !== undefined && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Services: {formatKES(dailyReport.services_revenue)} | Products: {formatKES(dailyReport.products_revenue)}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                     <Card>
@@ -311,15 +316,20 @@ export default function Reports() {
                 <div className="text-center py-8">Loading report...</div>
               ) : commissionReport ? (
                 <div className="space-y-6">
-                  <div className="grid gap-4 md:grid-cols-2">
+                  <div className="grid gap-4 md:grid-cols-3">
                     <Card>
                       <CardHeader>
-                        <CardTitle className="text-sm">Total Commission Payout</CardTitle>
+                        <CardTitle className="text-sm">Total Commission</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-green-600">
                           {formatKES(commissionReport.total_commission_payout)}
                         </div>
+                        {commissionReport.total_commission_paid !== undefined && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Paid: {formatKES(commissionReport.total_commission_paid)} | Pending: {formatKES(commissionReport.total_commission_pending)}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                     <Card>
@@ -339,14 +349,16 @@ export default function Reports() {
                         <TableRow>
                           <TableHead>Staff Name</TableHead>
                           <TableHead>Total Sales</TableHead>
-                          <TableHead>Commission (50%)</TableHead>
+                          <TableHead>Total Commission</TableHead>
+                          <TableHead>Paid</TableHead>
+                          <TableHead>Pending</TableHead>
                           <TableHead>Transactions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {commissionReport.staff_commissions.length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={4} className="text-center text-muted-foreground">
+                            <TableCell colSpan={6} className="text-center text-muted-foreground">
                               No commission data found
                             </TableCell>
                           </TableRow>
@@ -357,6 +369,12 @@ export default function Reports() {
                               <TableCell>{formatKES(staff.total_sales)}</TableCell>
                               <TableCell className="text-green-600 font-bold">
                                 {formatKES(staff.total_commission)}
+                              </TableCell>
+                              <TableCell className="text-blue-600">
+                                {formatKES(staff.paid_amount || 0)}
+                              </TableCell>
+                              <TableCell className="text-orange-600 font-semibold">
+                                {formatKES(staff.pending_amount || staff.total_commission)}
                               </TableCell>
                               <TableCell>{staff.transaction_count}</TableCell>
                             </TableRow>
@@ -425,6 +443,12 @@ export default function Reports() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">{formatKES(financialSummary.revenue.total_revenue)}</div>
+                        {financialSummary.revenue.services_revenue !== undefined && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Services: {formatKES(financialSummary.revenue.services_revenue)}<br />
+                            Products: {formatKES(financialSummary.revenue.products_revenue)}
+                          </div>
+                        )}
                         <p className="text-xs text-muted-foreground mt-1">
                           VAT (16%): {formatKES(financialSummary.revenue.vat_amount)}
                         </p>
@@ -436,11 +460,21 @@ export default function Reports() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-red-600">
-                          {formatKES(financialSummary.costs.total_commission + financialSummary.costs.total_expenses)}
+                          {formatKES(financialSummary.costs.total_commission_earned + financialSummary.costs.total_expenses)}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Commission: {formatKES(financialSummary.costs.total_commission)}
+                          Commission Earned: {formatKES(financialSummary.costs.total_commission_earned)}
                         </p>
+                        {financialSummary.costs.total_commission_paid !== undefined && (
+                          <>
+                            <p className="text-xs text-blue-600 mt-1">
+                              Commission Paid: {formatKES(financialSummary.costs.total_commission_paid)}
+                            </p>
+                            <p className="text-xs text-orange-600 mt-1">
+                              Commission Pending: {formatKES(financialSummary.costs.total_commission_pending)}
+                            </p>
+                          </>
+                        )}
                         <p className="text-xs text-muted-foreground">
                           Expenses: {formatKES(financialSummary.costs.total_expenses)}
                         </p>

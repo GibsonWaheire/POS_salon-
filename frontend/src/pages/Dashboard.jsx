@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
-import { Users, DollarSign, TrendingUp, Clock, UserPlus, FileText, Eye } from "lucide-react"
+import { Users, DollarSign, TrendingUp, Clock, UserPlus, FileText, Eye, Settings } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 
 const formatKES = (amount) => {
@@ -103,6 +103,10 @@ export default function Dashboard() {
           
           <Button variant="outline" onClick={fetchDashboardStats} disabled={loading}>
             Refresh
+          </Button>
+          <Button variant="outline" onClick={() => navigate("/services")}>
+            <Settings className="h-4 w-4 mr-2" />
+            Services
           </Button>
           <Button onClick={() => navigate("/staff")}>
             <UserPlus className="h-4 w-4 mr-2" />

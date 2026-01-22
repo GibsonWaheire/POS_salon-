@@ -8,7 +8,8 @@ import {
   User,
   Package,
   TrendingDown,
-  FileText
+  FileText,
+  DollarSign
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
@@ -19,11 +20,12 @@ import DemoModeToggle from "@/components/DemoModeToggle"
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Staff", href: "/staff", icon: UserCog },
+  { name: "Services", href: "/services", icon: Scissors },
+  { name: "Commission Payments", href: "/commission-payments", icon: DollarSign },
   { name: "Payments", href: "/payments", icon: CreditCard },
   { name: "Inventory", href: "/inventory", icon: Package },
   { name: "Expenses", href: "/expenses", icon: TrendingDown },
   { name: "Reports", href: "/reports", icon: FileText },
-  { name: "Services", href: "/services", icon: Scissors },
   // Appointments and Customers removed - not used in walk-in only business model
   // POS removed - only accessible via staff login
 ]

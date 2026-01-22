@@ -22,7 +22,7 @@ export default function Login() {
     setLoading(true)
 
     try {
-      const result = login(email, password)
+      const result = await login(email, password)
       if (result.success) {
         navigate("/dashboard")
       } else {

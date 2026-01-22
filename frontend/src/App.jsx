@@ -12,6 +12,7 @@ import Customers from "./pages/Customers"
 import Services from "./pages/Services"
 import Staff from "./pages/Staff"
 import Payments from "./pages/Payments"
+import CommissionPayments from "./pages/CommissionPayments"
 import Inventory from "./pages/Inventory"
 import Expenses from "./pages/Expenses"
 import Reports from "./pages/Reports"
@@ -75,6 +76,17 @@ function App() {
             }
           >
             <Route index element={<Services />} />
+          </Route>
+          
+          <Route
+            path="/commission-payments"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<CommissionPayments />} />
           </Route>
           
           <Route

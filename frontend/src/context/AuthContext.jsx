@@ -63,23 +63,51 @@ export function AuthProvider({ children }) {
     return () => clearInterval(interval)
   }, [isDemoUser, demoSessionExpiresAt, staff])
 
-  const login = (email, password) => {
-    // TODO: Replace with actual API call
-    // For now, simple validation - in production, call backend API
-    if (email && password) {
-      // Mock user data - replace with actual API response
-      const userData = {
-        email,
-        role: email.includes("admin") ? "admin" : "manager", // Simple role detection
-        name: email.split("@")[0]
+  const login = async (email, password) => {
+    try {
+      if (!email || !password) {
+        return { success: false, error: "Email and password are required" }
       }
-      setUser(userData)
-      setIsAuthenticated(true)
-      localStorage.setItem("salon_user", JSON.stringify(userData))
-      localStorage.setItem("salon_auth", "true")
-      return { success: true }
+
+      // Call backend API for authentication
+      const response = await fetch("http://localhost:5001/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          email: email.trim(),
+          password: password 
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        return { 
+          success: false, 
+          error: errorData.error || "Invalid email or password" 
+        }
+      }
+
+      const data = await response.json()
+      
+      if (data.success && data.user) {
+        // Store user data
+        setUser(data.user)
+        setIsAuthenticated(true)
+        localStorage.setItem("salon_user", JSON.stringify(data.user))
+        localStorage.setItem("salon_auth", "true")
+        return { success: true }
+      } else {
+        return { success: false, error: "Invalid email or password" }
+      }
+    } catch (err) {
+      console.error("Login error:", err)
+      return { 
+        success: false, 
+        error: "Unable to connect. Please check your internet connection and try again." 
+      }
     }
-    return { success: false, error: "Email and password are required" }
   }
 
   const staffLogin = async (staffId, pin) => {
@@ -122,7 +150,7 @@ export function AuthProvider({ children }) {
         console.error("Staff login network error:", fetchErr)
         return { 
           success: false, 
-          error: "Cannot connect to server. Please ensure the backend server is running on http://localhost:5001" 
+          error: "Unable to connect. Please check your internet connection and try again." 
         }
       }
       
@@ -132,7 +160,7 @@ export function AuthProvider({ children }) {
       } catch (jsonErr) {
         return { 
           success: false, 
-          error: `Server error (${response.status}). Please check if the backend is running correctly.` 
+          error: "Login failed. Please check your credentials and try again." 
         }
       }
       

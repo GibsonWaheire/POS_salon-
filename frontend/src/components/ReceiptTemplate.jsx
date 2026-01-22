@@ -5,7 +5,8 @@ export default function ReceiptTemplate({
   staffName, 
   clientName, 
   clientPhone, 
-  services, 
+  services = [], 
+  products = [],
   subtotal, 
   tax, 
   total, 
@@ -120,36 +121,76 @@ export default function ReceiptTemplate({
         )}
 
         {/* Services Header */}
-        <div style={{ marginBottom: '6px' }}>
-          <p style={{ fontWeight: 'bold', fontSize: '11px', textAlign: 'center', marginBottom: '4px' }}>
-            SERVICES PROVIDED
-          </p>
-        </div>
-
-        {/* Services List */}
-        <div style={{ marginBottom: '12px', borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '6px 0' }}>
-          {services.map((service, index) => (
-            <div 
-              key={index} 
-              style={{ 
-                marginBottom: index < services.length - 1 ? '6px' : '0',
-                fontSize: '10px',
-                paddingBottom: index < services.length - 1 ? '6px' : '0',
-                borderBottom: index < services.length - 1 ? '1px dashed #ccc' : 'none'
-              }}
-            >
-              <div style={{ marginBottom: '3px', fontWeight: 'bold' }}>
-                {service.name}
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#555' }}>
-                <span>Qty: {service.quantity} × {formatKES(service.price)}</span>
-                <span style={{ fontWeight: 'bold', color: '#000' }}>
-                  {formatKES(service.price * service.quantity)}
-                </span>
-              </div>
+        {services.length > 0 && (
+          <>
+            <div style={{ marginBottom: '6px' }}>
+              <p style={{ fontWeight: 'bold', fontSize: '11px', textAlign: 'center', marginBottom: '4px' }}>
+                SERVICES PROVIDED
+              </p>
             </div>
-          ))}
-        </div>
+
+            {/* Services List */}
+            <div style={{ marginBottom: '12px', borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '6px 0' }}>
+              {services.map((service, index) => (
+                <div 
+                  key={`service-${index}`}
+                  style={{ 
+                    marginBottom: index < services.length - 1 ? '6px' : '0',
+                    fontSize: '10px',
+                    paddingBottom: index < services.length - 1 ? '6px' : '0',
+                    borderBottom: index < services.length - 1 ? '1px dashed #ccc' : 'none'
+                  }}
+                >
+                  <div style={{ marginBottom: '3px', fontWeight: 'bold' }}>
+                    {service.name}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#555' }}>
+                    <span>Qty: {service.quantity} × {formatKES(service.price)}</span>
+                    <span style={{ fontWeight: 'bold', color: '#000' }}>
+                      {formatKES(service.price * service.quantity)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Products Header */}
+        {products.length > 0 && (
+          <>
+            <div style={{ marginBottom: '6px', marginTop: services.length > 0 ? '12px' : '0' }}>
+              <p style={{ fontWeight: 'bold', fontSize: '11px', textAlign: 'center', marginBottom: '4px' }}>
+                PRODUCTS SOLD
+              </p>
+            </div>
+
+            {/* Products List */}
+            <div style={{ marginBottom: '12px', borderTop: '1px solid #000', borderBottom: '1px solid #000', padding: '6px 0' }}>
+              {products.map((product, index) => (
+                <div 
+                  key={`product-${index}`}
+                  style={{ 
+                    marginBottom: index < products.length - 1 ? '6px' : '0',
+                    fontSize: '10px',
+                    paddingBottom: index < products.length - 1 ? '6px' : '0',
+                    borderBottom: index < products.length - 1 ? '1px dashed #ccc' : 'none'
+                  }}
+                >
+                  <div style={{ marginBottom: '3px', fontWeight: 'bold' }}>
+                    {product.name}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', color: '#555' }}>
+                    <span>Qty: {product.quantity} × {formatKES(product.price)}</span>
+                    <span style={{ fontWeight: 'bold', color: '#000' }}>
+                      {formatKES(product.price * product.quantity)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Totals Section */}
         <div style={{ marginBottom: '12px', fontSize: '11px' }}>

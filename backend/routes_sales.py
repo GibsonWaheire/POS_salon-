@@ -60,10 +60,13 @@ def create_sale():
         
         service = Service.query.get(service_id)
         if service:
+            # Prices are tax-inclusive, so extract subtotal for commission calculation
             unit_price = service.price
             total_price = unit_price * quantity
             commission_rate = service_data.get('commission_rate', 0.50)
-            commission_amount = total_price * commission_rate
+            # Commission is calculated on subtotal (excluding tax)
+            subtotal_price = round(total_price / 1.16, 2)
+            commission_amount = round(subtotal_price * commission_rate, 2)
             
             sale_service = SaleService(
                 sale_id=sale.id,
@@ -97,11 +100,14 @@ def create_sale():
             )
             db.session.add(sale_product)
     
-    # Calculate totals
-    subtotal = sum(ss.total_price for ss in sale.sale_services) + sum(sp.total_price for sp in sale.sale_products)
-    tax_amount = subtotal * 0.16  # 16% VAT
-    total_amount = subtotal + tax_amount
-    commission_amount = sum(ss.commission_amount for ss in sale.sale_services)
+    # Calculate totals - prices are inclusive of tax (16% VAT)
+    # Total amount is the sum of all prices (tax-inclusive)
+    total_amount = sum(ss.total_price for ss in sale.sale_services) + sum(sp.total_price for sp in sale.sale_products)
+    # Extract subtotal and tax from tax-inclusive total
+    subtotal = round(total_amount / 1.16, 2)  # Subtotal excluding tax (rounded to 2 decimals)
+    tax_amount = round(total_amount - subtotal, 2)  # Tax amount (rounded to 2 decimals)
+    # Commission is calculated on subtotal (excluding tax)
+    commission_amount = sum((ss.total_price / 1.16) * ss.commission_rate for ss in sale.sale_services)
     
     sale.subtotal = subtotal
     sale.tax_amount = tax_amount

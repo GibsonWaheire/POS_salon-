@@ -1,9 +1,16 @@
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, send_file
 from sqlalchemy import func
-from models import Customer, Service, Staff, Payment, StaffLoginLog, Product, ProductUsage, Expense, Shift, Sale, SaleService, SaleProduct
+from models import Customer, Service, Staff, Payment, StaffLoginLog, Product, ProductUsage, Expense, Shift, Sale, SaleService, SaleProduct, User, ServicePriceHistory, CommissionPayment
 from db import db
 from datetime import datetime, date, timedelta
 import re
+import io
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib.units import inch
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -41,6 +48,52 @@ def get_demo_filter(user=None, request_obj=None):
     
     # Otherwise show live data (not demo)
     return {'is_demo': False}
+
+# Authentication routes
+@bp.route('/auth/login', methods=['POST'])
+def login():
+    """Authenticate manager/admin user"""
+    try:
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not email or not password:
+            return jsonify({'success': False, 'error': 'Email and password are required'}), 400
+        
+        # Find user by email
+        user = User.query.filter_by(email=email.lower().strip()).first()
+        
+        if not user:
+            return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+        
+        if not user.is_active:
+            return jsonify({'success': False, 'error': 'Account is inactive'}), 403
+        
+        # Verify password
+        if not user.check_password(password):
+            return jsonify({'success': False, 'error': 'Invalid email or password'}), 401
+        
+        # Update last login
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+        
+        # Return user data (without password)
+        return jsonify({
+            'success': True,
+            'user': user.to_dict()
+        }), 200
+        
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        print(f"Error in login: {str(e)}")
+        if current_app.debug:
+            traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': 'An error occurred during login. Please try again.'
+        }), 500
 
 # Customer routes
 @bp.route('/customers', methods=['GET'])
@@ -132,25 +185,65 @@ def create_service():
 @bp.route('/services/<int:id>', methods=['GET'])
 def get_service(id):
     service = Service.query.get_or_404(id)
-    return jsonify(service.to_dict())
+    service_dict = service.to_dict()
+    # Include price history if requested
+    if request.args.get('include_history', '').lower() == 'true':
+        service_dict['price_history'] = [ph.to_dict() for ph in service.price_history]
+    return jsonify(service_dict)
 
 @bp.route('/services/<int:id>', methods=['PUT'])
 def update_service(id):
-    service = Service.query.get_or_404(id)
-    data = request.get_json()
-    service.name = data.get('name', service.name)
-    service.description = data.get('description', service.description)
-    service.price = data.get('price', service.price)
-    service.duration = data.get('duration', service.duration)
-    db.session.commit()
-    return jsonify(service.to_dict())
+    try:
+        service = Service.query.get_or_404(id)
+        data = request.get_json()
+        
+        old_price = service.price
+        new_price = data.get('price', service.price)
+        
+        # Update service fields
+        service.name = data.get('name', service.name)
+        service.description = data.get('description', service.description)
+        service.duration = data.get('duration', service.duration)
+        
+        # Track price change if price is being updated
+        if 'price' in data and old_price != new_price:
+            # Get user ID from request (if available - could be from session/token)
+            # For now, we'll use None or get from a header/query param
+            changed_by = request.args.get('user_id', type=int) or None
+            
+            # Create price history record
+            price_history = ServicePriceHistory(
+                service_id=service.id,
+                old_price=old_price,
+                new_price=new_price,
+                changed_by=changed_by,
+                notes=data.get('price_change_notes')
+            )
+            db.session.add(price_history)
+            
+            # Update the price
+            service.price = new_price
+        
+        db.session.commit()
+        return jsonify(service.to_dict())
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
 
 @bp.route('/services/<int:id>', methods=['DELETE'])
 def delete_service(id):
-    service = Service.query.get_or_404(id)
-    db.session.delete(service)
-    db.session.commit()
-    return jsonify({'message': 'Service deleted'}), 200
+    try:
+        service = Service.query.get_or_404(id)
+        
+        # Check if service is used in any sales (optional - you may want to prevent deletion)
+        # For now, we'll allow deletion but warn if there are sales
+        
+        db.session.delete(service)
+        db.session.commit()
+        return jsonify({'message': 'Service deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
 
 # Staff routes
 @bp.route('/staff', methods=['GET'])
@@ -874,6 +967,354 @@ def get_staff_commission_history(id):
         traceback.print_exc()
         return jsonify({'error': str(e), 'message': 'Failed to fetch commission history'}), 500
 
+# Commission Payment routes
+@bp.route('/commissions/pending', methods=['GET'])
+def get_pending_commissions():
+    """Get unpaid commissions by staff"""
+    try:
+        demo_filter = get_demo_filter(None, request)
+        
+        # Get date range from query params (default to all time)
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        # Query completed sales
+        query = Sale.query.filter(
+            Sale.status == 'completed',
+            Sale.is_demo == demo_filter['is_demo']
+        )
+        
+        if start_date:
+            try:
+                start_dt = datetime.fromisoformat(start_date).date()
+                query = query.filter(func.date(Sale.created_at) >= start_dt)
+            except (ValueError, AttributeError):
+                return jsonify({'error': f'Invalid start_date format: {start_date}'}), 400
+        
+        if end_date:
+            try:
+                end_dt = datetime.fromisoformat(end_date).date()
+                query = query.filter(func.date(Sale.created_at) <= end_dt)
+            except (ValueError, AttributeError):
+                return jsonify({'error': f'Invalid end_date format: {end_date}'}), 400
+        
+        sales = query.all()
+        
+        # Group by staff and calculate totals
+        staff_commissions = {}
+        for sale in sales:
+            if sale.staff_id not in staff_commissions:
+                staff = Staff.query.get(sale.staff_id)
+                staff_commissions[sale.staff_id] = {
+                    'staff_id': sale.staff_id,
+                    'staff_name': staff.name if staff else f'Staff {sale.staff_id}',
+                    'total_sales': 0,
+                    'total_commission': 0,
+                    'transaction_count': 0
+                }
+            
+            staff_commissions[sale.staff_id]['total_sales'] += sale.subtotal
+            staff_commissions[sale.staff_id]['total_commission'] += sale.commission_amount
+            staff_commissions[sale.staff_id]['transaction_count'] += 1
+        
+        # Subtract already paid commissions
+        for staff_id in staff_commissions:
+            paid_amount = db.session.query(func.sum(CommissionPayment.amount_paid)).filter(
+                CommissionPayment.staff_id == staff_id,
+                CommissionPayment.is_demo == demo_filter['is_demo']
+            ).scalar() or 0
+            
+            staff_commissions[staff_id]['paid_amount'] = round(paid_amount, 2)
+            staff_commissions[staff_id]['pending_amount'] = round(
+                staff_commissions[staff_id]['total_commission'] - paid_amount, 2
+            )
+            staff_commissions[staff_id]['total_sales'] = round(staff_commissions[staff_id]['total_sales'], 2)
+            staff_commissions[staff_id]['total_commission'] = round(staff_commissions[staff_id]['total_commission'], 2)
+        
+        # Filter out staff with zero pending
+        pending_commissions = [
+            {**comm, 'pending_amount': comm['pending_amount']}
+            for comm in staff_commissions.values()
+            if comm['pending_amount'] > 0
+        ]
+        
+        return jsonify({
+            'pending_commissions': pending_commissions,
+            'total_pending': round(sum(c['pending_amount'] for c in pending_commissions), 2)
+        }), 200
+        
+    except Exception as e:
+        import traceback
+        print(f"Error in get_pending_commissions: {str(e)}")
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/commissions/payments', methods=['GET'])
+def get_commission_payments():
+    """Get all commission payments"""
+    try:
+        demo_filter = get_demo_filter(None, request)
+        staff_id = request.args.get('staff_id', type=int)
+        
+        query = CommissionPayment.query.filter(
+            CommissionPayment.is_demo == demo_filter['is_demo']
+        )
+        
+        if staff_id:
+            query = query.filter(CommissionPayment.staff_id == staff_id)
+        
+        payments = query.order_by(CommissionPayment.payment_date.desc()).all()
+        
+        return jsonify([payment.to_dict() for payment in payments]), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/commissions/pay', methods=['POST'])
+def create_commission_payment():
+    """Create a commission payment"""
+    try:
+        data = request.get_json()
+        
+        staff_id = data.get('staff_id')
+        amount_paid = data.get('amount_paid')
+        period_start = data.get('period_start')
+        period_end = data.get('period_end')
+        payment_method = data.get('payment_method')
+        transaction_reference = data.get('transaction_reference')
+        notes = data.get('notes')
+        paid_by = data.get('paid_by')  # User ID who made the payment
+        
+        # Validate required fields
+        if not staff_id:
+            return jsonify({'error': 'Staff ID is required'}), 400
+        if not amount_paid or amount_paid <= 0:
+            return jsonify({'error': 'Valid amount is required'}), 400
+        if not period_start or not period_end:
+            return jsonify({'error': 'Period start and end dates are required'}), 400
+        
+        # Check if staff exists
+        staff = Staff.query.get(staff_id)
+        if not staff:
+            return jsonify({'error': 'Staff not found'}), 404
+        
+        # Get demo status from staff
+        is_demo = staff.is_demo if hasattr(staff, 'is_demo') else False
+        
+        # Generate receipt number
+        receipt_number = data.get('receipt_number') or f"COMM-{datetime.now().strftime('%Y%m%d')}-{CommissionPayment.query.count() + 1:04d}"
+        
+        # Parse dates
+        try:
+            period_start_date = datetime.fromisoformat(period_start).date() if isinstance(period_start, str) else period_start
+            period_end_date = datetime.fromisoformat(period_end).date() if isinstance(period_end, str) else period_end
+        except (ValueError, AttributeError):
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+        
+        # Validate M-Pesa transaction reference format if provided
+        if payment_method and payment_method.lower() in ['m_pesa', 'm-pesa', 'mpesa'] and transaction_reference:
+            import re
+            mpesa_pattern = re.compile(r'^[A-Z0-9]{10}$')
+            if not mpesa_pattern.match(transaction_reference.upper()):
+                return jsonify({
+                    'error': 'Invalid M-Pesa transaction code format. Must be exactly 10 alphanumeric characters (e.g., QGH7X2K9L8)'
+                }), 400
+            transaction_reference = transaction_reference.upper()  # Normalize to uppercase
+        
+        # Create commission payment
+        payment = CommissionPayment(
+            staff_id=staff_id,
+            amount_paid=round(float(amount_paid), 2),
+            payment_date=datetime.utcnow(),
+            period_start=period_start_date,
+            period_end=period_end_date,
+            payment_method=payment_method.lower().replace("-", "_") if payment_method else None,
+            transaction_reference=transaction_reference,
+            receipt_number=receipt_number,
+            paid_by=paid_by,
+            notes=notes,
+            is_demo=is_demo
+        )
+        
+        db.session.add(payment)
+        db.session.commit()
+        
+        return jsonify(payment.to_dict()), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        print(f"Error in create_commission_payment: {str(e)}")
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@bp.route('/commissions/payments/<int:id>/receipt', methods=['GET'])
+def get_commission_payment_receipt(id):
+    """Generate PDF receipt for commission payment"""
+    try:
+        payment = CommissionPayment.query.get_or_404(id)
+        staff = Staff.query.get(payment.staff_id)
+        payer = User.query.get(payment.paid_by) if payment.paid_by else None
+        
+        # Create PDF in memory
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, 
+                               rightMargin=0.75*inch, leftMargin=0.75*inch,
+                               topMargin=0.75*inch, bottomMargin=0.75*inch)
+        
+        # Container for the 'Flowable' objects
+        elements = []
+        
+        # Define styles
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle',
+            parent=styles['Heading1'],
+            fontSize=24,
+            textColor=colors.HexColor('#1e40af'),
+            spaceAfter=30,
+            alignment=TA_CENTER
+        )
+        
+        heading_style = ParagraphStyle(
+            'CustomHeading',
+            parent=styles['Heading2'],
+            fontSize=14,
+            textColor=colors.HexColor('#1e40af'),
+            spaceAfter=12
+        )
+        
+        normal_style = styles['Normal']
+        normal_style.fontSize = 10
+        
+        # Title
+        elements.append(Paragraph("COMMISSION PAYMENT RECEIPT", title_style))
+        elements.append(Spacer(1, 0.2*inch))
+        
+        # Receipt details
+        receipt_data = [
+            ['Receipt Number:', payment.receipt_number],
+            ['Date:', payment.payment_date.strftime('%d %B %Y') if payment.payment_date else 'N/A'],
+            ['Time:', payment.payment_date.strftime('%I:%M %p') if payment.payment_date else 'N/A'],
+        ]
+        
+        receipt_table = Table(receipt_data, colWidths=[2*inch, 4*inch])
+        receipt_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(receipt_table)
+        elements.append(Spacer(1, 0.3*inch))
+        
+        # Staff Information
+        elements.append(Paragraph("STAFF INFORMATION", heading_style))
+        staff_data = [
+            ['Staff Name:', staff.name if staff else f'Staff ID {payment.staff_id}'],
+            ['Staff ID:', str(payment.staff_id)],
+            ['Role:', staff.role if staff and staff.role else 'N/A'],
+        ]
+        
+        staff_table = Table(staff_data, colWidths=[2*inch, 4*inch])
+        staff_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+        ]))
+        elements.append(staff_table)
+        elements.append(Spacer(1, 0.3*inch))
+        
+        # Payment Details
+        elements.append(Paragraph("PAYMENT DETAILS", heading_style))
+        payment_data = [
+            ['Period:', f"{payment.period_start.strftime('%d %B %Y')} to {payment.period_end.strftime('%d %B %Y')}"],
+            ['Amount Paid:', f"KES {payment.amount_paid:,.2f}"],
+            ['Payment Method:', (payment.payment_method or 'N/A').upper().replace('_', ' ')],
+        ]
+        
+        if payment.transaction_reference:
+            payment_data.append(['Transaction Reference:', payment.transaction_reference])
+        
+        payment_table = Table(payment_data, colWidths=[2*inch, 4*inch])
+        payment_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('FONTNAME', (1, 1), (1, 1), 'Helvetica-Bold'),  # Make amount bold
+            ('FONTSIZE', (1, 1), (1, 1), 12),
+        ]))
+        elements.append(payment_table)
+        
+        if payment.notes:
+            elements.append(Spacer(1, 0.2*inch))
+            elements.append(Paragraph(f"<b>Notes:</b> {payment.notes}", normal_style))
+        
+        elements.append(Spacer(1, 0.5*inch))
+        
+        # Signature section
+        signature_data = [
+            ['', ''],
+            ['', ''],
+            ['_________________________', '_________________________'],
+            ['Staff Signature', 'Authorized Signature'],
+        ]
+        
+        if payer:
+            signature_data.append(['', f'Paid by: {payer.name}'])
+            signature_data.append(['', payer.role.upper() if payer.role else 'MANAGER'])
+        
+        signature_table = Table(signature_data, colWidths=[3*inch, 3*inch])
+        signature_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('TOPPADDING', (0, 2), (-1, 2), 20),
+        ]))
+        elements.append(signature_table)
+        
+        # Footer
+        elements.append(Spacer(1, 0.3*inch))
+        footer_style = ParagraphStyle(
+            'Footer',
+            parent=styles['Normal'],
+            fontSize=8,
+            textColor=colors.grey,
+            alignment=TA_CENTER
+        )
+        elements.append(Paragraph("This is a computer-generated receipt. No signature required.", footer_style))
+        elements.append(Paragraph(f"Generated on {datetime.now().strftime('%d %B %Y at %I:%M %p')}", footer_style))
+        
+        # Build PDF
+        doc.build(elements)
+        buffer.seek(0)
+        
+        # Return PDF
+        return send_file(
+            buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'commission_receipt_{payment.receipt_number}.pdf'
+        )
+        
+    except Exception as e:
+        import traceback
+        print(f"Error generating PDF receipt: {str(e)}")
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 # Staff weekly transactions endpoint
 @bp.route('/staff/<int:id>/weekly-transactions', methods=['GET'])
 def get_staff_weekly_transactions(id):
@@ -1247,11 +1688,14 @@ def get_payments():
         payment_dict = payment.to_dict()
         # Access sale through relationship (backref from Sale model)
         if hasattr(payment, 'sale') and payment.sale:
+            sale = payment.sale
             payment_dict['sale'] = {
-                'id': payment.sale.id,
-                'sale_number': payment.sale.sale_number,
-                'customer_name': payment.sale.customer_name or (payment.sale.customer.name if payment.sale.customer else 'Walk-in'),
-                'staff_name': payment.sale.staff.name if payment.sale.staff else None
+                'id': sale.id,
+                'sale_number': sale.sale_number,
+                'customer_name': sale.customer_name or (sale.customer.name if sale.customer else 'Walk-in'),
+                'staff_name': sale.staff.name if sale.staff else None,
+                'sale_services': [ss.to_dict() for ss in sale.sale_services],
+                'sale_products': [sp.to_dict() for sp in sale.sale_products]
             }
         else:
             # Fallback: query sale directly if relationship not loaded
@@ -1261,7 +1705,9 @@ def get_payments():
                     'id': sale.id,
                     'sale_number': sale.sale_number,
                     'customer_name': sale.customer_name or (sale.customer.name if sale.customer else 'Walk-in'),
-                    'staff_name': sale.staff.name if sale.staff else None
+                    'staff_name': sale.staff.name if sale.staff else None,
+                    'sale_services': [ss.to_dict() for ss in sale.sale_services],
+                    'sale_products': [sp.to_dict() for sp in sale.sale_products]
                 }
         result.append(payment_dict)
     
@@ -1465,15 +1911,31 @@ def get_daily_sales_report():
     start_datetime = datetime.combine(target_date, datetime.min.time())
     end_datetime = datetime.combine(target_date, datetime.max.time())
     
+    # Get demo filter from request
+    demo_filter = get_demo_filter(None, request)
+    
     sales = Sale.query.filter(
         Sale.status == 'completed',
         Sale.created_at >= start_datetime,
-        Sale.created_at <= end_datetime
+        Sale.created_at <= end_datetime,
+        Sale.is_demo == demo_filter['is_demo']
     ).all()
     
-    # Calculate totals from sales
-    total_revenue = sum(sale.total_amount for sale in sales)
-    total_commission = sum(sale.commission_amount for sale in sales)
+    # Calculate totals from sales - separate services and products
+    services_revenue = 0
+    products_revenue = 0
+    
+    for sale in sales:
+        # Revenue from services
+        for sale_service in sale.sale_services:
+            services_revenue += sale_service.total_price
+        
+        # Revenue from products
+        for sale_product in sale.sale_products:
+            products_revenue += sale_product.total_price
+    
+    total_revenue = services_revenue + products_revenue
+    total_commission = sum(sale.commission_amount for sale in sales)  # Commission only from services
     
     # Payment method breakdown - get from payments
     payment_methods = {}
@@ -1496,6 +1958,8 @@ def get_daily_sales_report():
     return jsonify({
         'date': target_date.isoformat(),
         'total_revenue': round(total_revenue, 2),
+        'services_revenue': round(services_revenue, 2),
+        'products_revenue': round(products_revenue, 2),
         'revenue_before_vat': round(revenue_before_vat, 2),
         'vat_amount': round(vat_amount, 2),
         'vat_rate': vat_rate,
@@ -1560,18 +2024,33 @@ def get_commission_payout_report():
         staff_commissions[sale.staff_id]['total_commission'] += sale.commission_amount
         staff_commissions[sale.staff_id]['transaction_count'] += 1
     
-    # Round values
+    # Round values and subtract paid commissions
     for staff_id in staff_commissions:
         staff_commissions[staff_id]['total_sales'] = round(staff_commissions[staff_id]['total_sales'], 2)
         staff_commissions[staff_id]['total_commission'] = round(staff_commissions[staff_id]['total_commission'], 2)
+        
+        # Get paid commissions for this staff
+        paid_commissions = db.session.query(func.sum(CommissionPayment.amount_paid)).filter(
+            CommissionPayment.staff_id == staff_id,
+            CommissionPayment.is_demo == demo_filter['is_demo']
+        ).scalar() or 0
+        
+        staff_commissions[staff_id]['paid_amount'] = round(paid_commissions, 2)
+        staff_commissions[staff_id]['pending_amount'] = round(
+            staff_commissions[staff_id]['total_commission'] - paid_commissions, 2
+        )
     
     total_commission = sum(s['total_commission'] for s in staff_commissions.values())
+    total_paid = sum(s['paid_amount'] for s in staff_commissions.values())
+    total_pending = sum(s['pending_amount'] for s in staff_commissions.values())
     
     return jsonify({
         'start_date': start_dt.isoformat(),
         'end_date': end_dt.isoformat(),
         'staff_commissions': list(staff_commissions.values()),
         'total_commission_payout': round(total_commission, 2),
+        'total_commission_paid': round(total_paid, 2),
+        'total_commission_pending': round(total_pending, 2),
         'total_staff': len(staff_commissions)
     }), 200
 
@@ -1596,7 +2075,7 @@ def get_financial_summary():
     # Get demo filter from request
     demo_filter = get_demo_filter(None, request)
     
-    # Revenue from completed sales
+    # Revenue from completed sales - separate services and products
     sales = Sale.query.filter(
         Sale.status == 'completed',
         Sale.created_at >= start_dt,
@@ -1604,7 +2083,19 @@ def get_financial_summary():
         Sale.is_demo == demo_filter['is_demo']
     ).all()
     
-    total_revenue = sum(sale.total_amount for sale in sales)
+    services_revenue = 0
+    products_revenue = 0
+    
+    for sale in sales:
+        # Revenue from services
+        for sale_service in sale.sale_services:
+            services_revenue += sale_service.total_price
+        
+        # Revenue from products
+        for sale_product in sale.sale_products:
+            products_revenue += sale_product.total_price
+    
+    total_revenue = services_revenue + products_revenue
     vat_rate = 0.16
     vat_amount = total_revenue * vat_rate / (1 + vat_rate)
     revenue_before_vat = total_revenue - vat_amount
@@ -1624,12 +2115,20 @@ def get_financial_summary():
         category = expense.category or 'other'
         expenses_by_category[category] = expenses_by_category.get(category, 0) + expense.amount
     
-    # Commission from sales
-    total_commission = sum(sale.commission_amount for sale in sales)
+    # Commission from sales (earned)
+    total_commission_earned = sum(sale.commission_amount for sale in sales)
     
-    # Profit calculation
-    gross_profit = revenue_before_vat - total_commission
-    net_profit = gross_profit - total_expenses
+    # Commission paid (from CommissionPayment table)
+    commission_payments = CommissionPayment.query.filter(
+        CommissionPayment.is_demo == demo_filter['is_demo']
+    ).all()
+    total_commission_paid = sum(cp.amount_paid for cp in commission_payments)
+    total_commission_pending = total_commission_earned - total_commission_paid
+    
+    # Profit calculation: Revenue - Expenses - Commission Earned
+    # Using total_revenue (including VAT) as requested
+    net_profit = total_revenue - total_expenses - total_commission_earned
+    profit_margin = round((net_profit / total_revenue * 100) if total_revenue > 0 else 0, 2)
     
     return jsonify({
         'period': {
@@ -1638,19 +2137,23 @@ def get_financial_summary():
         },
         'revenue': {
             'total_revenue': round(total_revenue, 2),
+            'services_revenue': round(services_revenue, 2),
+            'products_revenue': round(products_revenue, 2),
             'revenue_before_vat': round(revenue_before_vat, 2),
             'vat_amount': round(vat_amount, 2),
             'vat_rate': vat_rate
         },
         'costs': {
-            'total_commission': round(total_commission, 2),
+            'total_commission_earned': round(total_commission_earned, 2),
+            'total_commission_paid': round(total_commission_paid, 2),
+            'total_commission_pending': round(total_commission_pending, 2),
             'total_expenses': round(total_expenses, 2),
             'expenses_by_category': {k: round(v, 2) for k, v in expenses_by_category.items()}
         },
         'profit': {
-            'gross_profit': round(gross_profit, 2),
             'net_profit': round(net_profit, 2),
-            'profit_margin': round((net_profit / revenue_before_vat * 100) if revenue_before_vat > 0 else 0, 2)
+            'profit_margin': profit_margin,
+            'calculation': 'Revenue - Expenses - Commission Earned'
         }
     }), 200
 
@@ -1887,9 +2390,12 @@ def create_sale():
                 continue
         
         # Use price from frontend if provided, otherwise use database price
+        # Prices are tax-inclusive, so extract subtotal for commission calculation
         unit_price = service_price if service_price is not None else service.price
         total_price = unit_price * quantity
-        commission_amount = total_price * commission_rate
+        # Commission is calculated on subtotal (excluding tax)
+        subtotal_price = round(total_price / 1.16, 2)
+        commission_amount = round(subtotal_price * commission_rate, 2)
         
         # Always create SaleService record
         sale_service = SaleService(
@@ -1924,10 +2430,13 @@ def create_sale():
             )
             db.session.add(sale_product)
     
-    # Calculate totals
-    subtotal = sum(ss.total_price for ss in sale.sale_services) + sum(sp.total_price for sp in sale.sale_products)
-    tax_amount = subtotal * 0.16  # 16% VAT
-    total_amount = subtotal + tax_amount
+    # Calculate totals - prices are inclusive of tax (16% VAT)
+    # Total amount is the sum of all prices (tax-inclusive)
+    total_amount = sum(ss.total_price for ss in sale.sale_services) + sum(sp.total_price for sp in sale.sale_products)
+    # Extract subtotal and tax from tax-inclusive total
+    subtotal = round(total_amount / 1.16, 2)  # Subtotal excluding tax (rounded to 2 decimals)
+    tax_amount = round(total_amount - subtotal, 2)  # Tax amount (rounded to 2 decimals)
+    # Commission is already calculated on subtotal (excluding tax) when SaleService was created
     commission_amount = sum(ss.commission_amount for ss in sale.sale_services)
     
     sale.subtotal = subtotal
@@ -1958,6 +2467,17 @@ def complete_sale(id):
     if not payment_method:
         return jsonify({'error': 'Payment method is required'}), 400
     
+    # Validate M-Pesa transaction code format if provided
+    if payment_method.lower() in ['m_pesa', 'm-pesa', 'mpesa'] and transaction_code:
+        # M-Pesa codes are 10 alphanumeric characters (uppercase)
+        import re
+        mpesa_pattern = re.compile(r'^[A-Z0-9]{10}$')
+        if not mpesa_pattern.match(transaction_code.upper()):
+            return jsonify({
+                'error': 'Invalid M-Pesa transaction code format. Must be exactly 10 alphanumeric characters (e.g., QGH7X2K9L8)'
+            }), 400
+        transaction_code = transaction_code.upper()  # Normalize to uppercase
+    
     try:
         # STEP 1: Deduct product stock
         for sale_product in sale.sale_products:
@@ -1983,7 +2503,7 @@ def complete_sale(id):
         # STEP 2: Generate receipt number
         receipt_number = data.get('receipt_number') or f"RCP-{sale.sale_number.replace('SALE-', '')}"
         
-        # STEP 3: Create payment with demo flag matching sale
+        # STEP 3: Create payment
         payment = Payment(
             sale_id=sale.id,
             appointment_id=None,  # Explicitly set to None for sale-based payments
@@ -1991,8 +2511,7 @@ def complete_sale(id):
             payment_method=payment_method.lower().replace("-", "_"),
             status='completed',
             transaction_code=transaction_code,
-            receipt_number=receipt_number,
-            is_demo=sale.is_demo if hasattr(sale, 'is_demo') else False
+            receipt_number=receipt_number
         )
         db.session.add(payment)
         
@@ -2019,7 +2538,15 @@ def complete_sale(id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        # Log the error for debugging
+        print(f"Error in complete_sale: {str(e)}")
+        if current_app.debug:
+            traceback.print_exc()
+        return jsonify({
+            'error': 'Failed to complete sale',
+            'message': str(e) if current_app.debug else 'An error occurred while completing the sale'
+        }), 500
 
 @bp.route('/sales/<int:id>', methods=['GET'])
 def get_sale(id):
