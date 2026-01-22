@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from sqlalchemy import func
-from models import Customer, Service, Staff, Appointment, AppointmentService, Payment, StaffLoginLog, Product, ProductUsage, Expense, Shift, Sale, SaleService, SaleProduct
+from models import Customer, Service, Staff, Payment, StaffLoginLog, Product, ProductUsage, Expense, Shift, Sale, SaleService, SaleProduct
 from db import db
 from datetime import datetime, date, timedelta
 import re
@@ -235,41 +235,28 @@ def get_staff_performance(id):
     from datetime import date
     today = date.today()
     
-    # Build query
-    query = Appointment.query.filter(
-        Appointment.staff_id == id,
-        Appointment.status == 'completed'
+    # Build query - use Sales instead of Appointments
+    query = Sale.query.filter(
+        Sale.staff_id == id,
+        Sale.status == 'completed'
     )
     
     if today_only:
-        query = query.filter(func.date(Appointment.appointment_date) == today)
+        query = query.filter(func.date(Sale.created_at) == today)
     else:
         if start_date:
             start_dt = datetime.fromisoformat(start_date)
-            query = query.filter(Appointment.appointment_date >= start_dt)
+            query = query.filter(Sale.created_at >= start_dt)
         if end_date:
             end_dt = datetime.fromisoformat(end_date)
-            query = query.filter(Appointment.appointment_date <= end_dt)
+            query = query.filter(Sale.created_at <= end_dt)
     
-    appointments = query.all()
+    sales = query.all()
     
-    # Calculate totals
-    total_revenue = 0
-    total_commission = 0
-    transaction_count = 0
-    default_commission_rate = 0.50
-    
-    for appointment in appointments:
-        payment = Payment.query.filter_by(appointment_id=appointment.id, status='completed').first()
-        if payment:
-            appointment_total = 0
-            for apt_service in appointment.services:
-                if apt_service.service:
-                    appointment_total += apt_service.service.price
-            
-            total_revenue += appointment_total
-            total_commission += appointment_total * default_commission_rate
-            transaction_count += 1
+    # Calculate totals from sales
+    total_revenue = sum(sale.subtotal for sale in sales)
+    total_commission = sum(sale.commission_amount for sale in sales)
+    transaction_count = len(sales)
     
     return jsonify({
         'staff_id': id,
@@ -478,63 +465,32 @@ def get_staff_stats(id):
     staff = Staff.query.get_or_404(id)
     today = datetime.now().date()
     
-    # Get today's completed sales (new sale-based flow)
+    # Get today's completed sales
     today_sales = Sale.query.filter(
         Sale.staff_id == id,
         func.date(Sale.created_at) == today,
         Sale.status == 'completed'
     ).all()
     
-    # Get today's appointments (backward compatibility)
-    today_appointments = Appointment.query.filter(
-        Appointment.staff_id == id,
-        func.date(Appointment.appointment_date) == today
-    ).all()
-    completed_appointments = [apt for apt in today_appointments if apt.status == 'completed']
-    
-    # Calculate from sales (primary)
+    # Calculate from sales
     clients_served_today = len(today_sales)
     revenue_today = sum(sale.subtotal for sale in today_sales)
     commission_today = sum(sale.commission_amount for sale in today_sales)
     
-    # Add appointments data (backward compatibility)
-    default_commission_rate = 0.50
-    for appointment in completed_appointments:
-        appointment_total = 0
-        for apt_service in appointment.services:
-            if apt_service.service:
-                appointment_total += apt_service.service.price
-        revenue_today += appointment_total
-        commission_today += appointment_total * default_commission_rate
-        clients_served_today += 1
-    
     # Count transactions for today
-    transactions_today = len(today_sales) + len(completed_appointments)
+    transactions_today = len(today_sales)
     
     # Calculate weekly commission (last 7 days)
     from datetime import timedelta
     week_start = today - timedelta(days=6)  # Include today, so 6 days back
     
-    # Sales (primary)
+    # Sales
     week_sales = Sale.query.filter(
         Sale.staff_id == id,
         func.date(Sale.created_at) >= week_start,
         Sale.status == 'completed'
     ).all()
     commission_weekly = sum(sale.commission_amount for sale in week_sales)
-    
-    # Appointments (backward compatibility)
-    week_appointments = Appointment.query.filter(
-        Appointment.staff_id == id,
-        func.date(Appointment.appointment_date) >= week_start,
-        Appointment.status == 'completed'
-    ).all()
-    for appointment in week_appointments:
-        appointment_total = 0
-        for apt_service in appointment.services:
-            if apt_service.service:
-                appointment_total += apt_service.service.price
-        commission_weekly += appointment_total * default_commission_rate
     
     return jsonify({
         'staff_id': id,
@@ -556,65 +512,60 @@ def get_staff_commission_history(id):
     end_date = request.args.get('end_date')
     payment_method = request.args.get('payment_method')
     
-    # Get all completed appointments for this staff
-    query = Appointment.query.filter(
-        Appointment.staff_id == id,
-        Appointment.status == 'completed'
+    # Get all completed sales for this staff
+    query = Sale.query.filter(
+        Sale.staff_id == id,
+        Sale.status == 'completed'
     )
     
     # Apply date filters
     if start_date:
         start_dt = datetime.fromisoformat(start_date)
-        query = query.filter(Appointment.appointment_date >= start_dt)
+        query = query.filter(Sale.created_at >= start_dt)
     if end_date:
         end_dt = datetime.fromisoformat(end_date)
-        query = query.filter(Appointment.appointment_date <= end_dt)
+        query = query.filter(Sale.created_at <= end_dt)
     
-    appointments = query.order_by(Appointment.appointment_date.desc()).all()
+    sales = query.order_by(Sale.created_at.desc()).all()
     
     # Filter by payment method if specified
     if payment_method:
-        payment_ids = [p.appointment_id for p in Payment.query.filter_by(payment_method=payment_method).all()]
-        appointments = [apt for apt in appointments if apt.id in payment_ids]
+        sale_ids_with_payment = [p.sale_id for p in Payment.query.filter_by(
+            payment_method=payment_method
+        ).all() if p.sale_id]
+        sales = [sale for sale in sales if sale.id in sale_ids_with_payment]
     
     # Build commission history
     history = []
-    default_commission_rate = 0.50  # 50% commission rate
     
-    for appointment in appointments:
-        # Get payment for this appointment
-        payment = Payment.query.filter_by(appointment_id=appointment.id).first()
+    for sale in sales:
+        # Get payment for this sale
+        payment = Payment.query.filter_by(sale_id=sale.id).first()
         
-        # Calculate commission from services
-        appointment_total = 0
+        # Get services from sale
         services_list = []
-        
-        for apt_service in appointment.services:
-            if apt_service.service:
-                service_price = apt_service.service.price
-                appointment_total += service_price
+        for sale_service in sale.sale_services:
+            if sale_service.service:
                 services_list.append({
-                    'name': apt_service.service.name,
-                    'price': service_price
+                    'name': sale_service.service.name,
+                    'price': sale_service.total_price
                 })
         
-        commission_amount = appointment_total * default_commission_rate
-        
         history.append({
-            'id': appointment.id,
-            'date': appointment.appointment_date.strftime('%Y-%m-%d') if appointment.appointment_date else None,
-            'time': appointment.appointment_date.strftime('%H:%M') if appointment.appointment_date else None,
-            'datetime': appointment.appointment_date.isoformat() if appointment.appointment_date else None,
-            'client_name': appointment.customer.name if appointment.customer else 'Walk-in',
-            'client_phone': appointment.customer.phone if appointment.customer else None,
+            'id': sale.id,
+            'date': sale.created_at.strftime('%Y-%m-%d') if sale.created_at else None,
+            'time': sale.created_at.strftime('%H:%M') if sale.created_at else None,
+            'datetime': sale.created_at.isoformat() if sale.created_at else None,
+            'client_name': sale.customer_name or (sale.customer.name if sale.customer else 'Walk-in'),
+            'client_phone': sale.customer_phone or (sale.customer.phone if sale.customer else None),
             'services': services_list,
-            'total_amount': round(appointment_total, 2),
-            'tax': round(appointment_total * 0.08, 2),
-            'grand_total': round(appointment_total * 1.08, 2),
-            'commission': round(commission_amount, 2),
+            'total_amount': round(sale.subtotal, 2),
+            'tax': round(sale.tax_amount, 2),
+            'grand_total': round(sale.total_amount, 2),
+            'commission': round(sale.commission_amount, 2),
             'payment_method': payment.payment_method if payment else None,
             'payment_status': payment.status if payment else None,
-            'receipt_number': f"RCP-{appointment.id:06d}"
+            'receipt_number': payment.receipt_number if payment else f"RCP-{sale.sale_number}"
         })
     
     return jsonify({
@@ -633,22 +584,16 @@ def get_dashboard_stats():
     
     today = date.today()
     
-    # Today's sales revenue (from completed appointments - subtotal before VAT)
-    today_appointments = Appointment.query.filter(
-        func.date(Appointment.appointment_date) == today,
-        Appointment.status == 'completed'
+    # Today's sales revenue (from completed sales - subtotal before VAT)
+    today_sales = Sale.query.filter(
+        func.date(Sale.created_at) == today,
+        Sale.status == 'completed'
     ).all()
     
-    today_revenue = 0
-    for appointment in today_appointments:
-        appointment_subtotal = 0
-        for apt_service in appointment.services:
-            if apt_service.service:
-                appointment_subtotal += apt_service.service.price
-        today_revenue += appointment_subtotal
+    today_revenue = sum(sale.subtotal for sale in today_sales)
     
-    # Total commission to be paid today (50% of revenue before VAT)
-    total_commission = today_revenue * 0.50
+    # Total commission to be paid today (from sales)
+    total_commission = sum(sale.commission_amount for sale in today_sales)
     
     # Active staff count (staff with is_active=True)
     active_staff_count = Staff.query.filter(Staff.is_active == True).count()
@@ -663,22 +608,18 @@ def get_dashboard_stats():
     currently_logged_in = [log.staff_id for log in active_logins]
     active_staff_list = Staff.query.filter(Staff.id.in_(currently_logged_in)).all() if currently_logged_in else []
     
-    # Recent transactions (last 10 completed payments)
-    recent_payments = Payment.query.join(Appointment).filter(
-        Payment.status == 'completed'
+    # Recent transactions (last 10 completed payments from sales)
+    recent_payments = Payment.query.join(Sale).filter(
+        Payment.status == 'completed',
+        Payment.sale_id.isnot(None)
     ).order_by(Payment.created_at.desc()).limit(10).all()
     
     recent_transactions = []
     for payment in recent_payments:
-        appointment = payment.appointment
-        staff = appointment.staff if appointment else None
-        # Calculate commission from appointment services (subtotal), not payment amount (which includes VAT)
-        appointment_subtotal = 0
-        if appointment:
-            for apt_service in appointment.services:
-                if apt_service.service:
-                    appointment_subtotal += apt_service.service.price
-        commission = appointment_subtotal * 0.50
+        sale = payment.sale
+        staff = sale.staff if sale else None
+        # Use sale commission amount
+        commission = sale.commission_amount if sale else 0
         recent_transactions.append({
             'id': payment.id,
             'staff_name': staff.name if staff else 'N/A',
@@ -687,39 +628,26 @@ def get_dashboard_stats():
             'commission': round(commission, 2),
             'payment_method': payment.payment_method,
             'created_at': payment.created_at.isoformat() if payment.created_at else None,
-            'appointment_id': payment.appointment_id
+            'sale_id': payment.sale_id
         })
     
     # Staff performance summary (today's sales and commission per staff)
     staff_performance = []
-    staff_ids = set([apt.staff_id for apt in Appointment.query.filter(
-        func.date(Appointment.appointment_date) == today,
-        Appointment.status == 'completed'
-    ).all() if apt.staff_id])
+    staff_ids = set([sale.staff_id for sale in today_sales if sale.staff_id])
     
     for staff_id in staff_ids:
         staff = Staff.query.get(staff_id)
         if staff:
-            staff_appointments = Appointment.query.filter(
-                Appointment.staff_id == staff_id,
-                func.date(Appointment.appointment_date) == today,
-                Appointment.status == 'completed'
-            ).all()
-            staff_revenue = 0
-            for appointment in staff_appointments:
-                appointment_subtotal = 0
-                for apt_service in appointment.services:
-                    if apt_service.service:
-                        appointment_subtotal += apt_service.service.price
-                staff_revenue += appointment_subtotal
-            staff_commission = staff_revenue * 0.50
+            staff_sales = [sale for sale in today_sales if sale.staff_id == staff_id]
+            staff_revenue = sum(sale.subtotal for sale in staff_sales)
+            staff_commission = sum(sale.commission_amount for sale in staff_sales)
             
             staff_performance.append({
                 'staff_id': staff.id,
                 'staff_name': staff.name,
                 'sales_today': round(staff_revenue, 2),
                 'commission_today': round(staff_commission, 2),
-                'transactions_count': len(staff_appointments)
+                'transactions_count': len(staff_sales)
             })
     
     # Recent staff logins (last 24 hours)
@@ -920,67 +848,40 @@ def get_dashboard_stats_demo():
     
     return jsonify(demo_stats), 200
 
-# Appointment routes
-@bp.route('/appointments', methods=['GET'])
-def get_appointments():
-    appointments = Appointment.query.all()
-    return jsonify([appointment.to_dict() for appointment in appointments])
-
-@bp.route('/appointments', methods=['POST'])
-def create_appointment():
-    data = request.get_json()
-    appointment = Appointment(
-        customer_id=data.get('customer_id'),
-        staff_id=data.get('staff_id'),
-        appointment_date=datetime.fromisoformat(data.get('appointment_date')) if data.get('appointment_date') else None,
-        status=data.get('status', 'scheduled'),
-        notes=data.get('notes')
-    )
-    db.session.add(appointment)
-    db.session.flush()
-    
-    # Add services to appointment
-    service_ids = data.get('service_ids', [])
-    for service_id in service_ids:
-        appointment_service = AppointmentService(
-            appointment_id=appointment.id,
-            service_id=service_id
-        )
-        db.session.add(appointment_service)
-    
-    db.session.commit()
-    return jsonify(appointment.to_dict()), 201
-
-@bp.route('/appointments/<int:id>', methods=['GET'])
-def get_appointment(id):
-    appointment = Appointment.query.get_or_404(id)
-    return jsonify(appointment.to_dict())
-
-@bp.route('/appointments/<int:id>', methods=['PUT'])
-def update_appointment(id):
-    appointment = Appointment.query.get_or_404(id)
-    data = request.get_json()
-    appointment.customer_id = data.get('customer_id', appointment.customer_id)
-    appointment.staff_id = data.get('staff_id', appointment.staff_id)
-    if data.get('appointment_date'):
-        appointment.appointment_date = datetime.fromisoformat(data.get('appointment_date'))
-    appointment.status = data.get('status', appointment.status)
-    appointment.notes = data.get('notes', appointment.notes)
-    db.session.commit()
-    return jsonify(appointment.to_dict())
-
-@bp.route('/appointments/<int:id>', methods=['DELETE'])
-def delete_appointment(id):
-    appointment = Appointment.query.get_or_404(id)
-    db.session.delete(appointment)
-    db.session.commit()
-    return jsonify({'message': 'Appointment deleted'}), 200
 
 # Payment routes
 @bp.route('/payments', methods=['GET'])
 def get_payments():
-    payments = Payment.query.all()
-    return jsonify([payment.to_dict() for payment in payments])
+    """Get all payments - only sale-based payments"""
+    payments = Payment.query.filter(
+        Payment.sale_id.isnot(None)
+    ).order_by(Payment.created_at.desc()).all()
+    
+    # Include sale and staff information
+    result = []
+    for payment in payments:
+        payment_dict = payment.to_dict()
+        # Access sale through relationship (backref from Sale model)
+        if hasattr(payment, 'sale') and payment.sale:
+            payment_dict['sale'] = {
+                'id': payment.sale.id,
+                'sale_number': payment.sale.sale_number,
+                'customer_name': payment.sale.customer_name or (payment.sale.customer.name if payment.sale.customer else 'Walk-in'),
+                'staff_name': payment.sale.staff.name if payment.sale.staff else None
+            }
+        else:
+            # Fallback: query sale directly if relationship not loaded
+            sale = Sale.query.get(payment.sale_id) if payment.sale_id else None
+            if sale:
+                payment_dict['sale'] = {
+                    'id': sale.id,
+                    'sale_number': sale.sale_number,
+                    'customer_name': sale.customer_name or (sale.customer.name if sale.customer else 'Walk-in'),
+                    'staff_name': sale.staff.name if sale.staff else None
+                }
+        result.append(payment_dict)
+    
+    return jsonify(result)
 
 @bp.route('/payments', methods=['POST'])
 def create_payment():
@@ -1176,19 +1077,21 @@ def get_daily_sales_report():
     else:
         target_date = date.today()
     
-    # Get all completed payments for the date
+    # Get all completed payments for the date (from sales)
     start_datetime = datetime.combine(target_date, datetime.min.time())
     end_datetime = datetime.combine(target_date, datetime.max.time())
     
-    payments = Payment.query.join(Appointment).filter(
+    payments = Payment.query.join(Sale).filter(
         Payment.status == 'completed',
-        Appointment.appointment_date >= start_datetime,
-        Appointment.appointment_date <= end_datetime
+        Payment.sale_id.isnot(None),
+        Sale.created_at >= start_datetime,
+        Sale.created_at <= end_datetime
     ).all()
     
-    # Calculate totals
+    # Calculate totals from sales (use subtotal for commission calculation)
     total_revenue = sum(p.amount for p in payments)
-    total_commission = total_revenue * 0.50
+    # Commission from sales
+    total_commission = sum(p.sale.commission_amount for p in payments if p.sale)
     
     # Payment method breakdown
     payment_methods = {}
@@ -1235,45 +1138,37 @@ def get_commission_payout_report():
     else:
         end_dt = datetime.combine(date.today(), datetime.max.time())
     
-    # Get completed appointments in date range
-    query = Appointment.query.filter(
-        Appointment.status == 'completed',
-        Appointment.appointment_date >= start_dt,
-        Appointment.appointment_date <= end_dt
+    # Get completed sales in date range
+    query = Sale.query.filter(
+        Sale.status == 'completed',
+        Sale.created_at >= start_dt,
+        Sale.created_at <= end_dt
     )
     
     if staff_id:
-        query = query.filter(Appointment.staff_id == staff_id)
+        query = query.filter(Sale.staff_id == staff_id)
     
-    appointments = query.all()
+    sales = query.all()
     
     # Calculate commission by staff
     staff_commissions = {}
-    default_commission_rate = 0.50
     
-    for appointment in appointments:
-        if not appointment.staff_id:
+    for sale in sales:
+        if not sale.staff_id:
             continue
         
-        appointment_total = 0
-        for apt_service in appointment.services:
-            if apt_service.service:
-                appointment_total += apt_service.service.price
-        
-        commission = appointment_total * default_commission_rate
-        
-        if appointment.staff_id not in staff_commissions:
-            staff_commissions[appointment.staff_id] = {
-                'staff_id': appointment.staff_id,
-                'staff_name': appointment.staff.name if appointment.staff else 'Unknown',
+        if sale.staff_id not in staff_commissions:
+            staff_commissions[sale.staff_id] = {
+                'staff_id': sale.staff_id,
+                'staff_name': sale.staff.name if sale.staff else 'Unknown',
                 'total_sales': 0,
                 'total_commission': 0,
                 'transaction_count': 0
             }
         
-        staff_commissions[appointment.staff_id]['total_sales'] += appointment_total
-        staff_commissions[appointment.staff_id]['total_commission'] += commission
-        staff_commissions[appointment.staff_id]['transaction_count'] += 1
+        staff_commissions[sale.staff_id]['total_sales'] += sale.subtotal
+        staff_commissions[sale.staff_id]['total_commission'] += sale.commission_amount
+        staff_commissions[sale.staff_id]['transaction_count'] += 1
     
     # Round values
     for staff_id in staff_commissions:
@@ -1308,11 +1203,12 @@ def get_financial_summary():
     else:
         end_dt = datetime.combine(date.today(), datetime.max.time())
     
-    # Revenue from completed payments
-    payments = Payment.query.join(Appointment).filter(
+    # Revenue from completed payments (from sales)
+    payments = Payment.query.join(Sale).filter(
         Payment.status == 'completed',
-        Appointment.appointment_date >= start_dt,
-        Appointment.appointment_date <= end_dt
+        Payment.sale_id.isnot(None),
+        Sale.created_at >= start_dt,
+        Sale.created_at <= end_dt
     ).all()
     
     total_revenue = sum(p.amount for p in payments)
@@ -1334,8 +1230,8 @@ def get_financial_summary():
         category = expense.category or 'other'
         expenses_by_category[category] = expenses_by_category.get(category, 0) + expense.amount
     
-    # Commission
-    total_commission = total_revenue * 0.50
+    # Commission from sales
+    total_commission = sum(p.sale.commission_amount for p in payments if p.sale)
     
     # Profit calculation
     gross_profit = revenue_before_vat - total_commission
@@ -1386,11 +1282,12 @@ def get_tax_report():
         else:
             end_dt = datetime(today.year, today.month + 1, 1) - timedelta(days=1)
     
-    # Get all completed payments
-    payments = Payment.query.join(Appointment).filter(
+    # Get all completed payments (from sales)
+    payments = Payment.query.join(Sale).filter(
         Payment.status == 'completed',
-        Appointment.appointment_date >= start_dt,
-        Appointment.appointment_date <= end_dt
+        Payment.sale_id.isnot(None),
+        Sale.created_at >= start_dt,
+        Sale.created_at <= end_dt
     ).all()
     
     total_revenue = sum(p.amount for p in payments)

@@ -8,7 +8,6 @@ import StaffLogin from "./pages/StaffLogin"
 import POS from "./pages/POS"
 import StaffCommissionHistory from "./pages/StaffCommissionHistory"
 import Dashboard from "./pages/Dashboard"
-import Appointments from "./pages/Appointments"
 import Customers from "./pages/Customers"
 import Services from "./pages/Services"
 import Staff from "./pages/Staff"
@@ -54,17 +53,6 @@ function App() {
             }
           >
             <Route index element={<Dashboard />} />
-          </Route>
-          
-          <Route
-            path="/appointments"
-            element={
-              <ProtectedRoute>
-                <Layout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Appointments />} />
           </Route>
           
           <Route
