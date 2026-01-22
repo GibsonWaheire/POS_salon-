@@ -155,6 +155,7 @@ def complete_sale(id):
         # STEP 3: Create payment
         payment = Payment(
             sale_id=sale.id,
+            appointment_id=None,  # Explicitly set to None for sale-based payments
             amount=sale.total_amount,
             payment_method=payment_method.lower().replace("-", "_"),
             status='completed',

@@ -75,6 +75,55 @@ The API will be available at `http://localhost:5001`
 - **AppointmentService** - Services linked to appointments
 - **Payment** - Payment transactions
 
+## Database Migrations
+
+This project uses Flask-Migrate for database schema version control.
+
+### Initial Setup
+
+1. **Initialize migrations** (first time only):
+```bash
+export FLASK_APP=app.py
+flask db init
+```
+
+2. **Create initial migration** (if starting fresh):
+```bash
+flask db migrate -m "Initial migration"
+```
+
+3. **Apply migrations**:
+```bash
+flask db upgrade
+```
+
+### Working with Migrations
+
+- **Create a new migration** after model changes:
+```bash
+flask db migrate -m "Description of changes"
+```
+
+- **Apply pending migrations**:
+```bash
+flask db upgrade
+```
+
+- **Rollback last migration**:
+```bash
+flask db downgrade
+```
+
+- **View migration history**:
+```bash
+flask db history
+```
+
+- **Mark database as current** (if schema already matches):
+```bash
+flask db stamp head
+```
+
 ## CLI Commands
 
 Flask CLI commands are available for managing the application:
@@ -83,7 +132,7 @@ Flask CLI commands are available for managing the application:
 # Set Flask app (if not using python app.py)
 export FLASK_APP=app.py
 
-# Initialize database - create all tables
+# Initialize database - apply all migrations
 flask init-db
 
 # Seed demo staff users (for development/demo)
@@ -119,7 +168,19 @@ Run `flask show-demo-login` to see current demo credentials.
 
 ## Development
 
-The database will be automatically created when you first run the application. The default database is SQLite (`pos_salon.db`).
+The database uses Flask-Migrate for schema management. After installing dependencies, run:
+
+```bash
+export FLASK_APP=app.py
+flask db init          # First time only
+flask db migrate -m "Initial migration"  # If creating initial migration
+flask db upgrade      # Apply migrations
+```
+
+Or use the CLI command:
+```bash
+flask init-db  # Applies all migrations
+```
 
 Demo staff users are automatically seeded on startup if they don't exist.
 

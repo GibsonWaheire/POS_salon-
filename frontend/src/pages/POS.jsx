@@ -123,7 +123,22 @@ const services = [
 ]
 
 const formatKES = (amount) => {
-  return `KES ${amount.toLocaleString('en-KE')}`
+  // #region agent log
+  fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:125',message:'formatKES called',data:{amount,amountType:typeof amount,isUndefined:amount===undefined,isNull:amount===null,isNaN:Number.isNaN(amount)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,B'})}).catch(()=>{});
+  // #endregion
+  // Handle undefined, null, NaN, or non-numeric values
+  if (amount === undefined || amount === null || Number.isNaN(amount) || amount === '') {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:130',message:'formatKES received invalid value',data:{amount,amountType:typeof amount},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    return 'KES 0'
+  }
+  // Convert to number if it's a string
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : Number(amount)
+  if (Number.isNaN(numAmount) || !isFinite(numAmount)) {
+    return 'KES 0'
+  }
+  return `KES ${numAmount.toLocaleString('en-KE')}`
 }
 
 const defaultCommissionRate = 0.50 // 50% commission rate for Kenyan salons
@@ -195,10 +210,25 @@ export default function POS() {
       const response = await fetch(`http://localhost:5001/api/sales?staff_id=${staff.id}&status=completed&limit=10`)
       if (response.ok) {
         const data = await response.json()
-        setRecentTransactions(data.slice(0, 10) || [])
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:205',message:'Recent transactions API response',data:{dataLength:data.length,firstItem:data[0]||null,firstItemKeys:data[0]?Object.keys(data[0]):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B,C'})}).catch(()=>{});
+        // #endregion
+        // Transform API response to match frontend expectations
+        const transformedData = data.map(sale => ({
+          ...sale,
+          grand_total: sale.grand_total ?? sale.total_amount ?? 0,
+          commission: sale.commission ?? sale.commission_amount ?? 0,
+          client_name: sale.client_name ?? sale.customer_name ?? 'Walk-in',
+          time: sale.time ?? (sale.created_at ? new Date(sale.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }) : ''),
+          payment_method: sale.payment_method ?? sale.payment?.payment_method ?? null
+        }))
+        setRecentTransactions(transformedData.slice(0, 10) || [])
       }
     } catch (err) {
       console.error("Failed to fetch recent transactions:", err)
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:217',message:'Failed to fetch recent transactions',data:{error:err.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
     }
   }
 
@@ -301,12 +331,12 @@ export default function POS() {
     setPaymentMethod("")
   }
 
-  const subtotal = currentSale.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+  const subtotal = currentSale.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 0)), 0)
   const tax = subtotal * 0.16 // 16% VAT in Kenya (KRA standard)
   const total = subtotal + tax
   const totalCommission = currentSale.reduce((sum, item) => {
     const commissionRate = item.commissionRate || defaultCommissionRate
-    return sum + (item.price * item.quantity * commissionRate)
+    return sum + ((item.price || 0) * (item.quantity || 0) * commissionRate)
   }, 0)
 
   const handlePrintReceipt = async () => {
@@ -488,12 +518,12 @@ export default function POS() {
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-blue-600" />
                 <span className="font-medium">Today: {loadingStats ? "..." : staffStats.clients_served_today} Clients</span>
-                <span className="text-xs text-muted-foreground ml-2">| Weekly Commission: {loadingStats ? "..." : formatKES(Math.round(staffStats.commission_weekly))}</span>
+                <span className="text-xs text-muted-foreground ml-2">| Weekly Commission: {loadingStats ? "..." : formatKES(Math.round(staffStats.commission_weekly || 0))}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Coins className="h-4 w-4 text-green-600" />
                 <span className="font-medium text-green-600">
-                  {loadingStats ? "..." : formatKES(Math.round(staffStats.commission_today))}
+                  {loadingStats ? "..." : formatKES(Math.round(staffStats.commission_today || 0))}
                 </span>
               </div>
             </div>
@@ -554,7 +584,7 @@ export default function POS() {
                         {category}
                       </SelectLabel>
                       {categoryServices.map((service, index) => {
-                        const serviceCommission = service.price * (service.commissionRate || defaultCommissionRate)
+                        const serviceCommission = (service.price || 0) * ((service.commissionRate || defaultCommissionRate))
                         const isLastInGroup = index === categoryServices.length - 1
                         return (
                           <SelectItem 
@@ -679,14 +709,14 @@ export default function POS() {
             ) : (
               <div className="space-y-2">
                 {currentSale.map((item) => {
-                  const itemCommission = item.commission || (item.price * item.quantity * (item.commissionRate || defaultCommissionRate))
+                  const itemCommission = item.commission ?? ((item.price || 0) * (item.quantity || 0) * (item.commissionRate || defaultCommissionRate))
                   return (
                     <Card key={item.id} className="border">
                       <CardContent className="p-3">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex-1">
                             <h4 className="font-semibold text-sm mb-1">{item.name}</h4>
-                            <p className="text-xs text-muted-foreground">{formatKES(item.price)} × {item.quantity}</p>
+                            <p className="text-xs text-muted-foreground">{formatKES(item.price || 0)} × {item.quantity || 0}</p>
                             <div className="mt-1 flex items-center gap-1 bg-green-50 px-2 py-1 rounded text-xs">
                               <Coins className="h-3 w-3 text-green-600" />
                               <span className="font-semibold text-green-700">Commission: {formatKES(itemCommission)}</span>
@@ -724,7 +754,7 @@ export default function POS() {
                               +
                             </Button>
                           </div>
-                          <p className="font-bold text-primary">{formatKES(item.price * item.quantity)}</p>
+                          <p className="font-bold text-primary">{formatKES((item.price || 0) * (item.quantity || 0))}</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -767,20 +797,24 @@ export default function POS() {
               <div className="bg-white p-4 rounded border">
                 <h3 className="text-sm font-semibold mb-3">Recent Transactions</h3>
                 <div className="space-y-2 max-h-48 overflow-y-auto">
-                  {recentTransactions.slice(0, 5).map((txn) => (
+                  {recentTransactions.slice(0, 5).map((txn) => {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7243/ingest/89a825d3-7bb4-45cb-8c0c-0aecf18f6961',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'POS.jsx:770',message:'Rendering transaction',data:{txnId:txn.id,grandTotal:txn.grand_total,commission:txn.commission,hasGrandTotal:txn.hasOwnProperty('grand_total'),hasCommission:txn.hasOwnProperty('commission'),txnKeys:Object.keys(txn)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                    // #endregion
+                    return (
                     <div key={txn.id} className="text-xs border-b pb-2 last:border-0">
                       <div className="flex justify-between items-start">
                         <div>
-                          <div className="font-medium">{txn.client_name}</div>
-                          <div className="text-muted-foreground">{txn.time} • {txn.payment_method?.toUpperCase()}</div>
+                          <div className="font-medium">{txn.client_name || txn.customer_name}</div>
+                          <div className="text-muted-foreground">{txn.time || (txn.created_at ? new Date(txn.created_at).toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' }) : '')} • {txn.payment_method?.toUpperCase()}</div>
                         </div>
                         <div className="text-right">
-                          <div className="font-semibold">{formatKES(txn.grand_total)}</div>
-                          <div className="text-green-600 text-xs">{formatKES(txn.commission)}</div>
+                          <div className="font-semibold">{formatKES(txn.grand_total ?? txn.total_amount ?? 0)}</div>
+                          <div className="text-green-600 text-xs">{formatKES(txn.commission ?? txn.commission_amount ?? 0)}</div>
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )})}
                 </div>
               </div>
             )}

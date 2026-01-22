@@ -233,8 +233,8 @@ class Payment(db.Model):
     __tablename__ = 'payments'
     
     id = db.Column(db.Integer, primary_key=True)
-    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'))  # Made nullable for backward compatibility
-    appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'))  # Keep for backward compatibility
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=True)  # Made nullable for backward compatibility
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=True)  # Keep for backward compatibility - nullable for sale-based payments
     amount = db.Column(db.Float, nullable=False)
     payment_method = db.Column(db.String(50))  # cash, card, m_pesa, airtel_money, etc.
     status = db.Column(db.String(20), default='pending')  # pending, completed, refunded

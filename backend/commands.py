@@ -29,8 +29,9 @@ DEMO_STAFF = load_demo_staff()
 @click.command('init-db')
 @with_appcontext
 def init_db():
-    """Initialize the database - create all tables"""
-    db.create_all()
+    """Initialize the database - apply all migrations"""
+    from flask_migrate import upgrade
+    upgrade()
     click.echo('✓ Database initialized successfully')
 
 @click.command('seed-staff')
@@ -147,8 +148,11 @@ def create_staff(name, phone, email, role, pin):
 @with_appcontext
 def reset_db():
     """Reset the database - DROP ALL TABLES (WARNING: Destructive!)"""
-    db.drop_all()
-    db.create_all()
+    from flask_migrate import downgrade, upgrade
+    # Downgrade to base (removes all tables)
+    downgrade(revision='base')
+    # Upgrade to head (recreates all tables)
+    upgrade()
     click.echo('✓ Database reset successfully')
     click.echo('Run "flask seed-staff" to create demo users')
 

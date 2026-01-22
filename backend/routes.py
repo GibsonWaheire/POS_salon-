@@ -1641,6 +1641,7 @@ def complete_sale(id):
         # STEP 3: Create payment
         payment = Payment(
             sale_id=sale.id,
+            appointment_id=None,  # Explicitly set to None for sale-based payments
             amount=sale.total_amount,
             payment_method=payment_method.lower().replace("-", "_"),
             status='completed',
@@ -1706,4 +1707,20 @@ def get_sales():
         query = query.filter(func.date(Sale.created_at) <= datetime.fromisoformat(end_date).date())
     
     sales = query.order_by(Sale.created_at.desc()).limit(limit).all()
-    return jsonify([sale.to_dict() for sale in sales])
+    
+    # Include payment information in response
+    result = []
+    for sale in sales:
+        sale_dict = sale.to_dict()
+        # Add payment information if available
+        if sale.payment:
+            sale_dict['payment_method'] = sale.payment.payment_method
+            sale_dict['receipt_number'] = sale.payment.receipt_number
+        # Add computed fields for frontend compatibility
+        sale_dict['grand_total'] = sale.total_amount
+        sale_dict['commission'] = sale.commission_amount
+        sale_dict['client_name'] = sale.customer_name
+        sale_dict['time'] = sale.created_at.strftime('%H:%M') if sale.created_at else ''
+        result.append(sale_dict)
+    
+    return jsonify(result)
