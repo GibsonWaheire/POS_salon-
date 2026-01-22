@@ -9,6 +9,7 @@ from datetime import datetime, date
 from utils import get_demo_filter, get_current_week_range, parse_date, calculate_gross_pay, calculate_total_deductions, calculate_net_pay
 from validators import validate_mpesa_code, validate_date_format
 from pdf_generators import generate_commission_receipt_pdf
+from auth_helpers import require_manager_or_admin
 
 bp_commissions = Blueprint('commissions', __name__)
 
@@ -116,6 +117,7 @@ def get_commission_payments():
 
 
 @bp_commissions.route('/commissions/pay', methods=['POST'])
+@require_manager_or_admin
 def create_commission_payment():
     """Create a professional commission payment with earnings and deductions"""
     try:

@@ -16,6 +16,7 @@ import CommissionPayments from "./pages/CommissionPayments"
 import Inventory from "./pages/Inventory"
 import Expenses from "./pages/Expenses"
 import Reports from "./pages/Reports"
+import Users from "./pages/Users"
 
 function App() {
   return (
@@ -142,6 +143,17 @@ function App() {
             }
           >
             <Route index element={<Reports />} />
+          </Route>
+          
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Users />} />
           </Route>
         </Routes>
       </BrowserRouter>

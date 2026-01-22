@@ -441,10 +441,15 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='manager')  # admin or manager
+    managed_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Admin who manages this manager
     is_active = db.Column(db.Boolean, default=True)
     is_demo = db.Column(db.Boolean, default=False)  # Marks demo user accounts
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
+    
+    # Relationships
+    manager = db.relationship('User', remote_side=[id], backref='managed_managers')  # Admin who manages this user
+    created_price_changes = db.relationship('ServicePriceHistory', backref='changed_by_user', lazy=True)
     
     def set_password(self, password):
         """Hash and set password"""
@@ -454,12 +459,29 @@ class User(db.Model):
         """Check if provided password matches hash"""
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
     
+    def is_admin(self):
+        """Check if user is an admin"""
+        return self.role == 'admin'
+    
+    def is_manager(self):
+        """Check if user is a manager"""
+        return self.role == 'manager'
+    
+    def can_manage_user(self, target_user):
+        """Check if this user can manage the target user"""
+        if self.is_admin():
+            return True  # Admin can manage everyone
+        if self.is_manager() and target_user.is_manager():
+            return False  # Manager cannot manage other managers
+        return False
+    
     def to_dict(self):
         return {
             'id': self.id,
             'email': self.email,
             'name': self.name,
             'role': self.role,
+            'managed_by': self.managed_by,
             'is_active': self.is_active,
             'is_demo': self.is_demo,
             'created_at': self.created_at.isoformat() if self.created_at else None,

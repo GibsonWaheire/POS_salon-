@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, session
 from flask_cors import CORS
 from flask_migrate import Migrate
 from dotenv import load_dotenv
@@ -11,6 +11,9 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///pos_salon.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 
 # Initialize db with app
 db.init_app(app)
@@ -42,8 +45,8 @@ def health():
 CORS(app, 
      origins="*",  # Allow all origins
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],  # All HTTP methods
-     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept"],  # All needed headers
-     supports_credentials=False,  # No credentials needed
+     allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept", "X-User-Id"],  # All needed headers including custom auth header
+     supports_credentials=True,  # Enable credentials for session support
      max_age=3600  # Cache preflight requests for 1 hour
      )
 
@@ -57,7 +60,7 @@ def after_request(response):
     if 'Access-Control-Allow-Methods' not in response.headers:
         response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
     if 'Access-Control-Allow-Headers' not in response.headers:
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, X-User-Id'
     return response
 
 # Error handler to ensure proper error responses with CORS
@@ -80,7 +83,7 @@ def handle_500(e):
     # Ensure CORS headers are present
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, X-User-Id'
     
     return response
 
@@ -108,7 +111,7 @@ def handle_exception(e):
     # Ensure CORS headers are present
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, X-User-Id'
     
     return response
 

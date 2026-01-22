@@ -9,13 +9,15 @@ import {
   Package,
   TrendingDown,
   FileText,
-  DollarSign
+  DollarSign,
+  Users
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import DemoModeToggle from "@/components/DemoModeToggle"
+import { isAdmin } from "@/lib/api"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -26,6 +28,8 @@ const navigation = [
   { name: "Inventory", href: "/inventory", icon: Package },
   { name: "Expenses", href: "/expenses", icon: TrendingDown },
   { name: "Reports", href: "/reports", icon: FileText },
+  // Admin-only navigation items
+  { name: "Users", href: "/users", icon: Users, adminOnly: true },
   // Appointments and Customers removed - not used in walk-in only business model
   // POS removed - only accessible via staff login
 ]
@@ -50,25 +54,27 @@ export default function Layout() {
               <h1 className="text-xl font-bold">Salon POS</h1>
             </div>
             <nav className="flex-1 space-y-1 px-3 py-4">
-              {navigation.map((item) => {
-                const isActive = location.pathname === item.href
-                const Icon = item.icon
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    <Icon className="h-5 w-5" />
-                    {item.name}
-                  </Link>
-                )
-              })}
+              {navigation
+                .filter(item => !item.adminOnly || isAdmin())
+                .map((item) => {
+                  const isActive = location.pathname === item.href
+                  const Icon = item.icon
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={cn(
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                      {item.name}
+                    </Link>
+                  )
+                })}
             </nav>
             
             {/* User info and logout */}

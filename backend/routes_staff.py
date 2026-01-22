@@ -8,6 +8,7 @@ from sqlalchemy import func
 from datetime import datetime, date, timedelta
 from utils import get_demo_filter
 from validators import validate_pin_format, validate_staff_id
+from auth_helpers import require_manager_or_admin
 
 bp_staff = Blueprint('staff', __name__)
 
@@ -19,6 +20,7 @@ def get_staff():
 
 
 @bp_staff.route('/staff', methods=['POST'])
+@require_manager_or_admin
 def create_staff():
     data = request.get_json()
     
@@ -72,6 +74,7 @@ def update_staff(id):
 
 
 @bp_staff.route('/staff/<int:id>', methods=['DELETE'])
+@require_manager_or_admin
 def delete_staff(id):
     staff = Staff.query.get_or_404(id)
     db.session.delete(staff)

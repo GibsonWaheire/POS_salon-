@@ -48,10 +48,10 @@ def upgrade():
         import bcrypt
         password_hash = bcrypt.hashpw('demo123'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         
-        # Insert default user using raw SQL with proper datetime
+        # Insert default admin user using raw SQL with proper datetime
         conn.execute(sa.text(f"""
             INSERT INTO users (email, password_hash, name, role, is_active, is_demo, created_at)
-            VALUES ('manager@salon.com', :password_hash, 'Manager', 'manager', 1, 1, datetime('now'))
+            VALUES ('admin@salon.com', :password_hash, 'Admin', 'admin', 1, 1, datetime('now'))
         """), {'password_hash': password_hash})
 
 

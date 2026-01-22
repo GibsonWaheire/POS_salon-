@@ -7,6 +7,7 @@ from utils import get_demo_filter
 from report_calculators import (
     calculate_daily_sales_report,
     calculate_commission_payout_report,
+    calculate_detailed_commission_payout_report,
     calculate_financial_summary,
     calculate_tax_report
 )
@@ -36,6 +37,7 @@ def get_commission_payout_report():
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     staff_id = request.args.get('staff_id', type=int)
+    detailed = request.args.get('detailed', 'false').lower() == 'true'
     
     if start_date:
         start_dt = datetime.fromisoformat(start_date)
@@ -48,7 +50,11 @@ def get_commission_payout_report():
         end_dt = datetime.combine(date.today(), datetime.max.time())
     
     demo_filter = get_demo_filter(None, request)
-    report_data = calculate_commission_payout_report(start_dt, end_dt, staff_id, demo_filter, db.session)
+    
+    if detailed:
+        report_data = calculate_detailed_commission_payout_report(start_dt, end_dt, staff_id, demo_filter, db.session)
+    else:
+        report_data = calculate_commission_payout_report(start_dt, end_dt, staff_id, demo_filter, db.session, use_detailed=False)
     
     return jsonify(report_data), 200
 
@@ -58,6 +64,7 @@ def get_financial_summary():
     """Get financial summary (P&L, cash flow)"""
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
+    compare_with_previous = request.args.get('compare_with_previous', 'false').lower() == 'true'
     
     if start_date:
         start_dt = datetime.fromisoformat(start_date)
@@ -70,7 +77,7 @@ def get_financial_summary():
         end_dt = datetime.combine(date.today(), datetime.max.time())
     
     demo_filter = get_demo_filter(None, request)
-    summary_data = calculate_financial_summary(start_dt, end_dt, demo_filter, db.session)
+    summary_data = calculate_financial_summary(start_dt, end_dt, demo_filter, db.session, compare_with_previous=compare_with_previous)
     
     return jsonify(summary_data), 200
 

@@ -5,6 +5,7 @@ from flask import Blueprint
 
 # Import all route blueprints
 from routes_auth import bp_auth
+from routes_users import bp_users
 from routes_customers import bp_customers
 from routes_services import bp_services
 from routes_staff import bp_staff
@@ -22,6 +23,7 @@ bp = Blueprint('api', __name__, url_prefix='/api')
 
 # Register all blueprints
 bp.register_blueprint(bp_auth)
+bp.register_blueprint(bp_users)
 bp.register_blueprint(bp_customers)
 bp.register_blueprint(bp_services)
 bp.register_blueprint(bp_staff)
