@@ -96,6 +96,7 @@ class Staff(db.Model):
     is_active = db.Column(db.Boolean, default=True)
     is_demo = db.Column(db.Boolean, default=False)  # Marks demo staff accounts
     demo_mode_preference = db.Column(db.Boolean, default=False)  # Admin/manager toggle preference
+    base_pay = db.Column(db.Float, nullable=True)  # Monthly base salary
     last_login = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -113,6 +114,7 @@ class Staff(db.Model):
             'is_active': self.is_active,
             'is_demo': self.is_demo,
             'demo_mode_preference': self.demo_mode_preference,
+            'base_pay': self.base_pay,
             'last_login': self.last_login.isoformat() if self.last_login else None,
             'created_at': self.created_at.isoformat() if self.created_at else None
             # PIN is intentionally excluded from to_dict() for security
@@ -471,7 +473,11 @@ class CommissionPayment(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     staff_id = db.Column(db.Integer, db.ForeignKey('staff.id'), nullable=False)
-    amount_paid = db.Column(db.Float, nullable=False)
+    amount_paid = db.Column(db.Float, nullable=False)  # Kept for backward compatibility (equals net_pay)
+    base_pay = db.Column(db.Float, nullable=True)  # Base pay for this payment (overrides staff default if set)
+    gross_pay = db.Column(db.Float, nullable=True)  # Calculated sum of all earnings
+    total_deductions = db.Column(db.Float, nullable=True)  # Calculated sum of all deductions
+    net_pay = db.Column(db.Float, nullable=True)  # Calculated net pay (gross_pay - total_deductions)
     payment_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     period_start = db.Column(db.Date, nullable=False)  # Start date of commission period
     period_end = db.Column(db.Date, nullable=False)  # End date of commission period
@@ -488,11 +494,23 @@ class CommissionPayment(db.Model):
     payer = db.relationship('User', backref='commission_payments_made', lazy=True)
     
     def to_dict(self):
+        # Get earnings and deductions items
+        earnings = [item.to_dict() for item in self.items if item.item_type == 'earning']
+        deductions = [item.to_dict() for item in self.items if item.item_type == 'deduction']
+        
+        # Sort by display_order
+        earnings.sort(key=lambda x: x['display_order'])
+        deductions.sort(key=lambda x: x['display_order'])
+        
         return {
             'id': self.id,
             'staff_id': self.staff_id,
             'staff_name': self.staff.name if self.staff else None,
             'amount_paid': self.amount_paid,
+            'base_pay': self.base_pay,
+            'gross_pay': self.gross_pay,
+            'total_deductions': self.total_deductions,
+            'net_pay': self.net_pay,
             'payment_date': self.payment_date.isoformat() if self.payment_date else None,
             'period_start': self.period_start.isoformat() if self.period_start else None,
             'period_end': self.period_end.isoformat() if self.period_end else None,
@@ -503,6 +521,53 @@ class CommissionPayment(db.Model):
             'payer_name': self.payer.name if self.payer else None,
             'notes': self.notes,
             'is_demo': self.is_demo,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'earnings': earnings,
+            'deductions': deductions
+        }
+
+class CommissionPaymentItem(db.Model):
+    """Line items for commission payments (earnings and deductions)"""
+    __tablename__ = 'commission_payment_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    commission_payment_id = db.Column(db.Integer, db.ForeignKey('commission_payments.id'), nullable=False)
+    item_type = db.Column(db.String(20), nullable=False)  # 'earning' or 'deduction'
+    item_name = db.Column(db.String(100), nullable=False)  # 'Base Pay', 'Commission', 'Bonus', 'NSSF', 'NHIF', etc.
+    amount = db.Column(db.Float, nullable=False)  # Fixed amount (or percentage value if is_percentage is True)
+    is_percentage = db.Column(db.Boolean, default=False)  # If True, amount is percentage
+    percentage_of = db.Column(db.String(50))  # 'gross_pay', 'base_pay', etc. (for percentage calculations)
+    display_order = db.Column(db.Integer, default=0)  # Order in which to display items
+    notes = db.Column(db.Text)  # Optional notes
+    
+    # For commission items: link to specific sale/service
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=True)  # Which sale generated this commission
+    sale_service_id = db.Column(db.Integer, db.ForeignKey('sale_services.id'), nullable=True)  # Which service in the sale
+    service_name = db.Column(db.String(100), nullable=True)  # Service name for display (e.g., "Haircut", "Manicure")
+    sale_number = db.Column(db.String(50), nullable=True)  # Sale number for display (e.g., "SALE-20240119-001")
+    
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    commission_payment = db.relationship('CommissionPayment', backref='items', lazy=True, cascade='all, delete-orphan')
+    sale = db.relationship('Sale', backref='commission_items', lazy=True)
+    sale_service = db.relationship('SaleService', backref='commission_items', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'commission_payment_id': self.commission_payment_id,
+            'item_type': self.item_type,
+            'item_name': self.item_name,
+            'amount': self.amount,
+            'is_percentage': self.is_percentage,
+            'percentage_of': self.percentage_of,
+            'display_order': self.display_order,
+            'notes': self.notes,
+            'sale_id': self.sale_id,
+            'sale_service_id': self.sale_service_id,
+            'service_name': self.service_name,
+            'sale_number': self.sale_number,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 

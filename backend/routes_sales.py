@@ -1,9 +1,18 @@
-# Sale routes to be added to routes.py
-# ============================================================================
-# SALE ROUTES - Kenyan Salon Walk-in Transaction Flow (No Appointments)
-# ============================================================================
+"""
+Sales routes for the POS Salon backend.
+"""
+from flask import Blueprint, request, jsonify, current_app
+from models import Sale, SaleService, SaleProduct, Customer, Staff, Service, Product, ProductUsage, Payment
+from db import db
+from sqlalchemy import func
+from datetime import datetime, date
+from utils import get_demo_filter, generate_sale_number
+from validators import validate_mpesa_code
 
-@bp.route('/sales', methods=['POST'])
+bp_sales = Blueprint('sales', __name__)
+
+
+@bp_sales.route('/sales', methods=['POST'])
 def create_sale():
     """Create a new sale (walk-in transaction)"""
     data = request.get_json()
@@ -12,34 +21,37 @@ def create_sale():
     if not staff_id:
         return jsonify({'error': 'Staff ID is required'}), 400
     
-    # Generate unique sale number: SALE-YYYYMMDD-XXX
-    today = datetime.now().strftime('%Y%m%d')
-    # Get count of sales today to generate sequence number
-    today_sales_count = Sale.query.filter(
-        func.date(Sale.created_at) == date.today()
-    ).count()
-    sale_number = f"SALE-{today}-{today_sales_count + 1:03d}"
+    # Generate unique sale number
+    sale_number = generate_sale_number()
     
     # Create or get customer if name/phone provided
     customer_id = None
+    # Get staff to check demo status
+    staff = Staff.query.get(staff_id)
+    is_demo_user = staff.is_demo if staff and hasattr(staff, 'is_demo') and staff.is_demo else False
+    
     if data.get('customer_name') or data.get('customer_phone'):
-        # Try to find existing customer by phone
+        # Try to find existing customer by phone (only if same demo status)
         if data.get('customer_phone'):
-            existing_customer = Customer.query.filter_by(phone=data.get('customer_phone')).first()
+            existing_customer = Customer.query.filter_by(
+                phone=data.get('customer_phone'),
+                is_demo=is_demo_user
+            ).first()
             if existing_customer:
                 customer_id = existing_customer.id
             else:
-                # Create new customer
+                # Create new customer with demo flag
                 new_customer = Customer(
                     name=data.get('customer_name') or "Walk-in Customer",
                     phone=data.get('customer_phone'),
-                    email=data.get('customer_email')
+                    email=data.get('customer_email'),
+                    is_demo=is_demo_user
                 )
                 db.session.add(new_customer)
                 db.session.flush()
                 customer_id = new_customer.id
     
-    # Create sale
+    # Create sale with demo flag
     sale = Sale(
         sale_number=sale_number,
         staff_id=staff_id,
@@ -47,7 +59,8 @@ def create_sale():
         customer_name=data.get('customer_name'),
         customer_phone=data.get('customer_phone'),
         status='pending',
-        notes=data.get('notes')
+        notes=data.get('notes'),
+        is_demo=is_demo_user
     )
     db.session.add(sale)
     db.session.flush()
@@ -57,27 +70,61 @@ def create_sale():
     for service_data in services:
         service_id = service_data.get('service_id') or service_data.get('id')
         quantity = service_data.get('quantity', 1)
+        service_name = service_data.get('name')
+        service_price = service_data.get('price')
+        commission_rate = service_data.get('commission_rate', 0.50)
         
+        # Get or create Service record
         service = Service.query.get(service_id)
-        if service:
-            # Prices are tax-inclusive, so extract subtotal for commission calculation
-            unit_price = service.price
-            total_price = unit_price * quantity
-            commission_rate = service_data.get('commission_rate', 0.50)
-            # Commission is calculated on subtotal (excluding tax)
-            subtotal_price = round(total_price / 1.16, 2)
-            commission_amount = round(subtotal_price * commission_rate, 2)
-            
-            sale_service = SaleService(
-                sale_id=sale.id,
-                service_id=service_id,
-                quantity=quantity,
-                unit_price=unit_price,
-                total_price=total_price,
-                commission_rate=commission_rate,
-                commission_amount=commission_amount
-            )
-            db.session.add(sale_service)
+        if not service:
+            # Service doesn't exist in database - create it with frontend data
+            if service_name and service_price is not None:
+                # Get duration from frontend if provided, default to 30 minutes
+                duration = service_data.get('duration', 30)
+                try:
+                    # Try to create service with the specified ID
+                    service = Service(
+                        id=service_id,  # Try to use the ID from frontend
+                        name=service_name,
+                        price=service_price,
+                        duration=duration
+                    )
+                    db.session.add(service)
+                    db.session.flush()
+                except Exception:
+                    # If setting ID fails, create without ID
+                    db.session.rollback()
+                    existing_service = Service.query.filter_by(name=service_name).first()
+                    if existing_service:
+                        service = existing_service
+                    else:
+                        service = Service(
+                            name=service_name,
+                            price=service_price,
+                            duration=duration
+                        )
+                        db.session.add(service)
+                        db.session.flush()
+            else:
+                continue
+        
+        # Use price from frontend if provided, otherwise use database price
+        unit_price = service_price if service_price is not None else service.price
+        total_price = unit_price * quantity
+        # Commission is calculated on subtotal (excluding tax)
+        subtotal_price = round(total_price / 1.16, 2)
+        commission_amount = round(subtotal_price * commission_rate, 2)
+        
+        sale_service = SaleService(
+            sale_id=sale.id,
+            service_id=service.id,
+            quantity=quantity,
+            unit_price=unit_price,
+            total_price=total_price,
+            commission_rate=commission_rate,
+            commission_amount=commission_amount
+        )
+        db.session.add(sale_service)
     
     # Add products to sale (stock NOT deducted yet)
     products = data.get('products', [])
@@ -96,29 +143,31 @@ def create_sale():
                 quantity=quantity,
                 unit_price=unit_price,
                 total_price=total_price,
-                stock_deducted=False  # Stock will be deducted on completion
+                stock_deducted=False
             )
             db.session.add(sale_product)
     
-    # Calculate totals - prices are inclusive of tax (16% VAT)
-    # Total amount is the sum of all prices (tax-inclusive)
+    # Calculate totals
     total_amount = sum(ss.total_price for ss in sale.sale_services) + sum(sp.total_price for sp in sale.sale_products)
-    # Extract subtotal and tax from tax-inclusive total
-    subtotal = round(total_amount / 1.16, 2)  # Subtotal excluding tax (rounded to 2 decimals)
-    tax_amount = round(total_amount - subtotal, 2)  # Tax amount (rounded to 2 decimals)
-    # Commission is calculated on subtotal (excluding tax)
-    commission_amount = sum((ss.total_price / 1.16) * ss.commission_rate for ss in sale.sale_services)
+    subtotal = round(total_amount / 1.16, 2)
+    tax_amount = round(total_amount - subtotal, 2)
+    commission_amount = sum(ss.commission_amount for ss in sale.sale_services)
     
     sale.subtotal = subtotal
     sale.tax_amount = tax_amount
     sale.total_amount = total_amount
     sale.commission_amount = commission_amount
     
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to create sale: {str(e)}'}), 500
     
     return jsonify(sale.to_dict()), 201
 
-@bp.route('/sales/<int:id>/complete', methods=['POST'])
+
+@bp_sales.route('/sales/<int:id>/complete', methods=['POST'])
 def complete_sale(id):
     """Complete a sale - deduct stock, finalize commission, create payment"""
     sale = Sale.query.get_or_404(id)
@@ -128,10 +177,17 @@ def complete_sale(id):
         return jsonify({'error': 'Sale already completed'}), 400
     
     payment_method = data.get('payment_method')
-    transaction_code = data.get('transaction_code')  # For M-Pesa
+    transaction_code = data.get('transaction_code')
     
     if not payment_method:
         return jsonify({'error': 'Payment method is required'}), 400
+    
+    # Validate M-Pesa transaction code format if provided
+    if payment_method.lower() in ['m_pesa', 'm-pesa', 'mpesa'] and transaction_code:
+        is_valid, error, normalized_code = validate_mpesa_code(transaction_code)
+        if not is_valid:
+            return jsonify({'error': error}), 400
+        transaction_code = normalized_code
     
     try:
         # STEP 1: Deduct product stock
@@ -161,7 +217,7 @@ def complete_sale(id):
         # STEP 3: Create payment
         payment = Payment(
             sale_id=sale.id,
-            appointment_id=None,  # Explicitly set to None for sale-based payments
+            appointment_id=None,
             amount=sale.total_amount,
             payment_method=payment_method.lower().replace("-", "_"),
             status='completed',
@@ -170,10 +226,9 @@ def complete_sale(id):
         )
         db.session.add(payment)
         
-        # STEP 4: Mark sale as completed and finalize commission
+        # STEP 4: Mark sale as completed
         sale.status = 'completed'
         sale.completed_at = datetime.utcnow()
-        # Commission is already calculated and stored in sale.commission_amount
         
         # STEP 5: Update customer stats if customer exists
         if sale.customer_id:
@@ -193,9 +248,17 @@ def complete_sale(id):
         
     except Exception as e:
         db.session.rollback()
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        print(f"Error in complete_sale: {str(e)}")
+        if current_app.debug:
+            traceback.print_exc()
+        return jsonify({
+            'error': 'Failed to complete sale',
+            'message': str(e) if current_app.debug else 'An error occurred while completing the sale'
+        }), 500
 
-@bp.route('/sales/<int:id>', methods=['GET'])
+
+@bp_sales.route('/sales/<int:id>', methods=['GET'])
 def get_sale(id):
     """Get sale details"""
     sale = Sale.query.get_or_404(id)
@@ -206,18 +269,28 @@ def get_sale(id):
         sale_dict['payment'] = sale.payment.to_dict()
     return jsonify(sale_dict)
 
-@bp.route('/sales', methods=['GET'])
+
+@bp_sales.route('/sales', methods=['GET'])
 def get_sales():
     """Get all sales with optional filters"""
     staff_id = request.args.get('staff_id', type=int)
     status = request.args.get('status')
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
+    limit = request.args.get('limit', type=int, default=100)
     
     query = Sale.query
     
     if staff_id:
         query = query.filter(Sale.staff_id == staff_id)
+        staff = Staff.query.get(staff_id)
+        demo_filter = get_demo_filter(staff, request)
+    else:
+        demo_filter = get_demo_filter(None, request)
+    
+    # Apply demo filter
+    query = query.filter(Sale.is_demo == demo_filter['is_demo'])
+    
     if status:
         query = query.filter(Sale.status == status)
     if start_date:
@@ -225,5 +298,21 @@ def get_sales():
     if end_date:
         query = query.filter(func.date(Sale.created_at) <= datetime.fromisoformat(end_date).date())
     
-    sales = query.order_by(Sale.created_at.desc()).limit(100).all()
-    return jsonify([sale.to_dict() for sale in sales])
+    sales = query.order_by(Sale.created_at.desc()).limit(limit).all()
+    
+    # Include payment information in response
+    result = []
+    for sale in sales:
+        sale_dict = sale.to_dict()
+        # Add payment information if available
+        if sale.payment:
+            sale_dict['payment_method'] = sale.payment.payment_method
+            sale_dict['receipt_number'] = sale.payment.receipt_number
+        # Add computed fields for frontend compatibility
+        sale_dict['grand_total'] = sale.total_amount
+        sale_dict['commission'] = sale.commission_amount
+        sale_dict['client_name'] = sale.customer_name
+        sale_dict['time'] = sale.created_at.strftime('%H:%M') if sale.created_at else ''
+        result.append(sale_dict)
+    
+    return jsonify(result)
