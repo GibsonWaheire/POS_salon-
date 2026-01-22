@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify, current_app
 from models import Sale, SaleService, SaleProduct, Customer, Staff, Service, Product, ProductUsage, Payment
 from db import db
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from datetime import datetime, date
 from utils import get_demo_filter, generate_sale_number
 from validators import validate_mpesa_code
@@ -170,7 +171,7 @@ def create_sale():
 @bp_sales.route('/sales/<int:id>/complete', methods=['POST'])
 def complete_sale(id):
     """Complete a sale - deduct stock, finalize commission, create payment"""
-    sale = Sale.query.get_or_404(id)
+    sale = Sale.query.options(joinedload(Sale.sale_products).joinedload(SaleProduct.product)).get_or_404(id)
     data = request.get_json()
     
     if sale.status == 'completed':
@@ -190,26 +191,39 @@ def complete_sale(id):
         transaction_code = normalized_code
     
     try:
-        # STEP 1: Deduct product stock
-        for sale_product in sale.sale_products:
-            if not sale_product.stock_deducted:
-                product = sale_product.product
-                if product.stock_quantity < sale_product.quantity:
-                    return jsonify({
-                        'error': f'Insufficient stock for {product.name}. Available: {product.stock_quantity}, Required: {sale_product.quantity}'
-                    }), 400
-                
-                product.stock_quantity -= sale_product.quantity
-                sale_product.stock_deducted = True
-                
-                # Record product usage
-                product_usage = ProductUsage(
-                    product_id=product.id,
-                    sale_id=sale.id,
-                    quantity_used=sale_product.quantity,
-                    used_at=datetime.utcnow()
-                )
-                db.session.add(product_usage)
+        # STEP 1: Deduct product stock (if any products in sale)
+        if sale.sale_products:
+            for sale_product in sale.sale_products:
+                if not sale_product.stock_deducted:
+                    try:
+                        product = sale_product.product
+                    except AttributeError:
+                        # Product relationship not loaded, query it directly
+                        product = Product.query.get(sale_product.product_id)
+                    
+                    if not product:
+                        return jsonify({
+                            'error': f'Product not found for sale product ID {sale_product.id} (product_id: {sale_product.product_id}). Product may have been deleted.'
+                        }), 400
+                    
+                    # Handle None stock_quantity (default to 0)
+                    current_stock = product.stock_quantity if product.stock_quantity is not None else 0
+                    if current_stock < sale_product.quantity:
+                        return jsonify({
+                            'error': f'Insufficient stock for {product.name}. Available: {current_stock}, Required: {sale_product.quantity}'
+                        }), 400
+                    
+                    product.stock_quantity = current_stock - sale_product.quantity
+                    sale_product.stock_deducted = True
+                    
+                    # Record product usage
+                    product_usage = ProductUsage(
+                        product_id=product.id,
+                        sale_id=sale.id,
+                        quantity_used=sale_product.quantity,
+                        used_at=datetime.utcnow()
+                    )
+                    db.session.add(product_usage)
         
         # STEP 2: Generate receipt number
         receipt_number = data.get('receipt_number') or f"RCP-{sale.sale_number.replace('SALE-', '')}"
