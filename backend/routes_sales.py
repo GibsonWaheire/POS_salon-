@@ -250,6 +250,11 @@ def complete_sale(id):
             customer.total_visits += 1
             customer.total_spent += sale.total_amount
             customer.last_visit = datetime.utcnow()
+            
+            # Award loyalty points: 1 point per KES 100 spent
+            points_earned = int(sale.total_amount / 100)
+            if points_earned > 0:
+                customer.loyalty_points = (customer.loyalty_points or 0) + points_earned
         
         db.session.commit()
         

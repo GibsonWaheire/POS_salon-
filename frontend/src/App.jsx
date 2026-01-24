@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { Toaster } from "sonner"
 import { AuthProvider } from "./context/AuthContext"
 import Layout from "./components/Layout"
 import ProtectedRoute from "./components/ProtectedRoute"
@@ -17,10 +18,13 @@ import Inventory from "./pages/Inventory"
 import Expenses from "./pages/Expenses"
 import Reports from "./pages/Reports"
 import Users from "./pages/Users"
+import Shifts from "./pages/Shifts"
+import Sales from "./pages/Sales"
 
 function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-right" richColors />
       <BrowserRouter>
         <Routes>
           {/* Public routes */}
@@ -154,6 +158,28 @@ function App() {
             }
           >
             <Route index element={<Users />} />
+          </Route>
+          
+          <Route
+            path="/shifts"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Shifts />} />
+          </Route>
+          
+          <Route
+            path="/sales"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Sales />} />
           </Route>
         </Routes>
       </BrowserRouter>

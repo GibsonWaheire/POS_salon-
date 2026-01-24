@@ -11,9 +11,10 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///pos_salon.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
-app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+# Production settings - use environment variables
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SAMESITE'] = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')  # 'Lax', 'Strict', or 'None'
 
 # Initialize db with app
 db.init_app(app)
@@ -42,8 +43,10 @@ def health():
 
 # Enable CORS for all routes - MUST be after routes are registered
 # This handles all CORS including preflight OPTIONS requests
+# In production, set CORS_ORIGINS environment variable to restrict origins
+allowed_origins = os.getenv('CORS_ORIGINS', '*').split(',') if os.getenv('CORS_ORIGINS') else '*'
 CORS(app, 
-     origins="*",  # Allow all origins
+     origins=allowed_origins,  # Use environment variable or allow all in development
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],  # All HTTP methods
      allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept", "X-User-Id"],  # All needed headers including custom auth header
      supports_credentials=True,  # Enable credentials for session support

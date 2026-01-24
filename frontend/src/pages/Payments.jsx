@@ -4,7 +4,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/context/AuthContext"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Printer } from "lucide-react"
+import ReceiptTemplate from "@/components/ReceiptTemplate"
 
 const formatKES = (amount) => {
   return `KES ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -15,6 +16,42 @@ export default function Payments() {
   const [loading, setLoading] = useState(true)
   const [expandedRows, setExpandedRows] = useState(new Set())
   const { demoMode, isDemoUser } = useAuth()
+  const [receiptToPrint, setReceiptToPrint] = useState(null)
+
+  const handlePrintReceipt = (payment) => {
+    const sale = payment.sale || {}
+    const services = (sale.sale_services || []).map(ss => ({
+      name: ss.service?.name || 'Service',
+      quantity: ss.quantity || 1,
+      price: ss.unit_price || 0
+    }))
+    const products = (sale.sale_products || []).map(sp => ({
+      name: sp.product?.name || 'Product',
+      quantity: sp.quantity || 1,
+      price: sp.unit_price || 0
+    }))
+    
+    setReceiptToPrint({
+      receiptNumber: payment.receipt_number || sale.sale_number || `RCP-${payment.id}`,
+      date: payment.created_at ? new Date(payment.created_at).toLocaleDateString() : new Date().toLocaleDateString(),
+      time: payment.created_at ? new Date(payment.created_at).toLocaleTimeString() : new Date().toLocaleTimeString(),
+      staffName: sale.staff?.name || sale.staff_name || 'Staff',
+      clientName: sale.customer_name || sale.customer?.name || 'Walk-in',
+      clientPhone: sale.customer_phone || sale.customer?.phone || '',
+      services,
+      products,
+      subtotal: sale.subtotal || 0,
+      tax: sale.tax_amount || 0,
+      total: payment.amount || sale.total_amount || 0,
+      paymentMethod: payment.payment_method || 'cash',
+      transactionCode: payment.transaction_code || null
+    })
+    
+    setTimeout(() => {
+      window.print()
+      setTimeout(() => setReceiptToPrint(null), 1000)
+    }, 100)
+  }
 
   const toggleRow = (paymentId) => {
     const newExpanded = new Set(expandedRows)
@@ -74,6 +111,7 @@ export default function Payments() {
                   <TableHead>Payment Method</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Date</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -129,11 +167,33 @@ export default function Payments() {
                           <TableCell>
                             {payment.created_at ? new Date(payment.created_at).toLocaleDateString() : 'N/A'}
                           </TableCell>
+                          <TableCell className="text-right">
+                            {payment.status === 'completed' && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePrintReceipt(payment)}
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
                         </TableRow>
                         {isExpanded && hasDetails && (
                           <TableRow>
-                            <TableCell colSpan={8} className="bg-gray-50 p-4">
+                            <TableCell colSpan={9} className="bg-gray-50 p-4">
                               <div className="space-y-4">
+                                <div className="flex justify-end">
+                                  {payment.status === 'completed' && (
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => handlePrintReceipt(payment)}
+                                    >
+                                      <Printer className="h-4 w-4 mr-2" />
+                                      Print Receipt
+                                    </Button>
+                                  )}
+                                </div>
                                 {services.length > 0 && (
                                   <div>
                                     <h4 className="font-semibold text-sm mb-2 text-green-700">Services</h4>
@@ -182,6 +242,11 @@ export default function Payments() {
           )}
         </CardContent>
       </Card>
+      
+      {/* Receipt Print Template */}
+      {receiptToPrint && (
+        <ReceiptTemplate {...receiptToPrint} />
+      )}
     </div>
   )
 }

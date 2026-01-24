@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Eye, Edit, Trash2, History, TrendingUp } from "lucide-react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
 
 const formatKES = (amount) => {
   return `KES ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -147,11 +148,11 @@ export default function Staff() {
         })
       } else {
         const error = await response.json()
-        alert(error.error || "Failed to save staff member")
+        toast.error(error.error || "Failed to save staff member")
       }
     } catch (err) {
       console.error("Error saving staff:", err)
-      alert("An error occurred while saving staff member")
+      toast.error("An error occurred while saving staff member")
     }
   }
 
@@ -168,7 +169,7 @@ export default function Staff() {
         setStaffToDelete(null)
         fetchStaff()
       } else {
-        alert("Failed to delete staff member")
+        toast.error("Failed to delete staff member")
       }
     } catch (err) {
       console.error("Error deleting staff:", err)
@@ -188,11 +189,11 @@ export default function Staff() {
         fetchStaff()
       } else {
         const error = await response.json()
-        alert(error.error || "Failed to update role")
+        toast.error(error.error || "Failed to update role")
       }
     } catch (err) {
       console.error("Error updating role:", err)
-      alert("An error occurred while updating role")
+      toast.error("An error occurred while updating role")
     }
   }
 

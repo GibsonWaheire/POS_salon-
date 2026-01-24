@@ -16,6 +16,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/context/AuthContext"
 import ReceiptTemplate from "@/components/ReceiptTemplate"
+import { toast } from "sonner"
 import { 
   Plus,
   Trash2,
@@ -237,7 +238,7 @@ export default function POS() {
 
   const addServiceToSale = (service) => {
     if (sessionLocked) {
-      alert("Session ended. Please log in again.")
+      toast.error("Session ended. Please log in again.")
       return
     }
     const existingItem = currentSaleServices.find(item => item.id === service.id)
@@ -269,7 +270,7 @@ export default function POS() {
 
   const addProductToSale = (product) => {
     if (sessionLocked) {
-      alert("Session ended. Please log in again.")
+      toast.error("Session ended. Please log in again.")
       return
     }
     const existingItem = currentSaleProducts.find(item => item.id === product.id)
@@ -311,7 +312,7 @@ export default function POS() {
 
   const updateServiceQuantity = (id, change) => {
     if (sessionLocked) {
-      alert("Session ended. Please log in again.")
+      toast.error("Session ended. Please log in again.")
       return
     }
     setCurrentSaleServices(currentSaleServices.map(item => {
@@ -334,7 +335,7 @@ export default function POS() {
 
   const updateProductQuantity = (id, change) => {
     if (sessionLocked) {
-      alert("Session ended. Please log in again.")
+      toast.error("Session ended. Please log in again.")
       return
     }
     setCurrentSaleProducts(currentSaleProducts.map(item => {
@@ -365,7 +366,7 @@ export default function POS() {
 
   const removeServiceFromSale = (id) => {
     if (sessionLocked) {
-      alert("Session ended. Please log in again.")
+      toast.error("Session ended. Please log in again.")
       return
     }
     setCurrentSaleServices(currentSaleServices.filter(item => item.id !== id))
@@ -376,7 +377,7 @@ export default function POS() {
 
   const removeProductFromSale = (id) => {
     if (sessionLocked) {
-      alert("Session ended. Please log in again.")
+      toast.error("Session ended. Please log in again.")
       return
     }
     setCurrentSaleProducts(currentSaleProducts.filter(item => item.id !== id))
@@ -423,18 +424,18 @@ export default function POS() {
 
   const handlePrintReceipt = async () => {
     if (currentSaleServices.length === 0 && currentSaleProducts.length === 0) {
-      alert("Please add items to the sale first")
+      toast.warning("Please add items to the sale first")
       return
     }
 
     if (!paymentMethod) {
-      alert("Please select a payment method first")
+      toast.warning("Please select a payment method first")
       return
     }
 
     // Validate M-Pesa transaction code if M-Pesa payment method
     if (paymentMethod === "M-Pesa" && (!transactionCode || !validateMpesaCode(transactionCode))) {
-      alert("Please enter a valid M-Pesa transaction code (10 alphanumeric characters, e.g., QGH7X2K9L8)")
+      toast.warning("Please enter a valid M-Pesa transaction code (10 alphanumeric characters, e.g., QGH7X2K9L8)")
       setShowTransactionInput(true)
       return
     }
@@ -530,7 +531,7 @@ export default function POS() {
       }, 100)
     } catch (err) {
       console.error("Failed to save transaction:", err)
-      alert(`Error saving transaction: ${err.message}\nPlease try again.`)
+      toast.error(`Error saving transaction: ${err.message}. Please try again.`)
       setSessionLocked(false) // Unlock session on error
       setTransactionSaved(false) // Reset transaction saved state
     }
@@ -539,12 +540,12 @@ export default function POS() {
   const handlePayment = (method) => {
     // Just set the payment method - transaction will be saved when receipt is printed
     if (sessionLocked) {
-      alert("Session ended. Please log in again.")
+      toast.error("Session ended. Please log in again.")
       return
     }
     
     if (currentSaleServices.length === 0 && currentSaleProducts.length === 0) {
-      alert("Please add items to the sale first")
+      toast.warning("Please add items to the sale first")
       return
     }
     
@@ -567,7 +568,7 @@ export default function POS() {
 
   const handleMpesaCodeSubmit = () => {
     if (!transactionCode || !validateMpesaCode(transactionCode)) {
-      alert("Please enter a valid M-Pesa transaction code (10 alphanumeric characters, e.g., QGH7X2K9L8)")
+      toast.warning("Please enter a valid M-Pesa transaction code (10 alphanumeric characters, e.g., QGH7X2K9L8)")
       return
     }
     setShowTransactionInput(false)

@@ -140,7 +140,7 @@ export default function Login() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@salon.com"
+                    placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -206,35 +206,6 @@ export default function Login() {
             <Badge variant="outline" className="rounded-full px-3 py-1 bg-blue-50/50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
               <span className="text-xs text-muted-foreground">Secure & Protected</span>
             </Badge>
-          </div>
-        </div>
-      </div>
-
-      {/* Demo Details Section at Bottom */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-blue-600/90 via-indigo-600/85 to-transparent dark:from-blue-900/90 dark:via-indigo-900/85 backdrop-blur-sm border-t border-blue-500/30 dark:border-blue-700/30">
-        <div className="container mx-auto px-4 md:px-8 py-6">
-          <div className="max-w-4xl mx-auto">
-            <h3 className="text-lg font-semibold text-white mb-4 text-center">Demo Salon Credentials</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-              <Card className="rounded-2xl border-2 border-white/20 bg-white/10 backdrop-blur-md">
-                <CardContent className="p-4">
-                  <p className="text-xs text-blue-100 mb-1 font-medium">Email</p>
-                  <p className="text-sm font-semibold text-white">manager@salon.com</p>
-                </CardContent>
-              </Card>
-              <Card className="rounded-2xl border-2 border-white/20 bg-white/10 backdrop-blur-md">
-                <CardContent className="p-4">
-                  <p className="text-xs text-blue-100 mb-1 font-medium">Password</p>
-                  <p className="text-sm font-semibold text-white">demo123</p>
-                </CardContent>
-              </Card>
-              <Card className="rounded-2xl border-2 border-white/20 bg-white/10 backdrop-blur-md">
-                <CardContent className="p-4">
-                  <p className="text-xs text-blue-100 mb-1 font-medium">Salon</p>
-                  <p className="text-sm font-semibold text-white">Premium Beauty Salon</p>
-                </CardContent>
-              </Card>
-            </div>
           </div>
         </div>
       </div>

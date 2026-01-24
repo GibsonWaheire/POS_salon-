@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Plus, Edit, Trash2, TrendingDown } from "lucide-react"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { toast } from "sonner"
 
 const formatKES = (amount) => {
   return `KES ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -103,11 +104,11 @@ export default function Expenses() {
         fetchExpenses()
       } else {
         const error = await response.json()
-        alert(error.error || "Failed to save expense")
+        toast.error(error.error || "Failed to save expense")
       }
     } catch (err) {
       console.error("Error saving expense:", err)
-      alert("An error occurred while saving expense")
+      toast.error("An error occurred while saving expense")
     }
   }
 
@@ -124,11 +125,11 @@ export default function Expenses() {
         setExpenseToDelete(null)
         fetchExpenses()
       } else {
-        alert("Failed to delete expense")
+        toast.error("Failed to delete expense")
       }
     } catch (err) {
       console.error("Error deleting expense:", err)
-      alert("An error occurred while deleting expense")
+      toast.error("An error occurred while deleting expense")
     }
   }
 

@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 from models import Payment, Sale
 from db import db
 from utils import get_demo_filter
+from sqlalchemy.orm import joinedload
 
 bp_payments = Blueprint('payments', __name__)
 
@@ -15,9 +16,15 @@ def get_payments():
     # Get demo filter from request
     demo_filter = get_demo_filter(None, request)
     
-    payments = Payment.query.filter(
+    # Filter payments by sale's demo status (since Payment doesn't have is_demo field)
+    payments = Payment.query.join(Sale).filter(
         Payment.sale_id.isnot(None),
-        Payment.is_demo == demo_filter['is_demo']
+        Sale.is_demo == demo_filter['is_demo']
+    ).options(
+        joinedload(Payment.sale).joinedload(Sale.staff),
+        joinedload(Payment.sale).joinedload(Sale.customer),
+        joinedload(Payment.sale).joinedload(Sale.sale_services),
+        joinedload(Payment.sale).joinedload(Sale.sale_products)
     ).order_by(Payment.created_at.desc()).all()
     
     # Include sale and staff information

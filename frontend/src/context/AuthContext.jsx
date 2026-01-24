@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react"
+import { toast } from "sonner"
 
 const AuthContext = createContext(null) 
 // createContext is a function that creates a new context object.
@@ -44,7 +45,7 @@ export function AuthProvider({ children }) {
           const data = await response.json()
           if (data.expired) {
             // Session expired - auto logout
-            alert("Demo session expired. Logging out...")
+            toast.warning("Demo session expired. Logging out...")
             await staffLogout()
             window.location.href = "/staff-login"
           }

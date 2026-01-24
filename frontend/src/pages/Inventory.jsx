@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Package, Plus, Edit, AlertTriangle } from "lucide-react"
+import { toast } from "sonner"
 
 const formatKES = (amount) => {
   return `KES ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -119,11 +120,11 @@ export default function Inventory() {
         fetchProducts()
       } else {
         const error = await response.json()
-        alert(error.error || "Failed to save product")
+        toast.error(error.error || "Failed to save product")
       }
     } catch (err) {
       console.error("Error saving product:", err)
-      alert("An error occurred while saving product")
+      toast.error("An error occurred while saving product")
     }
   }
 
@@ -143,11 +144,11 @@ export default function Inventory() {
         setSelectedProduct(null)
         fetchProducts()
       } else {
-        alert("Failed to adjust stock")
+        toast.error("Failed to adjust stock")
       }
     } catch (err) {
       console.error("Error adjusting stock:", err)
-      alert("An error occurred while adjusting stock")
+      toast.error("An error occurred while adjusting stock")
     }
   }
 

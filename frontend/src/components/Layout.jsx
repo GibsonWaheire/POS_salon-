@@ -10,7 +10,9 @@ import {
   TrendingDown,
   FileText,
   DollarSign,
-  Users
+  Users,
+  Clock,
+  ShoppingCart
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
@@ -23,8 +25,10 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Staff", href: "/staff", icon: UserCog },
   { name: "Services", href: "/services", icon: Scissors },
+  { name: "Shifts", href: "/shifts", icon: Clock },
   { name: "Commission Payments", href: "/commission-payments", icon: DollarSign },
   { name: "Payments", href: "/payments", icon: CreditCard },
+  { name: "Sales", href: "/sales", icon: ShoppingCart },
   { name: "Inventory", href: "/inventory", icon: Package },
   { name: "Expenses", href: "/expenses", icon: TrendingDown },
   { name: "Reports", href: "/reports", icon: FileText },
