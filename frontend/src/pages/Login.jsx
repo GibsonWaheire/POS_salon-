@@ -71,7 +71,7 @@ export default function Login() {
           <div className="mb-12">
             <div className="mb-4">
               <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
-                Salon POS
+                Salonyst
               </h1>
               <p className="text-muted-foreground mt-1">Professional Management System</p>
             </div>
@@ -107,7 +107,7 @@ export default function Login() {
           {/* Mobile Branding */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              Salon POS
+              Salonyst
             </h1>
             <p className="text-sm text-muted-foreground">Professional Management System</p>
           </div>

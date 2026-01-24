@@ -43,7 +43,7 @@ except ImportError:
 
 @app.route('/api/health')
 def health():
-    return jsonify({'status': 'ok', 'message': 'Salon POS API is running'})
+    return jsonify({'status': 'ok', 'message': 'Salonyst API is running'})
 
 # Enable CORS for all routes - MUST be after routes are registered
 # This handles all CORS including preflight OPTIONS requests

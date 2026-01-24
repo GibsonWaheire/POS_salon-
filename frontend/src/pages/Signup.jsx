@@ -168,7 +168,7 @@ export default function Signup() {
         <div className="relative z-10 flex flex-col justify-center p-12 text-foreground">
           <div className="mb-12">
             <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent mb-4">
-              Salon POS
+              Salonyst
             </h1>
             <p className="text-muted-foreground mt-1 text-lg mb-4">Professional Management System</p>
             <p className="text-lg text-muted-foreground max-w-md leading-relaxed">
@@ -185,7 +185,7 @@ export default function Signup() {
           {/* Mobile Branding */}
           <div className="lg:hidden text-center mb-8">
             <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-2">
-              Salon POS
+              Salonyst
             </h1>
             <p className="text-sm text-muted-foreground">Create Your Account</p>
           </div>

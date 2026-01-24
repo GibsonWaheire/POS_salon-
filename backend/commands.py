@@ -1,5 +1,5 @@
 """
-Flask CLI commands for managing the Salon POS system
+Flask CLI commands for managing the Salonyst system
 """
 import click
 import json

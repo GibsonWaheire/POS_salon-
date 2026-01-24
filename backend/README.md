@@ -1,6 +1,6 @@
-# Salon POS Backend API
+# Salonyst Backend API
 
-Flask backend API for the Salon POS system.
+Flask backend API for the Salonyst system.
 
 ## Setup
 

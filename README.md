@@ -1,4 +1,4 @@
-# Salon POS
+# Salonyst
 
 A point-of-sale and management system for salons. Handles sales, staff, services, inventory, expenses, commission payments, and financial reports.
 

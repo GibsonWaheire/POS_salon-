@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 
 const WHATSAPP_NUMBER = "254726899113"
 const PREMADE_MESSAGES = [
-  "Hi, I'm interested in Salon POS",
+  "Hi, I'm interested in Salonyst",
   "Can I get a demo?",
   "What's the pricing?",
   "I need more information",
@@ -32,7 +32,7 @@ export default function WhatsAppChat() {
   }, [hasShownPopup, isOpen])
 
   const handleWhatsAppClick = (message = "") => {
-    const text = message || selectedMessage || "Hi, I'm interested in Salon POS"
+    const text = message || selectedMessage || "Hi, I'm interested in Salonyst"
     const encodedMessage = encodeURIComponent(text)
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`
     window.open(whatsappUrl, "_blank")
@@ -102,7 +102,7 @@ export default function WhatsAppChat() {
                     <MessageCircle className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="font-semibold">Salon POS Support</p>
+                    <p className="font-semibold">Salonyst Support</p>
                     <p className="text-xs text-white/80">Typically replies instantly</p>
                   </div>
                 </div>
