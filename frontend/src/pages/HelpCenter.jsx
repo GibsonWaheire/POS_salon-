@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, ChevronDown, ChevronUp, Search, Phone, HelpCircle } from "lucide-react"
 import Breadcrumb from "@/components/Breadcrumb"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import NavigationHeader from "@/components/NavigationHeader"
 
 export default function HelpCenter() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -95,22 +96,7 @@ export default function HelpCenter() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex h-20 items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-gradient-to-br from-blue-400 via-green-400 to-yellow-400 rounded-sm"></div>
-              <span className="text-2xl font-bold text-gray-900">Salonyst</span>
-            </Link>
-            <Link to="/">
-              <Button variant="ghost" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Home
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <NavigationHeader />
 
       {/* Hero Section */}
       <section className="relative py-24 overflow-hidden">
@@ -125,10 +111,10 @@ export default function HelpCenter() {
             ]} />
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div>
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6">
+                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-6">
                   Help Center
                 </h1>
-                <p className="text-xl md:text-2xl text-gray-700 leading-relaxed mb-8">
+                <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-8">
                   Find answers to common questions about Salonyst
                 </p>
                 <div className="relative max-w-xl">
@@ -143,9 +129,11 @@ export default function HelpCenter() {
                 </div>
               </div>
               <div className="relative">
-                <div className="aspect-square rounded-3xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 p-8 flex items-center justify-center shadow-2xl">
-                  <HelpCircle className="h-32 w-32 text-white opacity-80" />
-                </div>
+                <img 
+                  src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=600&h=600&fit=crop&auto=format" 
+                  alt="Help and support" 
+                  className="aspect-square rounded-3xl object-cover shadow-2xl"
+                />
                 <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-[#ef4444] rounded-2xl opacity-20"></div>
                 <div className="absolute -top-4 -left-4 w-16 h-16 bg-green-500 rounded-xl opacity-20"></div>
               </div>
@@ -159,7 +147,7 @@ export default function HelpCenter() {
         <div className="space-y-12">
           {faqs.map((category, catIndex) => (
             <section key={catIndex} className="bg-white rounded-3xl p-10 shadow-lg border border-gray-100">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8">{category.category}</h2>
+              <h2 className="text-lg font-bold text-gray-900 mb-8">{category.category}</h2>
               <div className="space-y-4">
                 {category.questions.map((faq, faqIndex) => {
                   const key = `${catIndex}-${faqIndex}`
@@ -178,7 +166,7 @@ export default function HelpCenter() {
                       </CollapsibleTrigger>
                       <CollapsibleContent>
                         <div className="p-6 pt-4 border-l-4 border-[#ef4444] ml-6 bg-gray-50 rounded-r-lg">
-                          <p className="text-lg text-gray-700 leading-relaxed">{faq.a}</p>
+                          <p className="text-sm text-gray-700 leading-relaxed">{faq.a}</p>
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
@@ -192,19 +180,19 @@ export default function HelpCenter() {
         <section className="mt-20 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#ef4444] via-red-600 to-red-700 p-12 text-white">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
           <div className="relative z-10 text-center">
-            <h2 className="text-4xl font-bold mb-4">Still Have Questions?</h2>
-            <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+            <h2 className="text-xl font-bold mb-4">Still Have Questions?</h2>
+            <p className="text-base mb-8 opacity-90 max-w-2xl mx-auto">
               Can't find what you're looking for? Our support team is here to help.
             </p>
             <div className="flex flex-wrap gap-4 justify-center">
               <a href="tel:+254726899113">
-                <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 text-lg px-8 py-6 h-auto gap-2">
+                <Button variant="outline" className="border-white/30 text-white hover:bg-white/10 text-sm px-8 py-6 h-auto gap-2">
                   <Phone className="h-5 w-5" />
                   Call Us
                 </Button>
               </a>
               <Link to="/#contact">
-                <Button className="bg-white text-[#ef4444] hover:bg-gray-100 text-lg px-8 py-6 h-auto shadow-xl">
+                <Button className="bg-white text-[#ef4444] hover:bg-gray-100 text-sm px-8 py-6 h-auto shadow-xl">
                   Contact Support
                 </Button>
               </Link>

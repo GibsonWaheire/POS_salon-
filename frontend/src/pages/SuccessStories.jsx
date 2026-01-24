@@ -2,6 +2,7 @@ import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, Quote, Star, TrendingUp } from "lucide-react"
 import Breadcrumb from "@/components/Breadcrumb"
+import NavigationHeader from "@/components/NavigationHeader"
 
 export default function SuccessStories() {
   const stories = [
@@ -15,7 +16,7 @@ export default function SuccessStories() {
     },
     {
       business: "Serenity Spa & Wellness",
-      location: "Mombasa, Kenya",
+      location: "London, United Kingdom",
       type: "Spa",
       testimonial: "The inventory management feature has been a game-changer. We no longer run out of products unexpectedly, and the expense tracking helps us understand our costs better. The reporting features give us insights we never had before.",
       results: "Better inventory control, improved cost management",
@@ -23,7 +24,7 @@ export default function SuccessStories() {
     },
     {
       business: "Modern Cuts Barber Shop",
-      location: "Kisumu, Kenya",
+      location: "New York, USA",
       type: "Barber Shop",
       testimonial: "As a barber shop owner, I needed something simple and effective. Salonyst delivers exactly that. The POS system is fast, and my barbers can easily track their earnings. Customer management helps us build relationships with repeat clients.",
       results: "Faster checkout, improved customer retention",
@@ -31,33 +32,34 @@ export default function SuccessStories() {
     },
     {
       business: "Glow Beauty Studio",
-      location: "Nakuru, Kenya",
+      location: "Dubai, UAE",
       type: "Beauty Salon",
       testimonial: "The staff management features are excellent. We can easily schedule shifts, track performance, and calculate commissions automatically. This has saved us hours of administrative work every week.",
       results: "80% reduction in admin time, accurate commission tracking",
       gradient: "from-pink-500 to-pink-600"
+    },
+    {
+      business: "Luxe Nail Bar",
+      location: "Sydney, Australia",
+      type: "Nail Salon",
+      testimonial: "Managing multiple locations was a challenge until we found Salonyst. The centralized system allows us to track performance across all locations and manage inventory efficiently. Our customer satisfaction has improved significantly.",
+      results: "Multi-location management, improved customer satisfaction",
+      gradient: "from-orange-500 to-orange-600"
+    },
+    {
+      business: "Bridal Beauty House",
+      location: "Toronto, Canada",
+      type: "Bridal Salon",
+      testimonial: "For bridal services, scheduling and coordination are crucial. Salonyst's appointment system handles complex bookings perfectly, and the customer database helps us personalize each bride's experience. Our bookings have doubled.",
+      results: "Doubled bookings, improved customer experience",
+      gradient: "from-indigo-500 to-indigo-600"
     }
   ]
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex h-20 items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-gradient-to-br from-blue-400 via-green-400 to-yellow-400 rounded-sm"></div>
-              <span className="text-2xl font-bold text-gray-900">Salonyst</span>
-            </Link>
-            <Link to="/">
-              <Button variant="ghost" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Home
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
+      <NavigationHeader />
 
       {/* Hero Section */}
       <section className="relative py-24 overflow-hidden">
@@ -72,17 +74,19 @@ export default function SuccessStories() {
             ]} />
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div>
-                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6">
+                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-6">
                   Success Stories
                 </h1>
-                <p className="text-xl md:text-2xl text-gray-700 leading-relaxed">
+                <p className="text-sm md:text-base text-gray-700 leading-relaxed">
                   See how salons and beauty businesses are growing with Salonyst
                 </p>
               </div>
               <div className="relative">
-                <div className="aspect-square rounded-3xl bg-gradient-to-br from-[#ef4444] via-red-500 to-pink-500 p-8 flex items-center justify-center shadow-2xl">
-                  <TrendingUp className="h-32 w-32 text-white opacity-80" />
-                </div>
+                <img 
+                  src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=600&h=600&fit=crop&auto=format" 
+                  alt="Success and growth" 
+                  className="aspect-square rounded-3xl object-cover shadow-2xl"
+                />
                 <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-500 rounded-2xl opacity-20"></div>
                 <div className="absolute -top-4 -left-4 w-16 h-16 bg-purple-500 rounded-xl opacity-20"></div>
               </div>
@@ -100,12 +104,12 @@ export default function SuccessStories() {
                 <Star className="h-8 w-8 text-white" />
               </div>
               <div className="mb-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">{story.business}</h2>
+                <h2 className="text-lg font-bold text-gray-900 mb-2">{story.business}</h2>
                 <p className="text-gray-600">{story.type} • {story.location}</p>
               </div>
               <div className="relative mb-6">
                 <Quote className="h-8 w-8 text-[#ef4444] mb-4 opacity-50" />
-                <p className="text-lg text-gray-700 leading-relaxed italic pl-8">
+                <p className="text-sm text-gray-700 leading-relaxed italic pl-8">
                   {story.testimonial}
                 </p>
               </div>
@@ -121,12 +125,12 @@ export default function SuccessStories() {
         <section className="mt-20 relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#ef4444] via-red-600 to-red-700 p-12 text-white">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
           <div className="relative z-10 text-center">
-            <h2 className="text-4xl font-bold mb-4">Share Your Success Story</h2>
-            <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+            <h2 className="text-xl font-bold mb-4">Share Your Success Story</h2>
+            <p className="text-base mb-8 opacity-90 max-w-2xl mx-auto">
               Are you a Salonyst customer with a success story to share? We'd love to hear from you.
             </p>
             <Link to="/#contact">
-              <Button className="bg-white text-[#ef4444] hover:bg-gray-100 text-lg px-8 py-6 h-auto shadow-xl">
+              <Button className="bg-white text-[#ef4444] hover:bg-gray-100 text-sm px-8 py-6 h-auto shadow-xl">
                 Contact Us
               </Button>
             </Link>
