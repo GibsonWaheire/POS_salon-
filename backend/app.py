@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, session
 from flask_cors import CORS
 from flask_migrate import Migrate
+from flask_compress import Compress
 from dotenv import load_dotenv
 import os
 from db import db
@@ -21,6 +22,9 @@ db.init_app(app)
 
 # Initialize Flask-Migrate
 migrate = Migrate(app, db)
+
+# Initialize Flask-Compress for gzip compression
+Compress(app)
 
 # Import models
 from models import *

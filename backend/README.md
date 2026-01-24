@@ -54,8 +54,8 @@ The API will be available at `http://localhost:5001`
 - `POST /api/staff/login` - Staff login (staff_id + PIN)
 
 ### Customers
-- `GET /api/customers` - Get all customers (supports `demo_mode` query param)
-- `POST /api/customers` - Create a new customer (supports `demo_mode` query param)
+- `GET /api/customers` - Get all customers
+- `POST /api/customers` - Create a new customer
 - `GET /api/customers/<id>` - Get a specific customer
 - `PUT /api/customers/<id>` - Update a customer
 - `DELETE /api/customers/<id>` - Delete a customer
@@ -78,14 +78,14 @@ The API will be available at `http://localhost:5001`
 - `DELETE /api/products/<id>` - Delete a product
 
 ### Sales
-- `GET /api/sales` - Get all sales (supports `staff_id`, `status`, `start_date`, `end_date`, `demo_mode` query params)
+- `GET /api/sales` - Get all sales (supports `staff_id`, `status`, `start_date`, `end_date` query params)
 - `POST /api/sales` - Create a new sale (walk-in transaction)
 - `GET /api/sales/<id>` - Get sale details
 - `POST /api/sales/<id>/complete` - Complete a sale (process payment)
 - `GET /api/sales/<id>/receipt` - Download sales receipt as PDF
 
 ### Payments
-- `GET /api/payments` - Get all payments (supports `demo_mode` query param)
+- `GET /api/payments` - Get all payments
 - `POST /api/payments` - Create a new payment
 - `GET /api/payments/<id>` - Get a specific payment
 - `PUT /api/payments/<id>` - Update a payment
@@ -106,18 +106,18 @@ The API will be available at `http://localhost:5001`
 - `GET /api/commissions/payments/<id>/payslip` - Download payslip PDF
 
 ### Reports
-- `GET /api/reports/daily-sales` - Get daily sales report (supports `start_date`, `end_date`, `demo_mode` query params)
-- `GET /api/reports/commission-payout` - Get commission payout report (supports `start_date`, `end_date`, `staff_id`, `demo_mode` query params)
-- `GET /api/reports/financial-summary` - Get financial summary report (supports `start_date`, `end_date`, `demo_mode` query params)
-- `GET /api/reports/tax-summary` - Get tax summary for KRA (supports `start_date`, `end_date`, `demo_mode` query params)
+- `GET /api/reports/daily-sales` - Get daily sales report (supports `start_date`, `end_date` query params)
+- `GET /api/reports/commission-payout` - Get commission payout report (supports `start_date`, `end_date`, `staff_id` query params)
+- `GET /api/reports/financial-summary` - Get financial summary report (supports `start_date`, `end_date` query params)
+- `GET /api/reports/tax-summary` - Get tax summary for KRA (supports `start_date`, `end_date` query params)
 
 ### Dashboard
-- `GET /api/dashboard/stats` - Get dashboard statistics (supports `demo_mode` query param)
-- `GET /api/dashboard/recent-sales` - Get recent sales (supports `limit`, `demo_mode` query params)
-- `GET /api/dashboard/top-services` - Get top selling services (supports `limit`, `demo_mode` query params)
+- `GET /api/dashboard/stats` - Get dashboard statistics
+- `GET /api/dashboard/recent-sales` - Get recent sales (supports `limit` query param)
+- `GET /api/dashboard/top-services` - Get top selling services (supports `limit` query param)
 
 ### Expenses
-- `GET /api/expenses` - Get all expenses (supports `category`, `start_date`, `end_date`, `demo_mode` query params)
+- `GET /api/expenses` - Get all expenses (supports `category`, `start_date`, `end_date` query params)
 - `POST /api/expenses` - Create a new expense
 - `GET /api/expenses/<id>` - Get a specific expense
 - `PUT /api/expenses/<id>` - Update an expense
@@ -211,17 +211,8 @@ export FLASK_APP=app.py
 # Initialize database - apply all migrations
 flask init-db
 
-# Seed demo staff users (for development/demo)
-flask seed-staff
-
-# Force reseed demo staff (removes existing and creates new)
-flask seed-staff --force
-
 # List all staff members
 flask list-staff
-
-# Show demo login credentials
-flask show-demo-login
 
 # Create a new staff member (interactive)
 flask create-staff
@@ -229,18 +220,6 @@ flask create-staff
 # Reset database - DROP ALL TABLES (WARNING: Destructive!)
 flask reset-db
 ```
-
-### Demo Staff Login Credentials
-
-For development/demo purposes, use these PINs at `/staff-login`:
-
-- **Jane Wanjiru** - PIN: `1234@` - Role: stylist
-- **Sarah Akinyi** - PIN: `5678!` - Role: stylist  
-- **Mary Nyambura** - PIN: `9012#` - Role: nail_technician
-- **Grace Muthoni** - PIN: `3456$` - Role: facial_specialist
-- **Lucy Wambui** - PIN: `7890%` - Role: receptionist
-
-Run `flask show-demo-login` to see current demo credentials.
 
 ## Development
 
@@ -257,6 +236,4 @@ Or use the CLI command:
 ```bash
 flask init-db  # Applies all migrations
 ```
-
-Demo staff users are automatically seeded on startup if they don't exist.
 
