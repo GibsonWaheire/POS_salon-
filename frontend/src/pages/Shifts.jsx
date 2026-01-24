@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus, Edit, Clock, LogIn, LogOut, Calendar, User, Search } from "lucide-react"
+import { Plus, Edit, Clock, LogIn, LogOut, Calendar, User, Search, Trash2 } from "lucide-react"
 import { apiRequest } from "@/lib/api"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 
@@ -108,25 +108,27 @@ export default function Shifts() {
     setError("")
 
     try {
-      if (editingShift) {
-        // Update shift - note: backend doesn't have PUT endpoint, so we'll need to add it
-        // For now, we'll just show an error
-        setError("Shift editing not yet supported. Please delete and recreate.")
+      // Validate staff_id
+      if (!formData.staff_id || formData.staff_id === "all") {
+        setError("Please select a staff member")
         return
+      }
+
+      if (editingShift) {
+        // Update existing shift
+        await apiRequest(`/shifts/${editingShift.id}`, {
+          method: "PUT",
+          body: JSON.stringify(formData)
+        })
       } else {
-        // Validate staff_id
-        if (!formData.staff_id || formData.staff_id === "all") {
-          setError("Please select a staff member")
-          return
-        }
         // Create new shift
         await apiRequest("/shifts", {
           method: "POST",
           body: JSON.stringify(formData)
         })
-        setIsDialogOpen(false)
-        fetchShifts()
       }
+      setIsDialogOpen(false)
+      fetchShifts()
     } catch (err) {
       setError(err.message || "Failed to save shift")
     }
@@ -156,8 +158,10 @@ export default function Shifts() {
 
   const handleDelete = async (shiftId) => {
     try {
-      // Note: Backend doesn't have DELETE endpoint yet
-      setError("Shift deletion not yet supported in backend")
+      await apiRequest(`/shifts/${shiftId}`, {
+        method: "DELETE"
+      })
+      fetchShifts()
     } catch (err) {
       setError(err.message || "Failed to delete shift")
     }
@@ -339,13 +343,65 @@ export default function Shifts() {
                           </Button>
                         )}
                         {shift.status === 'scheduled' && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEdit(shift)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEdit(shift)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Shift</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete this shift? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => handleDelete(shift.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        )}
+                        {shift.status === 'missed' && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Shift</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to delete this missed shift? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(shift.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         )}
                       </div>
                     </TableCell>

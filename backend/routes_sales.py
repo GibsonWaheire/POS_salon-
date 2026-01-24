@@ -1,7 +1,7 @@
 """
 Sales routes for the POS Salon backend.
 """
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, send_file
 from models import Sale, SaleService, SaleProduct, Customer, Staff, Service, Product, ProductUsage, Payment
 from db import db
 from sqlalchemy import func
@@ -9,6 +9,7 @@ from sqlalchemy.orm import joinedload
 from datetime import datetime, date
 from utils import get_demo_filter, generate_sale_number
 from validators import validate_mpesa_code
+from pdf_generators import generate_sales_receipt_pdf
 
 bp_sales = Blueprint('sales', __name__)
 
@@ -287,6 +288,37 @@ def get_sale(id):
     if sale.payment:
         sale_dict['payment'] = sale.payment.to_dict()
     return jsonify(sale_dict)
+
+
+@bp_sales.route('/sales/<int:id>/receipt', methods=['GET'])
+def download_receipt_pdf(id):
+    """Download sales receipt as PDF"""
+    sale = Sale.query.options(
+        joinedload(Sale.staff),
+        joinedload(Sale.customer),
+        joinedload(Sale.payment),
+        joinedload(Sale.sale_services).joinedload(SaleService.service),
+        joinedload(Sale.sale_products).joinedload(SaleProduct.product)
+    ).get_or_404(id)
+    
+    # Generate PDF
+    pdf_buffer = generate_sales_receipt_pdf(
+        sale=sale,
+        staff=sale.staff,
+        customer=sale.customer,
+        payment=sale.payment
+    )
+    
+    # Generate filename
+    receipt_number = sale.payment.receipt_number if sale.payment and sale.payment.receipt_number else sale.sale_number
+    filename = f"receipt_{receipt_number.replace(' ', '_')}.pdf"
+    
+    return send_file(
+        pdf_buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=filename
+    )
 
 
 @bp_sales.route('/sales', methods=['GET'])

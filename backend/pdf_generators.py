@@ -428,3 +428,227 @@ def generate_commission_receipt_pdf(payment, staff, payer=None):
     buffer.seek(0)
     
     return buffer
+
+
+def generate_sales_receipt_pdf(sale, staff=None, customer=None, payment=None):
+    """
+    Generate professional sales receipt PDF.
+    
+    Args:
+        sale: Sale object
+        staff: Staff object (optional)
+        customer: Customer object (optional)
+        payment: Payment object (optional)
+    
+    Returns:
+        io.BytesIO: PDF buffer
+    """
+    # Create PDF in memory
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, 
+                           rightMargin=0.75*inch, leftMargin=0.75*inch,
+                           topMargin=0.5*inch, bottomMargin=0.5*inch)
+    
+    # Container for the 'Flowable' objects
+    elements = []
+    
+    # Get styles
+    styles_dict = _create_pdf_styles()
+    
+    # Company Header
+    elements.append(Paragraph("PREMIUM BEAUTY SALON", styles_dict['company_header']))
+    elements.append(Paragraph("SALES RECEIPT", styles_dict['title']))
+    elements.append(Spacer(1, 0.1*inch))
+    
+    # Divider line
+    divider = Table([['']], colWidths=[6.5*inch])
+    divider.setStyle(TableStyle([
+        ('LINEBELOW', (0, 0), (0, 0), 1, colors.HexColor('#1e40af')),
+        ('TOPPADDING', (0, 0), (0, 0), 5),
+        ('BOTTOMPADDING', (0, 0), (0, 0), 5),
+    ]))
+    elements.append(divider)
+    elements.append(Spacer(1, 0.15*inch))
+    
+    # Receipt Information
+    receipt_number = payment.receipt_number if payment and payment.receipt_number else sale.receipt_number if hasattr(sale, 'receipt_number') else sale.sale_number
+    receipt_header_data = [
+        ['Receipt Number:', receipt_number],
+        ['Sale Number:', sale.sale_number],
+        ['Date:', sale.created_at.strftime('%d %B %Y') if sale.created_at else 'N/A'],
+        ['Time:', sale.created_at.strftime('%I:%M %p') if sale.created_at else 'N/A'],
+    ]
+    
+    receipt_header_table = Table(receipt_header_data, colWidths=[2.5*inch, 4*inch])
+    receipt_header_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#f3f4f6')),
+    ]))
+    elements.append(receipt_header_table)
+    elements.append(Spacer(1, 0.25*inch))
+    
+    # Customer Information
+    if customer:
+        elements.append(Paragraph("CUSTOMER INFORMATION", styles_dict['section']))
+        customer_data = [
+            ['Name:', customer.name if customer else 'Walk-in Customer'],
+            ['Phone:', customer.phone if customer and customer.phone else 'N/A'],
+            ['Email:', customer.email if customer and customer.email else 'N/A'],
+        ]
+        
+        customer_table = Table(customer_data, colWidths=[2.5*inch, 4*inch])
+        customer_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        elements.append(customer_table)
+        elements.append(Spacer(1, 0.3*inch))
+    
+    # Staff Information
+    if staff:
+        elements.append(Paragraph("STAFF INFORMATION", styles_dict['section']))
+        staff_data = [
+            ['Staff Name:', staff.name if staff else 'N/A'],
+            ['Staff ID:', str(sale.staff_id)],
+        ]
+        
+        staff_table = Table(staff_data, colWidths=[2.5*inch, 4*inch])
+        staff_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+            ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ]))
+        elements.append(staff_table)
+        elements.append(Spacer(1, 0.3*inch))
+    
+    # Services Section
+    if hasattr(sale, 'sale_services') and sale.sale_services:
+        elements.append(Paragraph("SERVICES", styles_dict['section']))
+        services_table_data = [['Service', 'Qty', 'Unit Price', 'Total']]
+        
+        for ss in sale.sale_services:
+            service_name = ss.service.name if ss.service else f"Service #{ss.service_id}"
+            services_table_data.append([
+                service_name,
+                str(ss.quantity),
+                f"{ss.unit_price:,.2f}",
+                f"{ss.total_price:,.2f}"
+            ])
+        
+        services_table = Table(services_table_data, colWidths=[3*inch, 0.8*inch, 1.2*inch, 1.5*inch])
+        services_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e5e7eb')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ]))
+        elements.append(services_table)
+        elements.append(Spacer(1, 0.3*inch))
+    
+    # Products Section
+    if hasattr(sale, 'sale_products') and sale.sale_products:
+        elements.append(Paragraph("PRODUCTS", styles_dict['section']))
+        products_table_data = [['Product', 'Qty', 'Unit Price', 'Total']]
+        
+        for sp in sale.sale_products:
+            product_name = sp.product.name if sp.product else f"Product #{sp.product_id}"
+            products_table_data.append([
+                product_name,
+                f"{sp.quantity:.2f}",
+                f"{sp.unit_price:,.2f}",
+                f"{sp.total_price:,.2f}"
+            ])
+        
+        products_table = Table(products_table_data, colWidths=[3*inch, 0.8*inch, 1.2*inch, 1.5*inch])
+        products_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('ALIGN', (1, 0), (-1, -1), 'RIGHT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#e5e7eb')),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ]))
+        elements.append(products_table)
+        elements.append(Spacer(1, 0.3*inch))
+    
+    # Summary Section
+    elements.append(Paragraph("PAYMENT SUMMARY", styles_dict['section']))
+    
+    subtotal = sale.subtotal if hasattr(sale, 'subtotal') and sale.subtotal else 0.0
+    tax_amount = sale.tax_amount if hasattr(sale, 'tax_amount') and sale.tax_amount else 0.0
+    total_amount = sale.total_amount if hasattr(sale, 'total_amount') else 0.0
+    
+    summary_data = [
+        ['Subtotal:', f"KES {subtotal:,.2f}"],
+        ['Tax:', f"KES {tax_amount:,.2f}"],
+        ['Total:', f"KES {total_amount:,.2f}"],
+    ]
+    
+    if payment:
+        summary_data.append(['Payment Method:', (payment.payment_method or 'N/A').upper().replace('_', ' ')])
+        if payment.transaction_code:
+            summary_data.append(['Transaction Code:', payment.transaction_code])
+    
+    summary_table = Table(summary_data, colWidths=[2.5*inch, 4*inch])
+    summary_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTNAME', (1, 2), (1, 2), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('FONTSIZE', (1, 2), (1, 2), 14),
+        ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BACKGROUND', (0, 2), (-1, 2), colors.HexColor('#dbeafe')),
+        ('TEXTCOLOR', (1, 2), (1, 2), colors.HexColor('#1e40af')),
+        ('LINEBELOW', (0, 1), (-1, 1), 1, colors.grey),
+    ]))
+    elements.append(summary_table)
+    elements.append(Spacer(1, 0.3*inch))
+    
+    # Footer
+    footer_divider = Table([['']], colWidths=[6.5*inch])
+    footer_divider.setStyle(TableStyle([
+        ('LINEABOVE', (0, 0), (0, 0), 1, colors.grey),
+        ('TOPPADDING', (0, 0), (0, 0), 5),
+        ('BOTTOMPADDING', (0, 0), (0, 0), 5),
+    ]))
+    elements.append(footer_divider)
+    elements.append(Spacer(1, 0.1*inch))
+    elements.append(Paragraph("Thank you for your business!", styles_dict['footer']))
+    elements.append(Paragraph(f"Generated on {datetime.now().strftime('%d %B %Y at %I:%M %p')}", styles_dict['footer']))
+    elements.append(Paragraph("Premium Beauty Salon - Nairobi, Kenya", styles_dict['footer']))
+    
+    # Build PDF
+    doc.build(elements)
+    buffer.seek(0)
+    
+    return buffer

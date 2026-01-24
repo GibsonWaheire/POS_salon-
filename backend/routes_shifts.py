@@ -64,3 +64,43 @@ def clock_out(id):
     shift.status = 'completed'
     db.session.commit()
     return jsonify(shift.to_dict())
+
+
+@bp_shifts.route('/shifts/<int:id>', methods=['PUT'])
+def update_shift(id):
+    """Update a shift"""
+    shift = Shift.query.get_or_404(id)
+    data = request.get_json()
+    
+    # Only allow updating scheduled shifts
+    if shift.status not in ['scheduled', 'missed']:
+        return jsonify({'error': 'Can only update scheduled or missed shifts'}), 400
+    
+    # Update fields
+    if 'staff_id' in data:
+        shift.staff_id = data.get('staff_id')
+    if 'shift_date' in data:
+        shift.shift_date = datetime.fromisoformat(data.get('shift_date')).date() if data.get('shift_date') else date.today()
+    if 'start_time' in data:
+        shift.start_time = datetime.strptime(data.get('start_time'), '%H:%M').time()
+    if 'end_time' in data:
+        shift.end_time = datetime.strptime(data.get('end_time'), '%H:%M').time()
+    if 'notes' in data:
+        shift.notes = data.get('notes')
+    
+    db.session.commit()
+    return jsonify(shift.to_dict())
+
+
+@bp_shifts.route('/shifts/<int:id>', methods=['DELETE'])
+def delete_shift(id):
+    """Delete a shift"""
+    shift = Shift.query.get_or_404(id)
+    
+    # Only allow deleting scheduled or missed shifts
+    if shift.status not in ['scheduled', 'missed']:
+        return jsonify({'error': 'Can only delete scheduled or missed shifts'}), 400
+    
+    db.session.delete(shift)
+    db.session.commit()
+    return jsonify({'message': 'Shift deleted successfully'}), 200

@@ -32,19 +32,18 @@ The API will be available at `http://localhost:5001`
 ### Health Check
 - `GET /api/health` - Check API status
 
-### Customers
-- `GET /api/customers` - Get all customers
-- `POST /api/customers` - Create a new customer
-- `GET /api/customers/<id>` - Get a specific customer
-- `PUT /api/customers/<id>` - Update a customer
-- `DELETE /api/customers/<id>` - Delete a customer
+### Authentication
+- `POST /api/auth/login` - Admin/Manager login (email + password)
+- `POST /api/auth/logout` - Logout current session
+- `GET /api/auth/me` - Get current authenticated user
 
-### Services
-- `GET /api/services` - Get all services
-- `POST /api/services` - Create a new service
-- `GET /api/services/<id>` - Get a specific service
-- `PUT /api/services/<id>` - Update a service
-- `DELETE /api/services/<id>` - Delete a service
+### Users (Admin only)
+- `GET /api/users` - Get all users (admin/manager accounts)
+- `GET /api/users/managers` - Get all manager users
+- `POST /api/users` - Create a new user (admin only)
+- `GET /api/users/<id>` - Get a specific user
+- `PUT /api/users/<id>` - Update a user
+- `DELETE /api/users/<id>` - Delete a user
 
 ### Staff
 - `GET /api/staff` - Get all staff members
@@ -52,28 +51,105 @@ The API will be available at `http://localhost:5001`
 - `GET /api/staff/<id>` - Get a specific staff member
 - `PUT /api/staff/<id>` - Update a staff member
 - `DELETE /api/staff/<id>` - Delete a staff member
+- `POST /api/staff/login` - Staff login (staff_id + PIN)
 
-### Appointments
+### Customers
+- `GET /api/customers` - Get all customers (supports `demo_mode` query param)
+- `POST /api/customers` - Create a new customer (supports `demo_mode` query param)
+- `GET /api/customers/<id>` - Get a specific customer
+- `PUT /api/customers/<id>` - Update a customer
+- `DELETE /api/customers/<id>` - Delete a customer
+- `GET /api/customers/<id>/sales` - Get sales history for a customer
+- `POST /api/customers/<id>/redeem-points` - Redeem loyalty points for discount
+
+### Services
+- `GET /api/services` - Get all services
+- `POST /api/services` - Create a new service
+- `GET /api/services/<id>` - Get a specific service
+- `PUT /api/services/<id>` - Update a service
+- `DELETE /api/services/<id>` - Delete a service
+- `GET /api/services/<id>/price-history` - Get price change history for a service
+
+### Products
+- `GET /api/products` - Get all products
+- `POST /api/products` - Create a new product
+- `GET /api/products/<id>` - Get a specific product
+- `PUT /api/products/<id>` - Update a product
+- `DELETE /api/products/<id>` - Delete a product
+
+### Sales
+- `GET /api/sales` - Get all sales (supports `staff_id`, `status`, `start_date`, `end_date`, `demo_mode` query params)
+- `POST /api/sales` - Create a new sale (walk-in transaction)
+- `GET /api/sales/<id>` - Get sale details
+- `POST /api/sales/<id>/complete` - Complete a sale (process payment)
+- `GET /api/sales/<id>/receipt` - Download sales receipt as PDF
+
+### Payments
+- `GET /api/payments` - Get all payments (supports `demo_mode` query param)
+- `POST /api/payments` - Create a new payment
+- `GET /api/payments/<id>` - Get a specific payment
+- `PUT /api/payments/<id>` - Update a payment
+
+### Shifts
+- `GET /api/shifts` - Get all shifts (supports `staff_id`, `start_date`, `end_date` query params)
+- `POST /api/shifts` - Create a new shift
+- `PUT /api/shifts/<id>` - Update a shift (only scheduled/missed shifts)
+- `DELETE /api/shifts/<id>` - Delete a shift (only scheduled/missed shifts)
+- `POST /api/shifts/<id>/clock-in` - Clock in for a shift
+- `POST /api/shifts/<id>/clock-out` - Clock out from a shift
+
+### Commission Payments
+- `GET /api/commissions/pending` - Get pending commission payments
+- `GET /api/commissions/payments` - Get all commission payment records
+- `POST /api/commissions/pay` - Process commission payment
+- `GET /api/commissions/payments/<id>` - Get commission payment details
+- `GET /api/commissions/payments/<id>/payslip` - Download payslip PDF
+
+### Reports
+- `GET /api/reports/daily-sales` - Get daily sales report (supports `start_date`, `end_date`, `demo_mode` query params)
+- `GET /api/reports/commission-payout` - Get commission payout report (supports `start_date`, `end_date`, `staff_id`, `demo_mode` query params)
+- `GET /api/reports/financial-summary` - Get financial summary report (supports `start_date`, `end_date`, `demo_mode` query params)
+- `GET /api/reports/tax-summary` - Get tax summary for KRA (supports `start_date`, `end_date`, `demo_mode` query params)
+
+### Dashboard
+- `GET /api/dashboard/stats` - Get dashboard statistics (supports `demo_mode` query param)
+- `GET /api/dashboard/recent-sales` - Get recent sales (supports `limit`, `demo_mode` query params)
+- `GET /api/dashboard/top-services` - Get top selling services (supports `limit`, `demo_mode` query params)
+
+### Expenses
+- `GET /api/expenses` - Get all expenses (supports `category`, `start_date`, `end_date`, `demo_mode` query params)
+- `POST /api/expenses` - Create a new expense
+- `GET /api/expenses/<id>` - Get a specific expense
+- `PUT /api/expenses/<id>` - Update an expense
+- `DELETE /api/expenses/<id>` - Delete an expense
+
+### Appointments (Legacy - not actively used in walk-in model)
 - `GET /api/appointments` - Get all appointments
 - `POST /api/appointments` - Create a new appointment (include `service_ids` array in body)
 - `GET /api/appointments/<id>` - Get a specific appointment
 - `PUT /api/appointments/<id>` - Update an appointment
 - `DELETE /api/appointments/<id>` - Delete an appointment
 
-### Payments
-- `GET /api/payments` - Get all payments
-- `POST /api/payments` - Create a new payment
-- `GET /api/payments/<id>` - Get a specific payment
-- `PUT /api/payments/<id>` - Update a payment
-
 ## Database Models
 
-- **Customer** - Customer information
-- **Service** - Salon services (haircuts, styling, etc.)
-- **Staff** - Staff/employee information
-- **Appointment** - Appointment bookings
+- **User** - Admin/Manager user accounts (email + password authentication)
+- **Customer** - Customer information with loyalty points tracking
+- **Service** - Salon services (haircuts, styling, etc.) with price history
+- **ServicePriceHistory** - Historical record of service price changes
+- **Product** - Products/inventory items
+- **Staff** - Staff/employee information (PIN-based authentication)
+- **Sale** - Sales transactions (walk-in model)
+- **SaleService** - Services included in a sale
+- **SaleProduct** - Products included in a sale
+- **Payment** - Payment transactions linked to sales
+- **Shift** - Staff shift schedules and attendance tracking
+- **CommissionPayment** - Commission payment records with professional structure (base pay, deductions, etc.)
+- **CommissionPaymentItem** - Individual items (earnings/deductions) in commission payments
+- **Expense** - Business expenses by category
+- **Appointment** - Appointment bookings (legacy, not actively used)
 - **AppointmentService** - Services linked to appointments
-- **Payment** - Payment transactions
+- **ProductUsage** - Product usage tracking for inventory
+- **StaffLoginLog** - Staff login history
 
 ## Database Migrations
 
