@@ -52,6 +52,7 @@ import WhatsAppChat from "@/components/WhatsAppChat"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency } from "@/lib/currency"
 
 export default function Landing() {
@@ -1725,32 +1726,44 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Feature Cards - Modern Card Layout */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => {
-              const Icon = feature.icon
-              return (
-                <div 
-                  key={index} 
-                  className="group bg-white rounded-3xl p-8 border border-gray-200 hover:border-[#ef4444]/30 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2"
-                >
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#ef4444] to-red-600 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                    <Icon className="h-8 w-8 text-white" />
-                  </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 group-hover:text-[#ef4444] transition-colors">
-                    {feature.title}
-                  </h3>
-                  <ul className="space-y-3">
-                    {feature.subFeatures.map((subFeature, subIndex) => (
-                      <li key={subIndex} className="text-gray-700 flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-[#ef4444] mt-2 flex-shrink-0"></div>
-                        <span className="text-base">{subFeature}</span>
-                      </li>
+          {/* Features – horizontal table */}
+          <div className="overflow-x-auto rounded-2xl border border-gray-200 bg-white shadow-lg">
+            <Table className="min-w-[800px]">
+              <TableHeader>
+                <TableRow className="hover:bg-transparent border-b-2 border-gray-200">
+                  {features.map((feature, index) => {
+                    const Icon = feature.icon
+                    return (
+                      <TableHead
+                        key={index}
+                        className="w-[1%] whitespace-nowrap py-6 px-6 text-center align-top first:rounded-tl-2xl last:rounded-tr-2xl"
+                      >
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#ef4444] to-red-600 flex items-center justify-center shadow-lg">
+                            <Icon className="h-7 w-7 text-white" />
+                          </div>
+                          <span className="text-lg font-bold text-gray-900">{feature.title}</span>
+                        </div>
+                      </TableHead>
+                    )
+                  })}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[0, 1, 2, 3, 4].map((rowIndex) => (
+                  <TableRow key={rowIndex} className="hover:bg-gray-50/80">
+                    {features.map((feature, colIndex) => (
+                      <TableCell
+                        key={colIndex}
+                        className="py-4 px-6 text-center text-gray-700 text-sm first:pl-6 last:pr-6"
+                      >
+                        {feature.subFeatures[rowIndex] ?? "—"}
+                      </TableCell>
                     ))}
-                  </ul>
-                </div>
-              )
-            })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         </div>
       </section>
@@ -1808,7 +1821,7 @@ export default function Landing() {
                       <Input
                         id="appt-phone"
                         type="tel"
-                        placeholder="+254 700 000 000"
+                        placeholder="e.g. +1 234 567 8900"
                         value={appointmentForm.phone}
                         onChange={(e) => setAppointmentForm({ ...appointmentForm, phone: e.target.value })}
                         className="h-12 text-base"
@@ -2084,7 +2097,7 @@ export default function Landing() {
                       <Input
                         id="phone"
                         type="tel"
-                        placeholder="+254 700 000 000"
+                        placeholder="e.g. +1 234 567 8900"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         disabled={isSubmitting}

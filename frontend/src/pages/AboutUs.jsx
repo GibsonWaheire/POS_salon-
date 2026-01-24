@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Phone, Mail, MapPin, Target, Users, Package, Heart, Zap, Award, TrendingUp, Shield, CheckCircle2 } from "lucide-react"
 import Breadcrumb from "@/components/Breadcrumb"
 import NavigationHeader from "@/components/NavigationHeader"
+import dashboardScreenshot from "@/assets/dashboard-screenshot.png"
+import posScreenshot from "@/assets/pos-screenshot.png"
 
 export default function AboutUs() {
   const values = [
@@ -59,7 +61,16 @@ export default function AboutUs() {
                       Get Started
                     </Button>
                   </Link>
-                  <Link to="/#contact">
+                  <Link
+                    to="#contact"
+                    onClick={(e) => {
+                      const el = document.getElementById('contact')
+                      if (el) {
+                        e.preventDefault()
+                        el.scrollIntoView({ behavior: 'smooth' })
+                      }
+                    }}
+                  >
                     <Button variant="outline" className="text-sm px-8 py-6 h-auto">
                       Contact Us
                     </Button>
@@ -68,9 +79,9 @@ export default function AboutUs() {
               </div>
               <div className="relative">
                 <img 
-                  src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=600&h=600&fit=crop&auto=format" 
-                  alt="Team working together" 
-                  className="aspect-square rounded-3xl object-cover shadow-2xl"
+                  src={dashboardScreenshot} 
+                  alt="Salonyst dashboard – overview of sales, commissions, and staff" 
+                  className="aspect-video md:aspect-[16/10] w-full rounded-3xl object-cover object-top shadow-2xl border border-gray-200"
                 />
                 <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-500 rounded-2xl opacity-20"></div>
                 <div className="absolute -top-4 -left-4 w-16 h-16 bg-purple-500 rounded-xl opacity-20"></div>
@@ -121,9 +132,10 @@ export default function AboutUs() {
             </div>
             <div className="relative">
               <img 
-                src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=450&fit=crop&auto=format" 
-                alt="Mission and vision" 
-                className="aspect-[4/3] rounded-3xl object-cover shadow-2xl"
+                src={posScreenshot} 
+                alt="Salonyst POS – services, current sale, M-Pesa, and commission tracking" 
+                className="aspect-[4/3] rounded-3xl object-cover object-top shadow-2xl border border-gray-200"
+                loading="lazy"
               />
             </div>
           </section>
@@ -133,8 +145,9 @@ export default function AboutUs() {
             <div className="relative order-2 md:order-1">
               <img 
                 src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=450&fit=crop&auto=format" 
-                alt="Team collaboration" 
-                className="aspect-[4/3] rounded-3xl object-cover shadow-2xl"
+                alt="Salonyst team collaboration" 
+                className="aspect-[4/3] rounded-3xl object-cover shadow-2xl border border-gray-200"
+                loading="lazy"
               />
             </div>
             <div className="bg-white rounded-3xl p-10 shadow-xl border border-gray-100 order-1 md:order-2">
@@ -178,6 +191,24 @@ export default function AboutUs() {
             </div>
           </section>
 
+          {/* See Salonyst in action */}
+          <section>
+            <div className="text-center mb-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">See Salonyst in action</h2>
+              <p className="text-sm text-gray-600 max-w-2xl mx-auto">
+                Your command center for sales, staff, and commissions – all in one place.
+              </p>
+            </div>
+            <div className="rounded-3xl overflow-hidden shadow-2xl border border-gray-200 bg-gray-50">
+              <img
+                src={dashboardScreenshot}
+                alt="Salonyst dashboard screenshot"
+                className="w-full aspect-video object-cover object-top"
+                loading="lazy"
+              />
+            </div>
+          </section>
+
           {/* Values Section */}
           <section>
             <div className="text-center mb-12">
@@ -203,7 +234,7 @@ export default function AboutUs() {
           </section>
 
           {/* Contact Section */}
-          <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#ef4444] via-red-600 to-red-700 p-12 text-white">
+          <section id="contact" className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#ef4444] via-red-600 to-red-700 p-12 text-white">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
             <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-2xl"></div>
             <div className="relative z-10">
