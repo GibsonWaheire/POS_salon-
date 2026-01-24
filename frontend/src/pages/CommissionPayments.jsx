@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DollarSign, Download, Calendar, AlertCircle, CheckCircle2 } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
+import { apiRequest } from "@/lib/api"
 
 const formatKES = (amount) => {
   return `KES ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -121,9 +122,8 @@ export default function CommissionPayments() {
     }
 
     try {
-      const response = await fetch("http://localhost:5001/api/commissions/pay", {
+      const paymentData = await apiRequest("/commissions/pay", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           staff_id: selectedStaff.staff_id,
           amount_paid: parseFloat(formData.amount_paid),
@@ -136,22 +136,16 @@ export default function CommissionPayments() {
         })
       })
 
-      if (response.ok) {
-        const paymentData = await response.json()
-        setSuccess(`Commission payment of ${formatKES(paymentData.amount_paid)} recorded successfully!`)
-        setPayDialogOpen(false)
-        resetForm()
-        // Refresh data immediately
-        await Promise.all([fetchPendingCommissions(), fetchPaymentHistory()])
-        
-        // Clear success message after 5 seconds
-        setTimeout(() => setSuccess(""), 5000)
-      } else {
-        const errorData = await response.json()
-        setError(errorData.error || "Failed to record payment")
-      }
+      setSuccess(`Commission payment of ${formatKES(paymentData.amount_paid)} recorded successfully!`)
+      setPayDialogOpen(false)
+      resetForm()
+      // Refresh data immediately
+      await Promise.all([fetchPendingCommissions(), fetchPaymentHistory()])
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => setSuccess(""), 5000)
     } catch (err) {
-      setError("Failed to record payment. Please try again.")
+      setError(err.message || "Failed to record payment. Please try again.")
       console.error("Error recording payment:", err)
     } finally {
       setProcessingPayment(false)

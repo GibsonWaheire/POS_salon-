@@ -10,6 +10,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
 import { 
   ArrowRight,
@@ -281,7 +285,16 @@ export default function Landing() {
     {
       title: "Appointment",
       icon: Calendar,
-      subFeatures: ["Online Booking", "Slot Blockers", "Off Hours Booking", "Package Booking", "Membership Booking"]
+      subFeatures: [
+        "Slot Blockers",
+        "Drag & Drop Reschedule",
+        "Popup Notes & History",
+        "Recurring Bookings",
+        "Color-Coded Appointments",
+        "Resource Scheduling",
+        "Calendar Sync & Export",
+        "Easy Rescheduling"
+      ]
     },
     {
       title: "Inventory",
@@ -390,11 +403,49 @@ export default function Landing() {
                   Features
                   <ChevronDown className="h-5 w-5" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>All Features</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>Appointment Management</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>POS System</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>Inventory</DropdownMenuItem>
+                <DropdownMenuContent className="w-64">
+                  <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                    All Features
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Appointment Management
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem onClick={() => navigate("/features/slot-blockers")}>
+                        Slot Blockers
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/features/drag-drop-reschedule")}>
+                        Drag & Drop Reschedule
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/features/popup-notes-history")}>
+                        Popup Notes & History
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/features/recurring-bookings")}>
+                        Recurring Bookings
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/features/color-coded-appointments")}>
+                        Color-Coded Appointments
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/features/resource-scheduling")}>
+                        Resource Scheduling
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/features/calendar-sync-export")}>
+                        Calendar Sync & Export
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate("/features/easy-rescheduling")}>
+                        Easy Rescheduling
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                  <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                    POS System
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                    Inventory
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -1750,7 +1801,7 @@ export default function Landing() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {[0, 1, 2, 3, 4].map((rowIndex) => (
+                {[0, 1, 2, 3, 4, 5, 6, 7].map((rowIndex) => (
                   <TableRow key={rowIndex} className="hover:bg-gray-50/80">
                     {features.map((feature, colIndex) => (
                       <TableCell

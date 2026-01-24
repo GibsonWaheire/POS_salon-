@@ -31,6 +31,22 @@ import Blog from "./pages/Blog"
 import HelpCenter from "./pages/HelpCenter"
 import Pricing from "./pages/Pricing"
 import Solutions from "./pages/Solutions"
+import SlotBlockers from "./pages/SlotBlockers"
+import DragDropReschedule from "./pages/DragDropReschedule"
+import PopupNotesHistory from "./pages/PopupNotesHistory"
+import RecurringBookings from "./pages/RecurringBookings"
+import ColorCodedAppointments from "./pages/ColorCodedAppointments"
+import ResourceScheduling from "./pages/ResourceScheduling"
+import CalendarSyncExport from "./pages/CalendarSyncExport"
+import EasyRescheduling from "./pages/EasyRescheduling"
+import SlotBlockers from "./pages/SlotBlockers"
+import DragDropReschedule from "./pages/DragDropReschedule"
+import PopupNotesHistory from "./pages/PopupNotesHistory"
+import RecurringBookings from "./pages/RecurringBookings"
+import ColorCodedAppointments from "./pages/ColorCodedAppointments"
+import ResourceScheduling from "./pages/ResourceScheduling"
+import CalendarSyncExport from "./pages/CalendarSyncExport"
+import EasyRescheduling from "./pages/EasyRescheduling"
 
 function App() {
   return (
@@ -50,6 +66,26 @@ function App() {
           <Route path="/help-center" element={<HelpCenter />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/solutions" element={<Solutions />} />
+          
+          {/* Appointment Management Feature Pages */}
+          <Route path="/features/slot-blockers" element={<SlotBlockers />} />
+          <Route path="/features/drag-drop-reschedule" element={<DragDropReschedule />} />
+          <Route path="/features/popup-notes-history" element={<PopupNotesHistory />} />
+          <Route path="/features/recurring-bookings" element={<RecurringBookings />} />
+          <Route path="/features/color-coded-appointments" element={<ColorCodedAppointments />} />
+          <Route path="/features/resource-scheduling" element={<ResourceScheduling />} />
+          <Route path="/features/calendar-sync-export" element={<CalendarSyncExport />} />
+          <Route path="/features/easy-rescheduling" element={<EasyRescheduling />} />
+          
+          {/* Appointment Management Feature Pages */}
+          <Route path="/features/slot-blockers" element={<SlotBlockers />} />
+          <Route path="/features/drag-drop-reschedule" element={<DragDropReschedule />} />
+          <Route path="/features/popup-notes-history" element={<PopupNotesHistory />} />
+          <Route path="/features/recurring-bookings" element={<RecurringBookings />} />
+          <Route path="/features/color-coded-appointments" element={<ColorCodedAppointments />} />
+          <Route path="/features/resource-scheduling" element={<ResourceScheduling />} />
+          <Route path="/features/calendar-sync-export" element={<CalendarSyncExport />} />
+          <Route path="/features/easy-rescheduling" element={<EasyRescheduling />} />
           
           {/* Staff-only routes */}
           <Route

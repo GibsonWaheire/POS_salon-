@@ -2,8 +2,9 @@
 Utility functions for the POS Salon backend.
 """
 from datetime import datetime, date, timedelta
-from models import Staff, Sale
-from sqlalchemy import func
+from models import Staff, Sale, SlotBlocker, Appointment
+from sqlalchemy import func, and_, or_
+from db import db
 
 
 def get_demo_filter(user=None, request_obj=None):
@@ -189,3 +190,163 @@ def calculate_net_pay(gross_pay, total_deductions):
     gross_pay = float(gross_pay) if gross_pay is not None else 0.0
     total_deductions = float(total_deductions) if total_deductions is not None else 0.0
     return round(gross_pay - total_deductions, 2)
+
+
+def check_slot_availability(staff_id, start_time, end_time, exclude_appointment_id=None, is_demo=False):
+    """
+    Check if a time slot is available (not blocked by slot blockers).
+    
+    Args:
+        staff_id: Staff ID (can be None for all staff)
+        start_time: Start datetime
+        end_time: End datetime
+        exclude_appointment_id: Appointment ID to exclude from conflict check
+        is_demo: Whether to check demo blockers
+    
+    Returns:
+        tuple: (is_available: bool, blocker: SlotBlocker or None, error_message: str or None)
+    """
+    try:
+        # Check slot blockers that overlap with the requested time
+        query = SlotBlocker.query.filter(
+            SlotBlocker.is_demo == is_demo,
+            or_(
+                SlotBlocker.staff_id == staff_id,
+                SlotBlocker.staff_id.is_(None)  # Applies to all staff
+            ),
+            and_(
+                SlotBlocker.start_date < end_time,
+                SlotBlocker.end_date > start_time
+            )
+        )
+        
+        blocker = query.first()
+        
+        if blocker:
+            reason = blocker.reason or "Time slot is blocked"
+            return False, blocker, reason
+        
+        return True, None, None
+    
+    except Exception as e:
+        return False, None, f"Error checking slot availability: {str(e)}"
+
+
+def generate_recurring_appointments(pattern, start_date, end_date, template_appointment_data):
+    """
+    Generate list of dates for recurring appointments.
+    
+    Args:
+        pattern: 'daily', 'weekly', or 'monthly'
+        start_date: Start datetime
+        end_date: End datetime
+        template_appointment_data: Dict with appointment data template
+    
+    Returns:
+        list: List of datetime objects for recurring appointments
+    """
+    dates = []
+    current = start_date
+    
+    delta_map = {
+        'daily': timedelta(days=1),
+        'weekly': timedelta(weeks=1),
+        'monthly': timedelta(days=30)  # Approximate
+    }
+    
+    delta = delta_map.get(pattern.lower())
+    if not delta:
+        return dates  # Invalid pattern
+    
+    while current <= end_date:
+        dates.append(current)
+        if pattern.lower() == 'monthly':
+            # For monthly, try to add exactly one month
+            try:
+                if current.month == 12:
+                    current = current.replace(year=current.year + 1, month=1)
+                else:
+                    current = current.replace(month=current.month + 1)
+            except:
+                # Fallback to approximate 30 days
+                current += timedelta(days=30)
+        else:
+            current += delta
+    
+    return dates
+
+
+def export_appointments_ical(appointments):
+    """
+    Generate iCal format string for appointments.
+    
+    Args:
+        appointments: List of Appointment objects
+    
+    Returns:
+        str: iCal format string
+    """
+    ical_lines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//Salonyst//Appointments//EN",
+        "CALSCALE:GREGORIAN"
+    ]
+    
+    for apt in appointments:
+        ical_lines.extend([
+            "BEGIN:VEVENT",
+            f"UID:appointment-{apt.id}@salonyst",
+            f"DTSTART:{apt.appointment_date.strftime('%Y%m%dT%H%M%S')}",
+            f"DTEND:{(apt.appointment_date + timedelta(hours=1)).strftime('%Y%m%dT%H%M%S')}",  # Assume 1 hour duration
+            f"SUMMARY:{apt.customer.name if apt.customer else 'Appointment'}",
+            f"DESCRIPTION:Appointment #{apt.id}",
+            f"STATUS:{apt.status.upper()}",
+            "END:VEVENT"
+        ])
+    
+    ical_lines.append("END:VCALENDAR")
+    return "\r\n".join(ical_lines)
+
+
+def export_appointments_csv(appointments):
+    """
+    Generate CSV format string for appointments.
+    
+    Args:
+        appointments: List of Appointment objects
+    
+    Returns:
+        str: CSV format string
+    """
+    import csv
+    from io import StringIO
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    
+    # Header
+    writer.writerow([
+        'ID', 'Date', 'Time', 'Customer', 'Phone', 'Staff', 'Services', 
+        'Status', 'Location', 'Resource', 'Color', 'Notes'
+    ])
+    
+    # Rows
+    for apt in appointments:
+        services = ', '.join([s.service.name for s in apt.services if s.service]) if apt.services else ''
+        writer.writerow([
+            apt.id,
+            apt.appointment_date.strftime('%Y-%m-%d') if apt.appointment_date else '',
+            apt.appointment_date.strftime('%H:%M') if apt.appointment_date else '',
+            apt.customer.name if apt.customer else '',
+            apt.customer.phone if apt.customer else '',
+            apt.staff.name if apt.staff else '',
+            services,
+            apt.status,
+            apt.service_location or 'salon',
+            apt.resource.name if apt.resource else '',
+            apt.color or '',
+            apt.notes or ''
+        ])
+    
+    return output.getvalue()

@@ -3,24 +3,48 @@ import React from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, Search, Calendar, User, MapPin, Clock, CheckCircle2, XCircle, X } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { 
+  Eye, Search, Calendar, User, MapPin, Clock, CheckCircle2, XCircle, X, 
+  CalendarDays, Table as TableIcon, Plus, FileDown, RefreshCw, StickyNote,
+  Palette, Repeat, Box
+} from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
 import { toast } from "sonner"
+import { apiRequest, isAdmin } from "@/lib/api"
+import AppointmentCalendar from "@/components/appointments/AppointmentCalendar"
+import SlotBlockerDialog from "@/components/appointments/SlotBlockerDialog"
+import AppointmentNotesDialog from "@/components/appointments/AppointmentNotesDialog"
+import RecurringBookingDialog from "@/components/appointments/RecurringBookingDialog"
+import ResourceSelector from "@/components/appointments/ResourceSelector"
 
 export default function Appointments() {
-  const { demoMode, isDemoUser } = useAuth()
+  const { demoMode, isDemoUser, user } = useAuth()
   const [appointments, setAppointments] = useState([])
   const [filteredAppointments, setFilteredAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
+  const [view, setView] = useState("table") // "table" or "calendar"
+  const [calendarDate, setCalendarDate] = useState(new Date())
+  const [calendarView, setCalendarView] = useState("month")
+  
+  // New state for enhanced features
+  const [slotBlockers, setSlotBlockers] = useState([])
+  const [resources, setResources] = useState([])
+  const [staffList, setStaffList] = useState([])
+  const [slotBlockerDialogOpen, setSlotBlockerDialogOpen] = useState(false)
+  const [selectedSlotBlocker, setSelectedSlotBlocker] = useState(null)
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false)
+  const [recurringDialogOpen, setRecurringDialogOpen] = useState(false)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
   
   // Filters
   const [selectedStatus, setSelectedStatus] = useState("all")
@@ -30,10 +54,14 @@ export default function Appointments() {
 
   useEffect(() => {
     fetchAppointments()
+    fetchSlotBlockers()
+    fetchResources()
+    fetchStaff()
   }, [])
 
   useEffect(() => {
     fetchAppointments()
+    fetchSlotBlockers()
   }, [selectedStatus, startDate, endDate, demoMode])
 
   useEffect(() => {
@@ -85,6 +113,45 @@ export default function Appointments() {
       console.error("Failed to fetch appointments:", err)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchSlotBlockers = async () => {
+    try {
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      const response = await fetch(`http://localhost:5001/api/slot-blockers?demo_mode=${demoModeParam}`)
+      if (response.ok) {
+        const data = await response.json()
+        setSlotBlockers(data || [])
+      }
+    } catch (err) {
+      console.error("Failed to fetch slot blockers:", err)
+    }
+  }
+
+  const fetchResources = async () => {
+    try {
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      const response = await fetch(`http://localhost:5001/api/resources?demo_mode=${demoModeParam}`)
+      if (response.ok) {
+        const data = await response.json()
+        setResources(data || [])
+      }
+    } catch (err) {
+      console.error("Failed to fetch resources:", err)
+    }
+  }
+
+  const fetchStaff = async () => {
+    try {
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      const response = await fetch(`http://localhost:5001/api/staff?demo_mode=${demoModeParam}`)
+      if (response.ok) {
+        const data = await response.json()
+        setStaffList(data || [])
+      }
+    } catch (err) {
+      console.error("Failed to fetch staff:", err)
     }
   }
 
@@ -154,6 +221,49 @@ export default function Appointments() {
     }
   }
 
+  const handleEventDrop = async ({ event, start, end }) => {
+    // Only handle appointment events, not slot blockers
+    if (!event.resource || !event.resource.id || event.id.toString().startsWith('blocker-')) {
+      return
+    }
+    
+    try {
+      await apiRequest(`/appointments/${event.resource.id}/reschedule`, {
+        method: "POST",
+        body: JSON.stringify({
+          appointment_date: start.toISOString()
+        })
+      })
+      toast.success("Appointment rescheduled successfully")
+      await fetchAppointments()
+    } catch (err) {
+      toast.error(err.message || "Failed to reschedule appointment")
+    }
+  }
+
+  const handleCalendarEventClick = (event) => {
+    if (event.resource && event.resource.id) {
+      fetchAppointmentDetails(event.resource.id)
+    }
+  }
+
+  const handleExportCalendar = async (format) => {
+    try {
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      const params = new URLSearchParams()
+      params.append('format', format)
+      params.append('demo_mode', demoModeParam)
+      if (startDate) params.append('start_date', startDate)
+      if (endDate) params.append('end_date', endDate)
+      
+      const url = `http://localhost:5001/api/appointments/calendar/export?${params.toString()}`
+      window.open(url, '_blank')
+      toast.success(`Exporting appointments as ${format.toUpperCase()}...`)
+    } catch (err) {
+      toast.error("Failed to export calendar")
+    }
+  }
+
   const getStatusBadgeVariant = (status) => {
     switch (status) {
       case 'completed':
@@ -168,6 +278,28 @@ export default function Appointments() {
     }
   }
 
+  const getColorBadge = (color, status) => {
+    if (!color) {
+      // Default colors by status
+      const statusColors = {
+        'scheduled': 'bg-green-500',
+        'pending': 'bg-yellow-500',
+        'cancelled': 'bg-red-500',
+        'completed': 'bg-blue-500'
+      }
+      return statusColors[status] || 'bg-gray-500'
+    }
+    const colorMap = {
+      'green': 'bg-green-500',
+      'yellow': 'bg-yellow-500',
+      'red': 'bg-red-500',
+      'blue': 'bg-blue-500',
+      'orange': 'bg-orange-500',
+      'purple': 'bg-purple-500'
+    }
+    return colorMap[color] || 'bg-gray-500'
+  }
+
   const totalAppointments = filteredAppointments.length
   const pendingAppointments = filteredAppointments.filter(a => a.status === 'scheduled' || a.status === 'pending').length
   const completedAppointments = filteredAppointments.filter(a => a.status === 'completed').length
@@ -176,6 +308,36 @@ export default function Appointments() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Appointments</h1>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={view === "calendar" ? "default" : "outline"}
+            onClick={() => setView("calendar")}
+          >
+            <CalendarDays className="h-4 w-4 mr-2" />
+            Calendar
+          </Button>
+          <Button
+            variant={view === "table" ? "default" : "outline"}
+            onClick={() => setView("table")}
+          >
+            <TableIcon className="h-4 w-4 mr-2" />
+            Table
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => setSlotBlockerDialogOpen(true)}
+          >
+            <Clock className="h-4 w-4 mr-2" />
+            Slot Blockers
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleExportCalendar('ical')}
+          >
+            <FileDown className="h-4 w-4 mr-2" />
+            Export
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -272,116 +434,174 @@ export default function Appointments() {
         </CardContent>
       </Card>
 
-      {/* Appointments Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Appointments</CardTitle>
-          <CardDescription>
-            {filteredAppointments.length} appointment{filteredAppointments.length !== 1 ? 's' : ''} found
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-              <p className="mt-2 text-muted-foreground">Loading appointments...</p>
-            </div>
-          ) : filteredAppointments.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {error ? (
-                <div>
-                  <p className="text-red-600 mb-2">{error}</p>
-                  <Button variant="outline" onClick={fetchAppointments}>Retry</Button>
-                </div>
-              ) : (
-                "No appointments found."
-              )}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Date & Time</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Staff</TableHead>
-                  <TableHead>Services</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAppointments.map((appointment) => (
-                  <TableRow key={appointment.id}>
-                    <TableCell className="font-medium">#{appointment.id}</TableCell>
-                    <TableCell>
-                      {appointment.appointment_date
-                        ? new Date(appointment.appointment_date).toLocaleString()
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {appointment.customer?.name || "Unknown"}
-                      {appointment.customer?.phone && (
-                        <div className="text-xs text-muted-foreground">{appointment.customer.phone}</div>
-                      )}
-                    </TableCell>
-                    <TableCell>{appointment.staff?.name || "-"}</TableCell>
-                    <TableCell>
-                      {appointment.services && appointment.services.length > 0 ? (
-                        <div className="text-sm">
-                          {appointment.services.slice(0, 2).map(s => s.name).join(", ")}
-                          {appointment.services.length > 2 && ` +${appointment.services.length - 2} more`}
+      {/* Calendar or Table View */}
+      {view === "calendar" ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Calendar View</CardTitle>
+            <CardDescription>
+              Drag appointments to reschedule. Click to view details.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AppointmentCalendar
+              appointments={filteredAppointments}
+              slotBlockers={slotBlockers}
+              onSelectEvent={handleCalendarEventClick}
+              onEventDrop={handleEventDrop}
+              view={calendarView}
+              onViewChange={setCalendarView}
+              date={calendarDate}
+              onNavigate={setCalendarDate}
+            />
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle>Appointments</CardTitle>
+            <CardDescription>
+              {filteredAppointments.length} appointment{filteredAppointments.length !== 1 ? 's' : ''} found
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                <p className="mt-2 text-muted-foreground">Loading appointments...</p>
+              </div>
+            ) : filteredAppointments.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                {error ? (
+                  <div>
+                    <p className="text-red-600 mb-2">{error}</p>
+                    <Button variant="outline" onClick={fetchAppointments}>Retry</Button>
+                  </div>
+                ) : (
+                  "No appointments found."
+                )}
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>ID</TableHead>
+                    <TableHead>Date & Time</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Staff</TableHead>
+                    <TableHead>Services</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Resource</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAppointments.map((appointment) => (
+                    <TableRow key={appointment.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          #{appointment.id}
+                          {appointment.appointment_notes && appointment.appointment_notes.length > 0 && (
+                            <StickyNote className="h-4 w-4 text-yellow-500" title="Has notes" />
+                          )}
+                          {appointment.recurring_pattern && (
+                            <Repeat className="h-4 w-4 text-blue-500" title="Recurring" />
+                          )}
                         </div>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {appointment.service_location ? (
-                        <div className="flex items-center gap-1 text-sm">
-                          <MapPin className="h-3 w-3" />
-                          <span className="capitalize">{appointment.service_location}</span>
+                      </TableCell>
+                      <TableCell>
+                        {appointment.appointment_date
+                          ? new Date(appointment.appointment_date).toLocaleString()
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {appointment.customer?.name || "Unknown"}
+                        {appointment.customer?.phone && (
+                          <div className="text-xs text-muted-foreground">{appointment.customer.phone}</div>
+                        )}
+                      </TableCell>
+                      <TableCell>{appointment.staff?.name || "-"}</TableCell>
+                      <TableCell>
+                        {appointment.services && appointment.services.length > 0 ? (
+                          <div className="text-sm">
+                            {appointment.services.slice(0, 2).map(s => s.name).join(", ")}
+                            {appointment.services.length > 2 && ` +${appointment.services.length - 2} more`}
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {appointment.service_location ? (
+                          <div className="flex items-center gap-1 text-sm">
+                            <MapPin className="h-3 w-3" />
+                            <span className="capitalize">{appointment.service_location}</span>
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {appointment.resource ? (
+                          <div className="flex items-center gap-1 text-sm">
+                            <Box className="h-3 w-3" />
+                            {appointment.resource.name}
+                          </div>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-3 h-3 rounded-full ${getColorBadge(appointment.color, appointment.status)}`}></div>
+                          <Badge variant={getStatusBadgeVariant(appointment.status)}>
+                            {appointment.status}
+                          </Badge>
                         </div>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(appointment.status)}>
-                        {appointment.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {(appointment.status === 'scheduled' || appointment.status === 'pending') && (
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
                           <Button
-                            variant="destructive"
+                            variant="ghost"
                             size="sm"
-                            onClick={() => handleCancelAppointment(appointment.id)}
+                            onClick={() => {
+                              setSelectedAppointment(appointment)
+                              setNotesDialogOpen(true)
+                            }}
+                            title="View notes"
+                          >
+                            <StickyNote className="h-4 w-4" />
+                          </Button>
+                          {(appointment.status === 'scheduled' || appointment.status === 'pending') && (
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleCancelAppointment(appointment.id)}
+                              disabled={loading}
+                            >
+                              <X className="h-4 w-4 mr-1" />
+                              Cancel
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => fetchAppointmentDetails(appointment.id)}
                             disabled={loading}
                           >
-                            <X className="h-4 w-4 mr-1" />
-                            Cancel
+                            <Eye className="h-4 w-4" />
                           </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => fetchAppointmentDetails(appointment.id)}
-                          disabled={loading}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Appointment Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
@@ -392,7 +612,7 @@ export default function Appointments() {
               Appointment #{selectedAppointment?.id}
             </DialogDescription>
           </DialogHeader>
-              {selectedAppointment && (
+          {selectedAppointment && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -422,9 +642,12 @@ export default function Appointments() {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Status</Label>
-                  <Badge variant={getStatusBadgeVariant(selectedAppointment.status)}>
-                    {selectedAppointment.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${getColorBadge(selectedAppointment.color, selectedAppointment.status)}`}></div>
+                    <Badge variant={getStatusBadgeVariant(selectedAppointment.status)}>
+                      {selectedAppointment.status}
+                    </Badge>
+                  </div>
                 </div>
                 <div>
                   <Label className="text-muted-foreground flex items-center gap-2">
@@ -438,6 +661,24 @@ export default function Appointments() {
                     )}
                   </p>
                 </div>
+                {selectedAppointment.resource && (
+                  <div>
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                      <Box className="h-4 w-4" />
+                      Resource
+                    </Label>
+                    <p className="font-medium">{selectedAppointment.resource.name}</p>
+                  </div>
+                )}
+                {selectedAppointment.recurring_pattern && (
+                  <div>
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                      <Repeat className="h-4 w-4" />
+                      Recurring
+                    </Label>
+                    <p className="font-medium capitalize">{selectedAppointment.recurring_pattern}</p>
+                  </div>
+                )}
                 {selectedAppointment.sale_id && (
                   <div className="col-span-2">
                     <Label className="text-muted-foreground">Linked Sale</Label>
@@ -470,7 +711,16 @@ export default function Appointments() {
               )}
 
               {(selectedAppointment.status === 'scheduled' || selectedAppointment.status === 'pending') && (
-                <div className="flex justify-end pt-4 border-t">
+                <div className="flex justify-end gap-2 pt-4 border-t">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setNotesDialogOpen(true)
+                    }}
+                  >
+                    <StickyNote className="h-4 w-4 mr-2" />
+                    Notes
+                  </Button>
                   <Button
                     variant="destructive"
                     onClick={() => {
@@ -487,6 +737,31 @@ export default function Appointments() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Slot Blocker Dialog */}
+      <SlotBlockerDialog
+        open={slotBlockerDialogOpen}
+        onOpenChange={setSlotBlockerDialogOpen}
+        blocker={selectedSlotBlocker}
+        staffList={staffList}
+        onSuccess={() => {
+          fetchSlotBlockers()
+          setSelectedSlotBlocker(null)
+        }}
+      />
+
+      {/* Notes Dialog */}
+      <AppointmentNotesDialog
+        open={notesDialogOpen}
+        onOpenChange={setNotesDialogOpen}
+        appointment={selectedAppointment}
+        onNoteAdded={() => {
+          fetchAppointments()
+          if (selectedAppointment) {
+            fetchAppointmentDetails(selectedAppointment.id)
+          }
+        }}
+      />
     </div>
   )
 }

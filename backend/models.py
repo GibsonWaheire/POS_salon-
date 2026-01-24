@@ -136,10 +136,23 @@ class Appointment(db.Model):
     sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=True)  # Link to completed sale
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # New fields for enhanced appointment features
+    color = db.Column(db.String(20), nullable=True)  # Color code for appointment (e.g., "green", "yellow", "red")
+    recurring_pattern = db.Column(db.String(50), nullable=True)  # Pattern for recurring appointments (e.g., "daily", "weekly", "monthly")
+    recurring_end_date = db.Column(db.DateTime, nullable=True)  # End date for recurring series
+    parent_appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=True)  # Link to parent appointment for recurring series
+    resource_id = db.Column(db.Integer, db.ForeignKey('resources.id'), nullable=True)  # Link to resource/room/equipment
+    popup_notes = db.Column(db.Text, nullable=True)  # Notes that appear as popup/icon on calendar
+    last_modified_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Track who last modified
+    
     # Relationships
     services = db.relationship('AppointmentService', backref='appointment', lazy=True, cascade='all, delete-orphan')
     payment = db.relationship('Payment', foreign_keys='Payment.appointment_id', backref='appointment', uselist=False, lazy=True)
     sale = db.relationship('Sale', foreign_keys='Sale.appointment_id', backref='appointment_link', lazy=True, uselist=False)
+    resource = db.relationship('Resource', backref='appointments', lazy=True)
+    parent_appointment = db.relationship('Appointment', remote_side=[id], backref='child_appointments')
+    appointment_notes = db.relationship('AppointmentNote', backref='appointment', lazy=True, cascade='all, delete-orphan')
+    modified_by_user = db.relationship('User', foreign_keys=[last_modified_by], backref='modified_appointments')
     
     def to_dict(self):
         try:
@@ -180,6 +193,26 @@ class Appointment(db.Model):
             except Exception:
                 pass  # Skip sale if error
             
+            # Safely get resource
+            resource_dict = None
+            try:
+                if hasattr(self, 'resource') and self.resource:
+                    resource_dict = self.resource.to_dict()
+            except Exception:
+                pass
+            
+            # Safely get appointment notes
+            notes_list = []
+            try:
+                if hasattr(self, 'appointment_notes') and self.appointment_notes:
+                    for note in self.appointment_notes:
+                        try:
+                            notes_list.append(note.to_dict())
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+            
             return {
                 'id': self.id,
                 'customer_id': self.customer_id,
@@ -191,10 +224,19 @@ class Appointment(db.Model):
                 'home_service_address': getattr(self, 'home_service_address', None),
                 'sale_id': getattr(self, 'sale_id', None),
                 'created_at': self.created_at.isoformat() if hasattr(self, 'created_at') and self.created_at else None,
+                'color': getattr(self, 'color', None),
+                'recurring_pattern': getattr(self, 'recurring_pattern', None),
+                'recurring_end_date': self.recurring_end_date.isoformat() if hasattr(self, 'recurring_end_date') and self.recurring_end_date else None,
+                'parent_appointment_id': getattr(self, 'parent_appointment_id', None),
+                'resource_id': getattr(self, 'resource_id', None),
+                'popup_notes': getattr(self, 'popup_notes', None),
+                'last_modified_by': getattr(self, 'last_modified_by', None),
                 'customer': customer_dict,
                 'staff': staff_dict,
                 'services': services_list,
-                'sale': sale_dict
+                'sale': sale_dict,
+                'resource': resource_dict,
+                'appointment_notes': notes_list
             }
         except Exception as e:
             # Fallback if there's an error accessing relationships or missing columns
@@ -229,6 +271,84 @@ class AppointmentService(db.Model):
             'appointment_id': self.appointment_id,
             'service_id': self.service_id,
             'service': self.service.to_dict() if self.service else None
+        }
+
+
+class SlotBlocker(db.Model):
+    """Block time slots for staff (days off, breaks, etc.)"""
+    __tablename__ = 'slot_blockers'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    staff_id = db.Column(db.Integer, db.ForeignKey('staff.id'), nullable=True)  # If null, applies to all staff
+    start_date = db.Column(db.DateTime, nullable=False)  # Block start date/time
+    end_date = db.Column(db.DateTime, nullable=False)  # Block end date/time
+    reason = db.Column(db.String(100), nullable=True)  # Reason for block (e.g., "Day Off", "Break Time")
+    is_recurring = db.Column(db.Boolean, default=False)  # Whether this repeats
+    recurring_pattern = db.Column(db.String(50), nullable=True)  # Pattern if recurring (e.g., "daily", "weekly")
+    is_demo = db.Column(db.Boolean, default=False)  # Demo mode flag
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    staff = db.relationship('Staff', backref='slot_blockers', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'staff_id': self.staff_id,
+            'start_date': self.start_date.isoformat() if self.start_date else None,
+            'end_date': self.end_date.isoformat() if self.end_date else None,
+            'reason': self.reason,
+            'is_recurring': self.is_recurring,
+            'recurring_pattern': self.recurring_pattern,
+            'is_demo': self.is_demo,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'staff': self.staff.to_dict() if self.staff else None
+        }
+
+
+class Resource(db.Model):
+    """Resources like rooms, equipment that can be scheduled"""
+    __tablename__ = 'resources'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)  # Resource name (e.g., "Massage Room 1", "Tanning Bed A")
+    type = db.Column(db.String(50), nullable=True)  # Resource type (e.g., "room", "equipment")
+    is_active = db.Column(db.Boolean, default=True)
+    is_demo = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'type': self.type,
+            'is_active': self.is_active,
+            'is_demo': self.is_demo,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class AppointmentNote(db.Model):
+    """Separate notes for appointments (popup functionality)"""
+    __tablename__ = 'appointment_notes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=False)
+    note_text = db.Column(db.Text, nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    creator = db.relationship('User', backref='created_appointment_notes', lazy=True)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'appointment_id': self.appointment_id,
+            'note_text': self.note_text,
+            'created_by': self.created_by,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'creator': self.creator.to_dict() if self.creator else None
         }
 
 # Sale model for walk-in transactions (Kenyan salon flow - no appointments)
