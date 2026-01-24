@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "sonner"
 import { AuthProvider } from "./context/AuthContext"
 import Layout from "./components/Layout"
+import ScrollToTop from "./components/ScrollToTop"
 import ProtectedRoute from "./components/ProtectedRoute"
 import StaffProtectedRoute from "./components/StaffProtectedRoute"
 import Landing from "./pages/Landing"
@@ -28,6 +29,7 @@ import AboutUs from "./pages/AboutUs"
 import WhyChooseUs from "./pages/WhyChooseUs"
 import SuccessStories from "./pages/SuccessStories"
 import Blog from "./pages/Blog"
+import BlogPost from "./pages/BlogPost"
 import HelpCenter from "./pages/HelpCenter"
 import Pricing from "./pages/Pricing"
 import SlotBlockers from "./pages/SlotBlockers"
@@ -44,6 +46,7 @@ function App() {
     <AuthProvider>
       <Toaster position="top-right" richColors />
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Landing />} />
@@ -56,6 +59,7 @@ function App() {
           <Route path="/why-choose-us" element={<WhyChooseUs />} />
           <Route path="/success-stories" element={<SuccessStories />} />
           <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/help-center" element={<HelpCenter />} />
           <Route path="/pricing" element={<Pricing />} />
           
