@@ -12,7 +12,8 @@ import {
   DollarSign,
   Users,
   Clock,
-  ShoppingCart
+  ShoppingCart,
+  Calendar
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
@@ -29,12 +30,13 @@ const navigation = [
   { name: "Commission Payments", href: "/commission-payments", icon: DollarSign },
   { name: "Payments", href: "/payments", icon: CreditCard },
   { name: "Sales", href: "/sales", icon: ShoppingCart },
+  { name: "Appointments", href: "/appointments", icon: Calendar, adminOnly: true },
   { name: "Inventory", href: "/inventory", icon: Package },
   { name: "Expenses", href: "/expenses", icon: TrendingDown },
   { name: "Reports", href: "/reports", icon: FileText },
   // Admin-only navigation items
   { name: "Users", href: "/users", icon: Users, adminOnly: true },
-  // Appointments and Customers removed - not used in walk-in only business model
+  // Customers removed - not used in walk-in only business model
   // POS removed - only accessible via staff login
 ]
 

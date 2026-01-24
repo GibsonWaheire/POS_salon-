@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, Printer, Search, Calendar, User, DollarSign, Package, Scissors } from "lucide-react"
+import { Eye, Printer, Search, Calendar, User, DollarSign, Package, Scissors, Calendar as CalendarIcon, MapPin, Clock } from "lucide-react"
 import { apiRequest } from "@/lib/api"
 import { useAuth } from "@/context/AuthContext"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -396,6 +396,29 @@ export default function Sales() {
                                 <span className="text-muted-foreground">Commission:</span>{" "}
                                 {formatKES(sale.commission_amount || 0)}
                               </div>
+                              {sale.appointment_id && (
+                                <div className="col-span-2 flex items-center gap-2 text-blue-600">
+                                  <CalendarIcon className="h-4 w-4" />
+                                  <span className="font-semibold">From Appointment #{sale.appointment_id}</span>
+                                </div>
+                              )}
+                              {sale.service_location && (
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-muted-foreground">Location:</span>
+                                  <span className="capitalize">{sale.service_location}</span>
+                                  {sale.service_location === "home" && sale.home_service_address && (
+                                    <span className="text-xs text-muted-foreground">({sale.home_service_address})</span>
+                                  )}
+                                </div>
+                              )}
+                              {sale.service_duration_minutes && (
+                                <div className="flex items-center gap-2">
+                                  <Clock className="h-4 w-4 text-muted-foreground" />
+                                  <span className="text-muted-foreground">Service Duration:</span>
+                                  <span>{sale.service_duration_minutes} minutes</span>
+                                </div>
+                              )}
                               <div>
                                 <span className="text-muted-foreground">Time:</span>{" "}
                                 {sale.created_at
@@ -471,6 +494,38 @@ export default function Sales() {
                         ?.toUpperCase()
                         .replace("_", "-") || "-"}
                     </p>
+                  </div>
+                )}
+                {selectedSale.appointment_id && (
+                  <div className="col-span-2">
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4" />
+                      Linked Appointment
+                    </Label>
+                    <p className="font-medium text-blue-600">Appointment #{selectedSale.appointment_id}</p>
+                  </div>
+                )}
+                {selectedSale.service_location && (
+                  <div>
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Service Location
+                    </Label>
+                    <p className="font-medium capitalize">
+                      {selectedSale.service_location}
+                      {selectedSale.service_location === "home" && selectedSale.home_service_address && (
+                        <span className="text-sm text-muted-foreground block mt-1">{selectedSale.home_service_address}</span>
+                      )}
+                    </p>
+                  </div>
+                )}
+                {selectedSale.service_duration_minutes && (
+                  <div>
+                    <Label className="text-muted-foreground flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Service Duration
+                    </Label>
+                    <p className="font-medium">{selectedSale.service_duration_minutes} minutes</p>
                   </div>
                 )}
               </div>

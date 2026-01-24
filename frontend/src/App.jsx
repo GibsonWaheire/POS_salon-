@@ -22,6 +22,7 @@ import Reports from "./pages/Reports"
 import Users from "./pages/Users"
 import Shifts from "./pages/Shifts"
 import Sales from "./pages/Sales"
+import Appointments from "./pages/Appointments"
 
 function App() {
   return (
@@ -184,6 +185,17 @@ function App() {
             }
           >
             <Route index element={<Sales />} />
+          </Route>
+          
+          <Route
+            path="/appointments"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Appointments />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -30,6 +30,10 @@ import {
   History,
   Clock,
   CheckCircle2,
+  Calendar,
+  MapPin,
+  UserCheck,
+  UserX,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
@@ -90,11 +94,20 @@ export default function POS() {
   const [loadingProducts, setLoadingProducts] = useState(true)
   const [activeTab, setActiveTab] = useState("services")
   const [selectedProduct, setSelectedProduct] = useState("")
+  const [pendingAppointments, setPendingAppointments] = useState([])
+  const [loadingAppointments, setLoadingAppointments] = useState(true)
+  const [selectedAppointment, setSelectedAppointment] = useState(null)
+  const [serviceLocation, setServiceLocation] = useState("salon")
+  const [homeServiceAddress, setHomeServiceAddress] = useState("")
+  const [serviceStartTime, setServiceStartTime] = useState(null)
+  const [serviceEndTime, setServiceEndTime] = useState(null)
+  const [serviceDuration, setServiceDuration] = useState(null)
 
   // Fetch services from API
   useEffect(() => {
     fetchServices()
     fetchProducts()
+    fetchPendingAppointments()
   }, [])
 
   const fetchServices = async () => {
@@ -136,6 +149,151 @@ export default function POS() {
     } finally {
       setLoadingProducts(false)
     }
+  }
+
+  const fetchPendingAppointments = async () => {
+    setLoadingAppointments(true)
+    try {
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      const staffIdParam = staff?.id ? `&staff_id=${staff.id}` : ''
+      const url = `http://localhost:5001/api/appointments/pending?demo_mode=${demoModeParam}${staffIdParam}`
+      
+      console.log('Fetching appointments from:', url)
+      console.log('Staff ID:', staff?.id)
+      console.log('Demo mode:', demoModeParam)
+      
+      const response = await fetch(url)
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || 'Failed to fetch appointments'
+        console.error('Appointment fetch error:', errorMessage, 'Status:', response.status)
+        toast.error(errorMessage)
+        setPendingAppointments([])
+        return
+      }
+      
+      const data = await response.json()
+      console.log('Fetched appointments:', data.length, data)
+      setPendingAppointments(data || [])
+      
+      if (data.length === 0) {
+        console.log('No appointments found. Check:')
+        console.log('- Are there any appointments in the database?')
+        console.log('- Do appointments have status "scheduled" or "pending"?')
+        console.log('- Do appointments match demo_mode filter?')
+        console.log('- Are appointments assigned to this staff or unassigned?')
+      }
+    } catch (err) {
+      const errorMessage = err.message || 'An error occurred while fetching appointments'
+      console.error('Appointment fetch exception:', err)
+      toast.error(errorMessage)
+      setPendingAppointments([])
+    } finally {
+      setLoadingAppointments(false)
+    }
+  }
+
+  const handleAcceptAppointment = async (appointment) => {
+    if (sessionLocked) {
+      toast.error("Session ended. Please log in again.")
+      return
+    }
+    
+    if (!staff?.id) {
+      toast.error("Staff information not available")
+      return
+    }
+    
+    try {
+      const demoModeParam = isDemoUser ? 'true' : (demoMode ? 'true' : 'false')
+      const response = await fetch(`http://localhost:5001/api/appointments/${appointment.id}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ staff_id: staff.id })
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        const errorMessage = errorData.error || 'Failed to accept appointment'
+        toast.error(errorMessage)
+        return
+      }
+      
+      const updatedAppointment = await response.json()
+      
+      // Update local state
+      setPendingAppointments(prev => 
+        prev.map(apt => apt.id === appointment.id ? updatedAppointment : apt)
+      )
+      
+      toast.success(`Appointment accepted: ${updatedAppointment.customer?.name || 'Customer'}`)
+    } catch (err) {
+      const errorMessage = err.message || 'An error occurred while accepting the appointment'
+      toast.error(errorMessage)
+      console.error("Failed to accept appointment:", err)
+    }
+  }
+
+  const handleSelectAppointment = (appointment) => {
+    if (sessionLocked) {
+      toast.error("Session ended. Please log in again.")
+      return
+    }
+    
+    setSelectedAppointment(appointment)
+    
+    // Auto-populate customer
+    if (appointment.customer) {
+      setClientName(appointment.customer.name || "")
+      setClientPhone(appointment.customer.phone || "")
+    }
+    
+    // Auto-populate services
+    if (appointment.services && appointment.services.length > 0) {
+      const appointmentServices = appointment.services.map(service => ({
+        ...service,
+        quantity: 1,
+        commission: (service.price || 0) * defaultCommissionRate,
+        commissionRate: defaultCommissionRate,
+        type: 'service'
+      }))
+      setCurrentSaleServices(appointmentServices)
+    }
+    
+    // Auto-populate location
+    setServiceLocation(appointment.service_location || "salon")
+    setHomeServiceAddress(appointment.home_service_address || "")
+    
+    toast.success(`Appointment selected: ${appointment.customer?.name || "Customer"}`)
+  }
+
+  const handleStartService = () => {
+    if (sessionLocked) {
+      toast.error("Session ended. Please log in again.")
+      return
+    }
+    
+    const startTime = new Date()
+    setServiceStartTime(startTime)
+    toast.success("Service started")
+  }
+
+  const handleEndService = () => {
+    if (!serviceStartTime) {
+      toast.error("Please start the service first")
+      return
+    }
+    
+    const endTime = new Date()
+    setServiceEndTime(endTime)
+    
+    // Calculate duration
+    const durationMs = endTime - serviceStartTime
+    const durationMinutes = Math.floor(durationMs / 60000)
+    setServiceDuration(durationMinutes)
+    
+    toast.success(`Service ended. Duration: ${durationMinutes} minutes`)
   }
 
   // Fetch staff stats
@@ -400,6 +558,12 @@ export default function POS() {
     setCurrentSaleProducts([])
     setClientName("")
     setClientPhone("")
+    setSelectedAppointment(null)
+    setServiceLocation("salon")
+    setHomeServiceAddress("")
+    setServiceStartTime(null)
+    setServiceEndTime(null)
+    setServiceDuration(null)
     setReceiptPrinted(false)
     setReceiptNumber("")
     setShowReceipt(false)
@@ -450,8 +614,11 @@ export default function POS() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           staff_id: staff?.id,
+          appointment_id: selectedAppointment?.id || null,
           customer_name: clientName || null,
           customer_phone: clientPhone || null,
+          service_location: serviceLocation,
+          home_service_address: serviceLocation === "home" ? homeServiceAddress : null,
           services: currentSaleServices.map(item => ({
             service_id: item.id,
             name: item.name,
@@ -486,7 +653,11 @@ export default function POS() {
         body: JSON.stringify({
           payment_method: paymentMethod,
           transaction_code: paymentMethod === "M-Pesa" ? transactionCode : null,
-          receipt_number: receiptNum
+          receipt_number: receiptNum,
+          service_start_time: serviceStartTime ? serviceStartTime.toISOString() : null,
+          service_end_time: serviceEndTime ? serviceEndTime.toISOString() : null,
+          service_location: serviceLocation,
+          home_service_address: serviceLocation === "home" ? homeServiceAddress : null
         })
       })
 
@@ -506,6 +677,9 @@ export default function POS() {
       // Refresh stats to show the new transaction
       await fetchStaffStats()
       await fetchRecentTransactions()
+      
+      // Refresh appointments list to remove completed appointment
+      await fetchPendingAppointments()
       
       // STEP 3: Show receipt and print
       setShowReceipt(true)
@@ -726,6 +900,138 @@ export default function POS() {
       <div className="flex h-[calc(100vh-65px)]">
         {/* Left Panel - Services/Products List (60%) */}
         <div className="w-[60%] border-r bg-white flex flex-col overflow-hidden">
+          {/* Pending Appointments Section */}
+          <div className="p-4 border-b bg-blue-50">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-blue-900 flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Pending Appointments ({pendingAppointments.length})
+              </h3>
+              {loadingAppointments && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <div className="inline-block animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                  Loading...
+                </span>
+              )}
+            </div>
+            {loadingAppointments ? (
+              <div className="text-center py-4 text-xs text-muted-foreground">
+                Loading appointments...
+              </div>
+            ) : pendingAppointments.length > 0 ? (
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {pendingAppointments.map((appointment) => {
+                  const isAssignedToMe = appointment.staff_id === staff?.id
+                  const isUnassigned = !appointment.staff_id
+                  
+                  return (
+                    <Card 
+                      key={appointment.id} 
+                      className={`transition-all ${
+                        selectedAppointment?.id === appointment.id 
+                          ? 'border-blue-500 bg-blue-100' 
+                          : isAssignedToMe
+                            ? 'border-green-300 bg-green-50 hover:border-green-400'
+                            : isUnassigned
+                              ? 'border-yellow-300 bg-yellow-50 hover:border-yellow-400'
+                              : 'hover:border-blue-300'
+                      }`}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div 
+                            className="flex-1 cursor-pointer"
+                            onClick={() => {
+                              if (isAssignedToMe || isUnassigned) {
+                                handleSelectAppointment(appointment)
+                              } else {
+                                toast.warning("This appointment is assigned to another staff member")
+                              }
+                            }}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="font-semibold text-sm">{appointment.customer?.name || "Customer"}</div>
+                              {isAssignedToMe && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full border border-green-300">
+                                  <UserCheck className="h-3 w-3" />
+                                  Assigned to You
+                                </span>
+                              )}
+                              {isUnassigned && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full border border-yellow-300">
+                                  <UserX className="h-3 w-3" />
+                                  Unassigned
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {new Date(appointment.appointment_date).toLocaleString('en-KE', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                            {appointment.services && appointment.services.length > 0 && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {appointment.services.map(s => s.name).join(", ")}
+                              </div>
+                            )}
+                            {appointment.staff && !isAssignedToMe && (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Staff: {appointment.staff.name}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            {appointment.service_location && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <MapPin className="h-3 w-3" />
+                                {appointment.service_location === "home" ? "Home" : "Salon"}
+                              </div>
+                            )}
+                            {isUnassigned && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 text-xs border-yellow-400 text-yellow-700 hover:bg-yellow-100"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleAcceptAppointment(appointment)
+                                }}
+                                disabled={sessionLocked}
+                              >
+                                Accept
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-xs text-muted-foreground space-y-2">
+                <p>No pending appointments found.</p>
+                <p className="text-[10px] text-gray-500">
+                  Appointments will appear here when:
+                  <br />• Status is "scheduled" or "pending"
+                  <br />• Assigned to you OR unassigned
+                  <br />• Demo mode matches your session
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs mt-2"
+                  onClick={fetchPendingAppointments}
+                >
+                  Refresh
+                </Button>
+              </div>
+            )}
+          </div>
+          
           <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full">
             <TabsList className="mx-4 mt-4">
               <TabsTrigger value="services">Services</TabsTrigger>
@@ -986,6 +1292,74 @@ export default function POS() {
                 </div>
               </div>
             </div>
+
+            {/* Service Location & Time Tracking */}
+            {(selectedAppointment || currentSaleServices.length > 0) && (
+              <div className="space-y-3 bg-white p-4 rounded border">
+                <div>
+                  <Label className="text-sm font-semibold mb-2 block">Service Location</Label>
+                  <Select value={serviceLocation} onValueChange={setServiceLocation} disabled={sessionLocked}>
+                    <SelectTrigger className="h-11 text-base">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="salon">Salon</SelectItem>
+                      <SelectItem value="home">Home Service</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {serviceLocation === "home" && (
+                  <div>
+                    <Label htmlFor="homeServiceAddress" className="text-sm font-semibold mb-2 block">Home Service Address</Label>
+                    <Input
+                      id="homeServiceAddress"
+                      placeholder="Enter full address"
+                      value={homeServiceAddress}
+                      onChange={(e) => setHomeServiceAddress(e.target.value)}
+                      disabled={sessionLocked}
+                      className="h-11 text-base border"
+                    />
+                  </div>
+                )}
+                
+                {/* Service Time Tracking */}
+                <div>
+                  <Label className="text-sm font-semibold mb-2 block">Service Time</Label>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={serviceStartTime ? "default" : "outline"}
+                      size="sm"
+                      onClick={handleStartService}
+                      disabled={sessionLocked || !!serviceStartTime}
+                      className="flex-1"
+                    >
+                      <Clock className="h-4 w-4 mr-1" />
+                      {serviceStartTime ? "Started" : "Start Service"}
+                    </Button>
+                    <Button
+                      variant={serviceEndTime ? "default" : "outline"}
+                      size="sm"
+                      onClick={handleEndService}
+                      disabled={sessionLocked || !serviceStartTime || !!serviceEndTime}
+                      className="flex-1"
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      {serviceEndTime ? "Ended" : "End Service"}
+                    </Button>
+                  </div>
+                  {serviceStartTime && (
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Started: {serviceStartTime.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
+                  {serviceEndTime && serviceDuration !== null && (
+                    <div className="mt-1 text-xs font-semibold text-green-600">
+                      Duration: {serviceDuration} minutes
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Sale Items */}
             {currentSaleServices.length === 0 && currentSaleProducts.length === 0 ? (

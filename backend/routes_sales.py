@@ -2,7 +2,7 @@
 Sales routes for the POS Salon backend.
 """
 from flask import Blueprint, request, jsonify, current_app, send_file
-from models import Sale, SaleService, SaleProduct, Customer, Staff, Service, Product, ProductUsage, Payment
+from models import Sale, SaleService, SaleProduct, Customer, Staff, Service, Product, ProductUsage, Payment, Appointment, AppointmentService
 from db import db
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
@@ -10,15 +10,17 @@ from datetime import datetime, date
 from utils import get_demo_filter, generate_sale_number
 from validators import validate_mpesa_code
 from pdf_generators import generate_sales_receipt_pdf
+from error_helpers import get_user_friendly_error, handle_database_error
 
 bp_sales = Blueprint('sales', __name__)
 
 
 @bp_sales.route('/sales', methods=['POST'])
 def create_sale():
-    """Create a new sale (walk-in transaction)"""
+    """Create a new sale (walk-in transaction or from appointment)"""
     data = request.get_json()
     staff_id = data.get('staff_id')
+    appointment_id = data.get('appointment_id')
     
     if not staff_id:
         return jsonify({'error': 'Staff ID is required'}), 400
@@ -26,13 +28,37 @@ def create_sale():
     # Generate unique sale number
     sale_number = generate_sale_number()
     
-    # Create or get customer if name/phone provided
-    customer_id = None
     # Get staff to check demo status
     staff = Staff.query.get(staff_id)
     is_demo_user = staff.is_demo if staff and hasattr(staff, 'is_demo') and staff.is_demo else False
     
-    if data.get('customer_name') or data.get('customer_phone'):
+    # If appointment_id provided, load appointment and auto-populate
+    appointment = None
+    customer_id = None
+    service_location = None
+    home_service_address = None
+    
+    if appointment_id:
+        appointment = Appointment.query.options(
+            joinedload(Appointment.customer),
+            joinedload(Appointment.staff),
+            joinedload(Appointment.services).joinedload(AppointmentService.service)
+        ).get(appointment_id)
+        
+        if not appointment:
+            return jsonify({'error': 'Appointment not found'}), 404
+        
+        # Auto-populate from appointment
+        customer_id = appointment.customer_id
+        service_location = appointment.service_location or 'salon'
+        home_service_address = appointment.home_service_address
+        
+        # If staff_id not provided or different, use appointment's staff_id
+        if not staff_id or (appointment.staff_id and staff_id != appointment.staff_id):
+            staff_id = appointment.staff_id or staff_id
+    
+    # Create or get customer if name/phone provided (for walk-ins)
+    if not customer_id and (data.get('customer_name') or data.get('customer_phone')):
         # Try to find existing customer by phone (only if same demo status)
         if data.get('customer_phone'):
             existing_customer = Customer.query.filter_by(
@@ -53,22 +79,42 @@ def create_sale():
                 db.session.flush()
                 customer_id = new_customer.id
     
+    # Get customer for name/phone if customer_id exists
+    customer_name = data.get('customer_name')
+    customer_phone = data.get('customer_phone')
+    if customer_id and not customer_name:
+        customer = Customer.query.get(customer_id)
+        if customer:
+            customer_name = customer.name
+            customer_phone = customer.phone
+    
     # Create sale with demo flag
     sale = Sale(
         sale_number=sale_number,
         staff_id=staff_id,
         customer_id=customer_id,
-        customer_name=data.get('customer_name'),
-        customer_phone=data.get('customer_phone'),
+        customer_name=customer_name,
+        customer_phone=customer_phone,
+        appointment_id=appointment_id,
+        service_location=service_location or data.get('service_location'),
+        home_service_address=home_service_address or data.get('home_service_address'),
         status='pending',
-        notes=data.get('notes'),
+        notes=data.get('notes') or (appointment.notes if appointment else None),
         is_demo=is_demo_user
     )
     db.session.add(sale)
     db.session.flush()
     
     # Add services to sale
+    # If appointment exists and no services provided, use appointment services
     services = data.get('services', [])
+    if appointment and not services:
+        for aps in appointment.services:
+            services.append({
+                'service_id': aps.service_id,
+                'quantity': 1
+            })
+    
     for service_data in services:
         service_id = service_data.get('service_id') or service_data.get('id')
         quantity = service_data.get('quantity', 1)
@@ -184,6 +230,34 @@ def complete_sale(id):
     if not payment_method:
         return jsonify({'error': 'Payment method is required'}), 400
     
+    # Record service times and location if provided
+    service_start_time_str = data.get('service_start_time')
+    service_end_time_str = data.get('service_end_time')
+    service_location = data.get('service_location')
+    home_service_address = data.get('home_service_address')
+    
+    if service_start_time_str:
+        try:
+            sale.service_start_time = datetime.fromisoformat(service_start_time_str.replace('Z', '+00:00'))
+        except ValueError:
+            pass  # Ignore invalid format
+    
+    if service_end_time_str:
+        try:
+            sale.service_end_time = datetime.fromisoformat(service_end_time_str.replace('Z', '+00:00'))
+            # Calculate duration if both start and end times are set
+            if sale.service_start_time and sale.service_end_time:
+                duration = sale.service_end_time - sale.service_start_time
+                sale.service_duration_minutes = int(duration.total_seconds() / 60)
+        except ValueError:
+            pass  # Ignore invalid format
+    
+    if service_location:
+        sale.service_location = service_location
+    
+    if home_service_address:
+        sale.home_service_address = home_service_address
+    
     # Validate M-Pesa transaction code format if provided
     if payment_method.lower() in ['m_pesa', 'm-pesa', 'mpesa'] and transaction_code:
         is_valid, error, normalized_code = validate_mpesa_code(transaction_code)
@@ -244,6 +318,35 @@ def complete_sale(id):
         # STEP 4: Mark sale as completed
         sale.status = 'completed'
         sale.completed_at = datetime.utcnow()
+        
+        # STEP 4.5: Link appointment to sale and mark appointment as completed
+        if sale.appointment_id:
+            appointment = Appointment.query.get(sale.appointment_id)
+            if appointment:
+                # Validate appointment status before linking
+                if appointment.status == 'completed':
+                    db.session.rollback()
+                    return jsonify({'error': 'Appointment is already completed'}), 400
+                
+                if appointment.status not in ['scheduled', 'pending']:
+                    db.session.rollback()
+                    return jsonify({'error': f'Cannot link sale to appointment with status: {appointment.status}'}), 400
+                
+                # Prevent linking if appointment is already linked to another sale
+                if appointment.sale_id and appointment.sale_id != sale.id:
+                    db.session.rollback()
+                    return jsonify({'error': 'Appointment is already linked to another sale'}), 400
+                
+                # Validate staff assignment (if appointment has staff_id, it should match sale staff)
+                # Allow if appointment is unassigned (staff_id is None)
+                if appointment.staff_id is not None and appointment.staff_id != sale.staff_id:
+                    db.session.rollback()
+                    return jsonify({'error': 'Appointment is assigned to a different staff member'}), 400
+                
+                # Link appointment to sale (bidirectional)
+                appointment.status = 'completed'
+                appointment.sale_id = sale.id
+                sale.appointment_id = appointment.id  # Ensure bidirectional link
         
         # STEP 5: Update customer stats if customer exists
         if sale.customer_id:

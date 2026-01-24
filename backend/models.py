@@ -129,25 +129,90 @@ class Appointment(db.Model):
     appointment_date = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), default='scheduled')  # scheduled, completed, cancelled
     notes = db.Column(db.Text)
+    service_location = db.Column(db.String(20), default='salon')  # "salon" or "home"
+    home_service_address = db.Column(db.Text, nullable=True)  # Address for home services
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=True)  # Link to completed sale
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
     services = db.relationship('AppointmentService', backref='appointment', lazy=True, cascade='all, delete-orphan')
     payment = db.relationship('Payment', foreign_keys='Payment.appointment_id', backref='appointment', uselist=False, lazy=True)
+    sale = db.relationship('Sale', foreign_keys='Sale.appointment_id', backref='appointment_link', lazy=True, uselist=False)
     
     def to_dict(self):
-        return {
-            'id': self.id,
-            'customer_id': self.customer_id,
-            'staff_id': self.staff_id,
-            'appointment_date': self.appointment_date.isoformat() if self.appointment_date else None,
-            'status': self.status,
-            'notes': self.notes,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'customer': self.customer.to_dict() if self.customer else None,
-            'staff': self.staff.to_dict() if self.staff else None,
-            'services': [aps.service.to_dict() for aps in self.services] if self.services else []
-        }
+        try:
+            # Safely get customer
+            customer_dict = None
+            try:
+                if hasattr(self, 'customer') and self.customer:
+                    customer_dict = self.customer.to_dict()
+            except Exception:
+                pass  # Skip customer if error
+            
+            # Safely get staff
+            staff_dict = None
+            try:
+                if hasattr(self, 'staff') and self.staff:
+                    staff_dict = self.staff.to_dict()
+            except Exception:
+                pass  # Skip staff if error
+            
+            # Safely get services
+            services_list = []
+            try:
+                if hasattr(self, 'services') and self.services:
+                    for aps in self.services:
+                        try:
+                            if hasattr(aps, 'service') and aps.service:
+                                services_list.append(aps.service.to_dict())
+                        except Exception:
+                            pass  # Skip individual service if error
+            except Exception:
+                pass  # Skip services if error
+            
+            # Safely get sale
+            sale_dict = None
+            try:
+                if hasattr(self, 'sale') and self.sale:
+                    sale_dict = self.sale.to_dict()
+            except Exception:
+                pass  # Skip sale if error
+            
+            return {
+                'id': self.id,
+                'customer_id': self.customer_id,
+                'staff_id': getattr(self, 'staff_id', None),
+                'appointment_date': self.appointment_date.isoformat() if self.appointment_date else None,
+                'status': getattr(self, 'status', 'scheduled'),
+                'notes': getattr(self, 'notes', None),
+                'service_location': getattr(self, 'service_location', 'salon'),
+                'home_service_address': getattr(self, 'home_service_address', None),
+                'sale_id': getattr(self, 'sale_id', None),
+                'created_at': self.created_at.isoformat() if hasattr(self, 'created_at') and self.created_at else None,
+                'customer': customer_dict,
+                'staff': staff_dict,
+                'services': services_list,
+                'sale': sale_dict
+            }
+        except Exception as e:
+            # Fallback if there's an error accessing relationships or missing columns
+            import traceback
+            print(f"Error in Appointment.to_dict() for appointment {getattr(self, 'id', 'unknown')}: {str(e)}")
+            try:
+                if hasattr(self, '__dict__'):
+                    traceback.print_exc()
+            except:
+                pass
+            
+            return {
+                'id': getattr(self, 'id', None),
+                'customer_id': getattr(self, 'customer_id', None),
+                'staff_id': getattr(self, 'staff_id', None),
+                'appointment_date': self.appointment_date.isoformat() if hasattr(self, 'appointment_date') and self.appointment_date else None,
+                'status': getattr(self, 'status', 'scheduled'),
+                'notes': getattr(self, 'notes', None),
+                'created_at': self.created_at.isoformat() if hasattr(self, 'created_at') and self.created_at else None,
+            }
 
 class AppointmentService(db.Model):
     __tablename__ = 'appointment_services'
@@ -183,33 +248,60 @@ class Sale(db.Model):
     is_demo = db.Column(db.Boolean, default=False)  # Marks demo sale records
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     completed_at = db.Column(db.DateTime)  # When sale was completed
+    appointment_id = db.Column(db.Integer, db.ForeignKey('appointments.id'), nullable=True)  # Link sale to appointment
+    service_start_time = db.Column(db.DateTime, nullable=True)  # When service actually started
+    service_end_time = db.Column(db.DateTime, nullable=True)  # When service actually ended
+    service_duration_minutes = db.Column(db.Integer, nullable=True)  # Calculated duration
+    service_location = db.Column(db.String(20), nullable=True)  # "salon" or "home"
+    home_service_address = db.Column(db.Text, nullable=True)  # Full address if home-service
     
     # Relationships
     staff = db.relationship('Staff', backref='sales', lazy=True)
     customer = db.relationship('Customer', backref='sales', lazy=True)
+    appointment = db.relationship('Appointment', foreign_keys='Sale.appointment_id', lazy=True)
     sale_services = db.relationship('SaleService', backref='sale', lazy=True, cascade='all, delete-orphan')
     sale_products = db.relationship('SaleProduct', backref='sale', lazy=True, cascade='all, delete-orphan')
     payment = db.relationship('Payment', foreign_keys='Payment.sale_id', backref='sale', uselist=False, lazy=True)
     
     def to_dict(self):
-        return {
-            'id': self.id,
-            'sale_number': self.sale_number,
-            'staff_id': self.staff_id,
-            'customer_id': self.customer_id,
-            'customer_name': self.customer_name,
-            'customer_phone': self.customer_phone,
-            'status': self.status,
-            'subtotal': self.subtotal,
-            'tax_amount': self.tax_amount,
-            'total_amount': self.total_amount,
-            'commission_amount': self.commission_amount,
-            'notes': self.notes,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
-            'staff': self.staff.to_dict() if self.staff else None,
-            'customer': self.customer.to_dict() if self.customer else None
-        }
+        try:
+            return {
+                'id': self.id,
+                'sale_number': self.sale_number,
+                'staff_id': self.staff_id,
+                'customer_id': self.customer_id,
+                'customer_name': self.customer_name,
+                'customer_phone': self.customer_phone,
+                'status': self.status,
+                'subtotal': self.subtotal,
+                'tax_amount': self.tax_amount,
+                'total_amount': self.total_amount,
+                'commission_amount': self.commission_amount,
+                'notes': self.notes,
+                'appointment_id': getattr(self, 'appointment_id', None),
+                'service_start_time': self.service_start_time.isoformat() if hasattr(self, 'service_start_time') and self.service_start_time else None,
+                'service_end_time': self.service_end_time.isoformat() if hasattr(self, 'service_end_time') and self.service_end_time else None,
+                'service_duration_minutes': getattr(self, 'service_duration_minutes', None),
+                'service_location': getattr(self, 'service_location', None),
+                'home_service_address': getattr(self, 'home_service_address', None),
+                'created_at': self.created_at.isoformat() if self.created_at else None,
+                'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+                'staff': self.staff.to_dict() if self.staff else None,
+                'customer': self.customer.to_dict() if self.customer else None,
+                'appointment': self.appointment.to_dict() if hasattr(self, 'appointment') and self.appointment else None
+            }
+        except Exception as e:
+            # Fallback if there's an error accessing relationships or missing columns
+            return {
+                'id': self.id,
+                'sale_number': self.sale_number,
+                'staff_id': self.staff_id,
+                'customer_id': self.customer_id,
+                'customer_name': self.customer_name,
+                'status': self.status,
+                'total_amount': self.total_amount,
+                'created_at': self.created_at.isoformat() if self.created_at else None,
+            }
 
 class SaleService(db.Model):
     __tablename__ = 'sale_services'
@@ -477,19 +569,29 @@ class User(db.Model):
         return False
     
     def to_dict(self):
-        return {
-            'id': self.id,
-            'email': self.email,
-            'name': self.name,
-            'phone': self.phone,
-            'role': self.role,
-            'managed_by': self.managed_by,
-            'is_active': self.is_active,
-            'is_demo': self.is_demo,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'last_login': self.last_login.isoformat() if self.last_login else None
-            # password_hash is intentionally excluded
-        }
+        try:
+            return {
+                'id': self.id,
+                'email': self.email,
+                'name': self.name,
+                'phone': getattr(self, 'phone', None),
+                'role': self.role,
+                'managed_by': getattr(self, 'managed_by', None),
+                'is_active': self.is_active,
+                'is_demo': getattr(self, 'is_demo', False),
+                'created_at': self.created_at.isoformat() if self.created_at else None,
+                'last_login': self.last_login.isoformat() if self.last_login else None
+                # password_hash is intentionally excluded
+            }
+        except Exception as e:
+            # Fallback if there's an error accessing attributes
+            return {
+                'id': self.id,
+                'email': self.email,
+                'name': self.name,
+                'role': self.role,
+                'is_active': self.is_active,
+            }
 
 class CommissionPayment(db.Model):
     """Track commission payments made to staff"""

@@ -6,6 +6,8 @@ from models import User
 from db import db
 from datetime import datetime
 from auth_helpers import require_auth, require_admin
+from sqlalchemy.exc import OperationalError, DatabaseError
+from error_helpers import get_user_friendly_error, handle_database_error
 
 bp_auth = Blueprint('auth', __name__)
 
@@ -24,28 +26,52 @@ def login():
         if not email or not password:
             return jsonify({'success': False, 'error': 'Email and password are required'}), 400
         
+        # Check database connection
+        try:
+            db.session.execute(db.text('SELECT 1'))
+        except Exception as db_conn_error:
+            return jsonify({
+                'success': False,
+                'error': get_user_friendly_error(db_conn_error, current_app.debug)
+            }), 500
+        
         # Check if users table exists
         try:
             from sqlalchemy import inspect
             inspector = inspect(db.engine)
-            if 'users' not in inspector.get_table_names():
+            tables = inspector.get_table_names()
+            if 'users' not in tables:
                 return jsonify({
                     'success': False,
-                    'error': 'Database not initialized. Please run: flask db upgrade'
+                    'error': get_user_friendly_error('Database not initialized', current_app.debug)
                 }), 500
         except Exception as db_check_error:
             # If we can't check, continue and let the query fail with a better error
             pass
         
-        # Find user by email
+        # Find user by email - handle missing columns gracefully
         try:
             user = User.query.filter_by(email=email.lower().strip()).first()
-        except Exception as query_error:
+        except (OperationalError, DatabaseError) as query_error:
+            # Log technical details server-side only
             import traceback
-            traceback.print_exc()
+            print(f"Database query error: {str(query_error)}")
+            if current_app.debug:
+                traceback.print_exc()
+            
+            # Return user-friendly error
             return jsonify({
                 'success': False,
-                'error': f'Database error: {str(query_error)}. Please run: flask db upgrade'
+                'error': get_user_friendly_error(query_error, current_app.debug)
+            }), 500
+        except Exception as query_error:
+            import traceback
+            print(f"Unexpected error during login: {str(query_error)}")
+            if current_app.debug:
+                traceback.print_exc()
+            return jsonify({
+                'success': False,
+                'error': get_user_friendly_error(query_error, current_app.debug)
             }), 500
         
         if not user:
@@ -62,14 +88,22 @@ def login():
         try:
             user.last_login = datetime.utcnow()
             db.session.commit()
+        except (OperationalError, DatabaseError) as commit_error:
+            db.session.rollback()
+            import traceback
+            print(f"Database commit error: {str(commit_error)}")
+            if current_app.debug:
+                traceback.print_exc()
+            # Don't fail login if we can't update last_login
+            pass
         except Exception as commit_error:
             db.session.rollback()
             import traceback
-            traceback.print_exc()
-            return jsonify({
-                'success': False,
-                'error': f'Database error: {str(commit_error)}'
-            }), 500
+            print(f"Error updating last login: {str(commit_error)}")
+            if current_app.debug:
+                traceback.print_exc()
+            # Don't fail login if we can't update last_login
+            pass
         
         # Store user ID in session for subsequent requests (if session is available)
         try:
@@ -79,25 +113,61 @@ def login():
             pass
         
         # Return user data (without password)
+        try:
+            user_dict = user.to_dict()
+        except (OperationalError, DatabaseError) as dict_error:
+            import traceback
+            print(f"Error serializing user data: {str(dict_error)}")
+            if current_app.debug:
+                traceback.print_exc()
+            # Fallback user dict if to_dict fails due to missing columns
+            user_dict = {
+                'id': user.id,
+                'email': user.email,
+                'name': user.name,
+                'role': user.role,
+                'is_active': user.is_active
+            }
+        except Exception as dict_error:
+            import traceback
+            print(f"Unexpected error serializing user: {str(dict_error)}")
+            if current_app.debug:
+                traceback.print_exc()
+            # Fallback user dict if to_dict fails
+            user_dict = {
+                'id': user.id,
+                'email': user.email,
+                'name': user.name,
+                'role': user.role,
+                'is_active': user.is_active
+            }
+        
         return jsonify({
             'success': True,
-            'user': user.to_dict()
+            'user': user_dict
         }), 200
         
+    except (OperationalError, DatabaseError) as e:
+        db.session.rollback()
+        import traceback
+        error_msg = str(e)
+        print(f"Database error in login: {error_msg}")
+        if current_app.debug:
+            traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': get_user_friendly_error(e, current_app.debug)
+        }), 500
     except Exception as e:
         db.session.rollback()
         import traceback
         error_msg = str(e)
         print(f"Error in login: {error_msg}")
-        traceback.print_exc()
         if current_app.debug:
-            return jsonify({
-                'success': False,
-                'error': f'An error occurred during login: {error_msg}'
-            }), 500
+            traceback.print_exc()
         return jsonify({
             'success': False,
-            'error': 'An error occurred during login. Please try again.'
+            'error': get_user_friendly_error(e, current_app.debug)
         }), 500
 
 
@@ -167,18 +237,25 @@ def signup():
             'message': 'Account created successfully'
         }), 201
         
+    except (OperationalError, DatabaseError) as e:
+        db.session.rollback()
+        import traceback
+        error_msg = str(e)
+        print(f"Database error in signup: {error_msg}")
+        if current_app.debug:
+            traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': get_user_friendly_error(e, current_app.debug)
+        }), 500
     except Exception as e:
         db.session.rollback()
         import traceback
         error_msg = str(e)
         print(f"Error in signup: {error_msg}")
-        traceback.print_exc()
         if current_app.debug:
-            return jsonify({
-                'success': False,
-                'error': f'An error occurred during signup: {error_msg}'
-            }), 500
+            traceback.print_exc()
         return jsonify({
             'success': False,
-            'error': 'An error occurred during signup. Please try again.'
+            'error': get_user_friendly_error(e, current_app.debug)
         }), 500
