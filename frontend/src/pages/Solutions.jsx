@@ -3,81 +3,73 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Scissors, Sparkles, Users, Heart, Building2, ArrowRight, Palette } from "lucide-react"
 import Breadcrumb from "@/components/Breadcrumb"
 import NavigationHeader from "@/components/NavigationHeader"
+import { BUSINESS_TYPES } from "@/lib/serviceCategories"
+import { toKebabCase } from "@/lib/posTypes"
 
 export default function Solutions() {
-  const solutions = [
-    {
-      title: "For Hair Salons",
-      description: "Complete management solution for hair salons of all sizes. Manage appointments, track stylist performance, and streamline operations.",
-      icon: Scissors,
-      gradient: "from-[#ef4444] to-red-600"
-    },
-    {
-      title: "For Spas",
-      description: "Comprehensive spa management with appointment scheduling, treatment tracking, and inventory management for products and supplies.",
-      icon: Sparkles,
-      gradient: "from-blue-500 to-blue-600"
-    },
-    {
-      title: "For Barber Shops",
-      description: "Simple and effective POS system designed for barber shops. Fast checkout, staff management, and customer tracking.",
-      icon: Users,
-      gradient: "from-purple-500 to-purple-600"
-    },
-    {
-      title: "For Nail Salons",
-      description: "Specialized solution for nail salons with service management, product tracking, and appointment scheduling.",
-      icon: Heart,
-      gradient: "from-pink-500 to-pink-600"
-    },
-    {
-      title: "For Beauty Studios",
-      description: "All-in-one platform for beauty studios offering multiple services. Manage appointments, staff, and inventory in one place.",
-      icon: Sparkles,
-      gradient: "from-orange-500 to-orange-600"
-    },
-    {
-      title: "For Multi-Location Businesses",
-      description: "Enterprise solution for businesses with multiple locations. Centralized management with location-specific reporting.",
-      icon: Building2,
-      gradient: "from-indigo-500 to-indigo-600"
+  // Map all business types to solution cards
+  const solutions = BUSINESS_TYPES.map((businessType) => {
+    // Map icons based on business type
+    const iconMap = {
+      barber_shop: Users,
+      massage: Heart,
+      hair: Scissors,
+      spa: Sparkles,
+      makeup_artists: Palette,
+      beauty: Sparkles,
+      bridal: Heart,
+      tattoo: Palette,
+      pet_grooming: Heart,
+      nail_salon: Heart,
+      aesthetic_skin_care: Sparkles,
+      salon_booth_rental: Building2,
     }
-  ]
+    
+    // Map gradients based on business type
+    const gradientMap = {
+      barber_shop: "from-purple-500 to-purple-600",
+      massage: "from-blue-500 to-blue-600",
+      hair: "from-[#ef4444] to-red-600",
+      spa: "from-blue-500 to-blue-600",
+      makeup_artists: "from-pink-500 to-pink-600",
+      beauty: "from-orange-500 to-orange-600",
+      bridal: "from-pink-500 to-pink-600",
+      tattoo: "from-gray-700 to-gray-800",
+      pet_grooming: "from-green-500 to-green-600",
+      nail_salon: "from-pink-500 to-pink-600",
+      aesthetic_skin_care: "from-indigo-500 to-indigo-600",
+      salon_booth_rental: "from-indigo-500 to-indigo-600",
+    }
+    
+    return {
+      id: businessType.id,
+      title: `For ${businessType.name}`,
+      description: `Complete management solution for ${businessType.name.toLowerCase()} businesses. Manage appointments, track performance, and streamline operations.`,
+      icon: iconMap[businessType.id] || Building2,
+      gradient: gradientMap[businessType.id] || "from-gray-500 to-gray-600",
+    }
+  })
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <NavigationHeader />
 
-      {/* Hero Section */}
-      <section className="relative py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#ef4444]/10 via-blue-50/50 to-purple-50/30"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#ef4444]/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      {/* Dark Header Section */}
+      <section className="bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 text-white py-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-6xl mx-auto">
             <Breadcrumb items={[
               { label: "Home", href: "/" },
               { label: "Solutions" }
             ]} />
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-6">
-                  Solutions
-                </h1>
-                <p className="text-sm md:text-base text-gray-700 leading-relaxed">
-                  Tailored solutions for different types of beauty and wellness businesses
-                </p>
-              </div>
-              <div className="relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=600&fit=crop&auto=format" 
-                  alt="Business solutions" 
-                  className="aspect-square rounded-3xl object-cover shadow-2xl"
-                />
-                <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-500 rounded-2xl opacity-20"></div>
-                <div className="absolute -top-4 -left-4 w-16 h-16 bg-green-500 rounded-xl opacity-20"></div>
-              </div>
+            <div className="mt-8">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4">
+                Solutions
+              </h1>
+              <p className="text-lg text-gray-300 max-w-2xl">
+                Tailored solutions for different types of beauty and wellness businesses
+              </p>
             </div>
           </div>
         </div>
@@ -98,7 +90,7 @@ export default function Solutions() {
                     {solution.title}
                   </h2>
                   <p className="text-gray-700 leading-relaxed mb-4">{solution.description}</p>
-                  <Link to="/#contact" className="inline-flex items-center gap-2 text-[#ef4444] hover:text-[#dc2626] font-medium transition-colors">
+                  <Link to={`/solutions/${toKebabCase(solution.id)}`} className="inline-flex items-center gap-2 text-[#ef4444] hover:text-[#dc2626] font-medium transition-colors">
                     Learn More
                     <ArrowRight className="h-4 w-4" />
                   </Link>

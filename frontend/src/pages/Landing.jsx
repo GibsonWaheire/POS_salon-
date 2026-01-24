@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect, useMemo } from "react"
+import { useNavigate, useParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -49,7 +49,12 @@ import {
   Eye,
   TrendingUp,
   Calendar as CalendarIcon,
-  CheckCircle2
+  CheckCircle2,
+  Heart,
+  Sparkles,
+  Building2,
+  Palette,
+  Dog
 } from "lucide-react"
 import { toast } from "sonner"
 import WhatsAppChat from "@/components/WhatsAppChat"
@@ -58,9 +63,47 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatCurrency } from "@/lib/currency"
+import { getPOSType, fromKebabCase, toKebabCase, POS_TYPES } from "@/lib/posTypes"
+import { BUSINESS_TYPES } from "@/lib/serviceCategories"
 
 export default function Landing() {
   const navigate = useNavigate()
+  const { posType } = useParams()
+  
+  // Get POS configuration if posType is provided (memoized for stable reference)
+  const posConfig = useMemo(() => {
+    return posType ? getPOSType(fromKebabCase(posType)) : null
+  }, [posType])
+  
+  // Helper function to replace POS-specific text
+  const replacePOSText = (text, defaultText = null) => {
+    if (!posConfig) return defaultText || text
+    
+    // Replace common patterns
+    let replaced = text
+      .replace(/#1 Salon Software To Grow Your Business/g, posConfig.heroTitle)
+      .replace(/Salonyst is an all-in-one salon management software/g, posConfig.heroDescription.split('.')[0] + '.')
+      .replace(/salon software/gi, posConfig.softwareName.toLowerCase())
+      .replace(/Salon Software/g, posConfig.softwareName)
+      .replace(/salon staff members/gi, `${posConfig.industryTerm} staff members`)
+      .replace(/salon services/gi, `${posConfig.industryTerm} services`)
+      .replace(/Salons Using Salonyst/g, `${posConfig.pluralTerm ? posConfig.pluralTerm.charAt(0).toUpperCase() + posConfig.pluralTerm.slice(1) : posConfig.displayName + 's'} Using Salonyst`)
+      .replace(/Trusted Salon Software For/g, `Trusted ${posConfig.softwareName} For`)
+      .replace(/Your salon name/gi, `Your ${posConfig.businessTerm} name`)
+      .replace(/your salon/gi, `your ${posConfig.businessTerm}`)
+      .replace(/Tell us about your salon/gi, `Tell us about your ${posConfig.businessTerm}`)
+    
+    return replaced
+  }
+  
+  // Update document title based on POS type
+  useEffect(() => {
+    if (posConfig) {
+      document.title = `${posConfig.softwareName} | Salonyst`
+    } else {
+      document.title = "Salonyst | Salon Management Software"
+    }
+  }, [posConfig])
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -344,8 +387,47 @@ export default function Landing() {
     "Pet Grooming Pro"
   ]
 
+  // Icon mapping for Solutions dropdown
+  const solutionIcons = {
+    barber_shop: Users,
+    spa: Sparkles,
+    hair: Scissors,
+    bridal: Heart,
+    aesthetic_skin_care: Sparkles,
+    massage: Heart,
+    nail_salon: Heart,
+    tattoo: Palette,
+    pet_grooming: Dog,
+    salon_booth_rental: Building2,
+    makeup_artists: Palette,
+    beauty: Sparkles,
+  }
+
+  // Solutions dropdown items arranged in columns (matching image layout)
+  const solutionsDropdownItems = [
+    // Column 1
+    [
+      { id: "barber_shop", posType: POS_TYPES.barber_shop },
+      { id: "spa", posType: POS_TYPES.spa },
+      { id: "salon_booth_rental", posType: POS_TYPES.salon_booth_rental },
+    ],
+    // Column 2
+    [
+      { id: "hair", posType: POS_TYPES.hair },
+      { id: "bridal", posType: POS_TYPES.bridal },
+      { id: "aesthetic_skin_care", posType: POS_TYPES.aesthetic_skin_care },
+    ],
+    // Column 3
+    [
+      { id: "massage", posType: POS_TYPES.massage },
+      { id: "nail_salon", posType: POS_TYPES.nail_salon },
+      { id: "tattoo", posType: POS_TYPES.tattoo },
+      { id: "pet_grooming", posType: POS_TYPES.pet_grooming },
+    ],
+  ]
+
   const stats = [
-    { value: counters.salons, label: "Salons Using Salonyst", suffix: "+" },
+    { value: counters.salons, label: posConfig ? `${posConfig.pluralTerm ? posConfig.pluralTerm.charAt(0).toUpperCase() + posConfig.pluralTerm.slice(1) : posConfig.displayName + 's'} Using Salonyst` : "Salons Using Salonyst", suffix: "+" },
     { value: counters.transactions, label: "Transactions Processed", suffix: "+" },
     { value: counters.customers, label: "Happy Customers", suffix: "+" },
     { value: counters.satisfaction, label: "Customer Satisfaction", suffix: "%" }
@@ -399,7 +481,10 @@ export default function Landing() {
               </DropdownMenu>
 
               <DropdownMenu>
-                <DropdownMenuTrigger className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors flex items-center gap-2 py-2" style={{ fontSize: '18px', fontWeight: 600 }}>
+                <DropdownMenuTrigger 
+                  className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors flex items-center gap-2 py-2" 
+                  style={{ fontSize: '18px', fontWeight: 600 }}
+                >
                   Features
                   <ChevronDown className="h-5 w-5" />
                 </DropdownMenuTrigger>
@@ -449,9 +534,49 @@ export default function Landing() {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors py-2" style={{ fontSize: '18px', fontWeight: 600 }}>
-                Solutions
-              </a>
+              <DropdownMenu>
+                <DropdownMenuTrigger 
+                  className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors flex items-center gap-2 py-2" 
+                  style={{ fontSize: '18px', fontWeight: 600 }}
+                >
+                  Solutions
+                  <ChevronDown className="h-5 w-5" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent 
+                  className="w-[950px] p-8 bg-white shadow-xl" 
+                  align="start"
+                >
+                  <div className="grid grid-cols-3 gap-8">
+                    {solutionsDropdownItems.map((column, colIndex) => (
+                      <div key={colIndex} className="space-y-3">
+                        {column.map((item) => {
+                          const Icon = solutionIcons[item.id] || Building2
+                          const posType = item.posType
+                          return (
+                            <DropdownMenuItem
+                              key={item.id}
+                              onClick={() => navigate(`/solutions/${toKebabCase(item.id)}`)}
+                              className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
+                            >
+                              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[#ef4444] to-red-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                                <Icon className="h-6 w-6 text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0 pt-1">
+                                <h4 className="font-bold text-gray-900 text-sm mb-1.5 group-hover:text-[#ef4444] transition-colors leading-tight">
+                                  {posType.softwareName}
+                                </h4>
+                                <p className="text-xs text-gray-600 leading-relaxed">
+                                  {posType.dropdownDescription}
+                                </p>
+                              </div>
+                            </DropdownMenuItem>
+                          )
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <a href="/pricing" onClick={(e) => { e.preventDefault(); navigate("/pricing"); }} className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors py-2" style={{ fontSize: '18px', fontWeight: 600 }}>
                 Pricing
               </a>
@@ -490,10 +615,10 @@ export default function Landing() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 leading-tight" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 800 }}>
-              #1 Salon Software To Grow Your Business
+              {posConfig ? posConfig.heroTitle : "#1 Salon Software To Grow Your Business"}
             </h1>
             <p className="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed font-normal">
-              Salonyst is an all-in-one salon management software designed to promote growth in the beauty and wellness industry. Helps to manage day-to-day operations and elevate your client experience.
+              {posConfig ? posConfig.heroDescription : "Salonyst is an all-in-one salon management software designed to promote growth in the beauty and wellness industry. Helps to manage day-to-day operations and elevate your client experience."}
             </p>
             <div className="pt-8 flex flex-col items-center gap-4">
               <div 
@@ -728,7 +853,7 @@ export default function Landing() {
                           <div className="mb-6 flex items-center justify-between">
                             <div>
                               <h2 className="text-2xl font-bold mb-2">Staff Management</h2>
-                              <p className="text-gray-600">Manage your salon staff members</p>
+                              <p className="text-gray-600">{posConfig ? `Manage your ${posConfig.industryTerm} staff members` : "Manage your salon staff members"}</p>
                             </div>
                             <Button onClick={() => toast.info("Add Staff feature - Demo only")} className="bg-[#ef4444] hover:bg-[#dc2626]">
                               <Plus className="h-4 w-4 mr-2" />
@@ -790,7 +915,7 @@ export default function Landing() {
                           <div className="mb-6 flex items-center justify-between">
                             <div>
                               <h2 className="text-2xl font-bold mb-2">Services Management</h2>
-                              <p className="text-gray-600">Manage salon services and pricing</p>
+                              <p className="text-gray-600">{posConfig ? `Manage ${posConfig.industryTerm} services and pricing` : "Manage salon services and pricing"}</p>
                             </div>
                             <Button onClick={() => toast.info("Add Service feature - Demo only")} className="bg-[#ef4444] hover:bg-[#dc2626]">
                               <Plus className="h-4 w-4 mr-2" />
@@ -1746,7 +1871,7 @@ export default function Landing() {
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-900">
-            Trusted Salon Software For
+            {posConfig ? `Trusted ${posConfig.softwareName} For` : "Trusted Salon Software For"}
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {salonTypes.map((type, index) => (
@@ -2159,7 +2284,7 @@ export default function Landing() {
                       <Label htmlFor="businessName" className="text-gray-900">Business Name</Label>
                       <Input
                         id="businessName"
-                        placeholder="Your salon name"
+                        placeholder={posConfig ? `Your ${posConfig.businessTerm} name` : "Your salon name"}
                         value={formData.businessName}
                         onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
                         disabled={isSubmitting}
@@ -2171,7 +2296,7 @@ export default function Landing() {
                     <Label htmlFor="message" className="text-gray-900">Message / Requirements</Label>
                     <Textarea
                       id="message"
-                      placeholder="Tell us about your salon and any specific requirements..."
+                      placeholder={posConfig ? `Tell us about your ${posConfig.businessTerm} and any specific requirements...` : "Tell us about your salon and any specific requirements..."}
                       rows={5}
                       value={formData.message}
                       onChange={(e) => setFormData({ ...formData, message: e.target.value })}
@@ -2254,18 +2379,17 @@ export default function Landing() {
             <div>
               <h3 className="font-semibold mb-4 text-white">Who Can Use It?</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Barber Shops</a></li>
-                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Hair Salons</a></li>
-                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Massage Therapy</a></li>
-                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Nail Salon</a></li>
-                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Spas</a></li>
-                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Bridal Salon</a></li>
-                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Medical Spa Software</a></li>
-                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Aesthetic Skin Clinic</a></li>
-                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Tattoo Artist Software</a></li>
-                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Salon Booth For Renter</a></li>
-                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Tanning Salon Software</a></li>
-                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Pet Grooming</a></li>
+                {BUSINESS_TYPES.map((businessType) => (
+                  <li key={businessType.id}>
+                    <a 
+                      href={`/solutions/${toKebabCase(businessType.id)}`} 
+                      onClick={(e) => { e.preventDefault(); navigate(`/solutions/${toKebabCase(businessType.id)}`); }} 
+                      className="hover:text-white transition-colors"
+                    >
+                      {businessType.name}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
 
