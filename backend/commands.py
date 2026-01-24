@@ -186,10 +186,62 @@ def show_demo_login():
     click.echo('Example: Staff ID: 1, PIN: 1234@')
     click.echo('=' * 70)
 
+SEED_SERVICES = [
+    {"name": "Haircut & Style", "price": 1000, "duration": 45, "category": "hair", "description": "Professional haircut and styling"},
+    {"name": "Blowout", "price": 750, "duration": 30, "category": "hair", "description": "Professional blow dry styling"},
+    {"name": "Color - Full Head", "price": 2500, "duration": 120, "category": "hair", "description": "Full head hair coloring service"},
+    {"name": "Highlights", "price": 3000, "duration": 150, "category": "hair", "description": "Hair highlighting service"},
+    {"name": "Balayage", "price": 3500, "duration": 180, "category": "hair", "description": "Balayage hair coloring technique"},
+    {"name": "Cornrows", "price": 1500, "duration": 90, "category": "hair", "description": "Traditional cornrow braiding"},
+    {"name": "Manicure", "price": 800, "duration": 45, "category": "nails", "description": "Professional nail care and polish"},
+    {"name": "Pedicure", "price": 1000, "duration": 60, "category": "nails", "description": "Professional foot care and polish"},
+    {"name": "Facial Treatment", "price": 2000, "duration": 60, "category": "facial", "description": "Deep cleansing facial treatment"},
+    {"name": "Bridal Package", "price": 15000, "duration": 240, "category": "bridal", "description": "Complete bridal makeover package"},
+]
+
+
+@click.command("seed-services")
+@click.option("--force", is_flag=True, help="Run even if services exist; skip duplicates by name")
+@with_appcontext
+def seed_services(force):
+    """Seed services with categories (hair, nails, facial, bridal) for POS filtering."""
+    existing_count = Service.query.count()
+    if existing_count > 0 and not force:
+        click.echo(f"Services already exist ({existing_count}). Use --force to add missing seed services.")
+        return
+
+    created = 0
+    updated = 0
+    for s in SEED_SERVICES:
+        existing = Service.query.filter_by(name=s["name"]).first()
+        cat = (s.get("category") or "general").lower()
+        if not existing:
+            svc = Service(
+                name=s["name"],
+                description=s.get("description"),
+                price=s["price"],
+                duration=s["duration"],
+                category=cat,
+            )
+            db.session.add(svc)
+            created += 1
+        elif force and (not existing.category or existing.category != cat):
+            existing.category = cat
+            updated += 1
+
+    db.session.commit()
+    click.echo(f"✓ Created {created} seed services (hair, nails, facial, bridal)")
+    if updated:
+        click.echo(f"✓ Updated category for {updated} existing services")
+    if created == 0 and updated == 0 and force:
+        click.echo("All seed services already exist with correct categories.")
+
+
 def register_commands(app):
     """Register all CLI commands with the Flask app"""
     app.cli.add_command(init_db)
     app.cli.add_command(seed_staff)
+    app.cli.add_command(seed_services)
     app.cli.add_command(list_staff)
     app.cli.add_command(create_staff)
     app.cli.add_command(reset_db)

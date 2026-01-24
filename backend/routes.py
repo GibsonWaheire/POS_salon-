@@ -18,6 +18,7 @@ from routes_expenses import bp_expenses
 from routes_shifts import bp_shifts
 from routes_dashboard import bp_dashboard
 from routes_appointments import bp_appointments
+from routes_settings import bp_settings
 
 # Create main blueprint
 bp = Blueprint('api', __name__, url_prefix='/api')
@@ -37,3 +38,4 @@ bp.register_blueprint(bp_expenses)
 bp.register_blueprint(bp_shifts)
 bp.register_blueprint(bp_dashboard)
 bp.register_blueprint(bp_appointments)
+bp.register_blueprint(bp_settings)

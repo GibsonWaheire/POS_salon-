@@ -6,10 +6,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Pencil, Trash2, Plus, AlertTriangle } from "lucide-react"
 import { useAuth } from "@/context/AuthContext"
+import { CATEGORIES_FOR_FORM, getCategoryName } from "@/lib/serviceCategories"
 
 const formatKES = (amount) => {
   return `KES ${amount.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -32,7 +34,8 @@ export default function Services() {
     name: "",
     description: "",
     price: "",
-    duration: ""
+    duration: "",
+    category: "general"
   })
   const [priceChangeWarning, setPriceChangeWarning] = useState(false)
   const [originalPrice, setOriginalPrice] = useState(null)
@@ -77,7 +80,8 @@ export default function Services() {
           name: formData.name,
           description: formData.description || null,
           price: parseFloat(formData.price),
-          duration: parseInt(formData.duration)
+          duration: parseInt(formData.duration),
+          category: formData.category || null
         })
       })
 
@@ -101,7 +105,8 @@ export default function Services() {
       name: service.name,
       description: service.description || "",
       price: service.price.toString(),
-      duration: service.duration.toString()
+      duration: service.duration.toString(),
+      category: service.category || "general"
     })
     setOriginalPrice(service.price)
     setPriceChangeWarning(false)
@@ -129,6 +134,7 @@ export default function Services() {
           description: formData.description || null,
           price: newPrice,
           duration: parseInt(formData.duration),
+          category: formData.category || null,
           price_change_notes: priceChanged ? `Price changed from ${formatKES(originalPrice)} to ${formatKES(newPrice)}` : null
         })
       })
@@ -176,7 +182,8 @@ export default function Services() {
       name: "",
       description: "",
       price: "",
-      duration: ""
+      duration: "",
+      category: "general"
     })
     setPriceChangeWarning(false)
     setOriginalPrice(null)
@@ -262,6 +269,24 @@ export default function Services() {
                     required
                   />
                 </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="add-category">Category</Label>
+                  <Select
+                    value={formData.category}
+                    onValueChange={(v) => setFormData({ ...formData, category: v })}
+                  >
+                    <SelectTrigger id="add-category">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CATEGORIES_FOR_FORM.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setAddDialogOpen(false)}>
@@ -294,6 +319,7 @@ export default function Services() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Description</TableHead>
+                  <TableHead>Category</TableHead>
                   <TableHead>Price</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -302,7 +328,7 @@ export default function Services() {
               <TableBody>
                 {services.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                       No services found. Click "Add Service" to create one.
                     </TableCell>
                   </TableRow>
@@ -311,6 +337,7 @@ export default function Services() {
                     <TableRow key={service.id}>
                       <TableCell className="font-medium">{service.name}</TableCell>
                       <TableCell>{service.description || "-"}</TableCell>
+                      <TableCell>{getCategoryName(service.category || "general")}</TableCell>
                       <TableCell className="font-semibold">{formatKES(service.price)}</TableCell>
                       <TableCell>{service.duration} min</TableCell>
                       <TableCell className="text-right">
@@ -410,6 +437,24 @@ export default function Services() {
                   onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
                   required
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-category">Category</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(v) => setFormData({ ...formData, category: v })}
+                >
+                  <SelectTrigger id="edit-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES_FOR_FORM.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>

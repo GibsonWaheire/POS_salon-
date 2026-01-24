@@ -23,6 +23,7 @@ import Users from "./pages/Users"
 import Shifts from "./pages/Shifts"
 import Sales from "./pages/Sales"
 import Appointments from "./pages/Appointments"
+import Settings from "./pages/Settings"
 import AboutUs from "./pages/AboutUs"
 import WhyChooseUs from "./pages/WhyChooseUs"
 import SuccessStories from "./pages/SuccessStories"
@@ -210,6 +211,17 @@ function App() {
             }
           >
             <Route index element={<Appointments />} />
+          </Route>
+          
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Settings />} />
           </Route>
         </Routes>
       </BrowserRouter>

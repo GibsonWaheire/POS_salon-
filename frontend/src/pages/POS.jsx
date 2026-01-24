@@ -12,6 +12,7 @@ import {
   SelectValue,
   SelectGroup,
   SelectLabel,
+  SelectSeparator,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/context/AuthContext"
@@ -36,15 +37,7 @@ import {
   UserX,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-
-const categories = [
-  { id: "all", name: "All Services" },
-  { id: "hair", name: "Hair" },
-  { id: "nails", name: "Nails" },
-  { id: "facial", name: "Facial & Skin" },
-  { id: "bridal", name: "Bridal" },
-  { id: "threading", name: "Threading" },
-]
+import { SERVICE_CATEGORIES, getCategoryName, getBusinessTypeName } from "@/lib/serviceCategories"
 
 // Services will be fetched from API
 
@@ -102,13 +95,27 @@ export default function POS() {
   const [serviceStartTime, setServiceStartTime] = useState(null)
   const [serviceEndTime, setServiceEndTime] = useState(null)
   const [serviceDuration, setServiceDuration] = useState(null)
+  const [businessType, setBusinessType] = useState(null)
 
-  // Fetch services from API
+  // Fetch services, products, appointments, and public settings (business type for labels)
   useEffect(() => {
     fetchServices()
     fetchProducts()
     fetchPendingAppointments()
+    fetchBusinessType()
   }, [])
+
+  const fetchBusinessType = async () => {
+    try {
+      const res = await fetch("http://localhost:5001/api/settings/public")
+      if (res.ok) {
+        const data = await res.json()
+        setBusinessType(data.business_type ?? null)
+      }
+    } catch {
+      /* ignore */
+    }
+  }
 
   const fetchServices = async () => {
     setLoadingServices(true)
@@ -121,7 +128,7 @@ export default function POS() {
         const mappedServices = data.map(service => ({
           ...service,
           commissionRate: 0.50, // Default commission rate
-          category: service.category || "all" // Default category if not provided
+          category: (service.category || "general").toLowerCase() // Default category if not provided
         }))
         setServices(mappedServices)
       } else {
@@ -362,18 +369,22 @@ export default function POS() {
     }
   }
 
-  const filteredServices = selectedCategory === "all" 
-    ? services 
-    : services.filter(s => s.category === selectedCategory || !s.category)
+  const filteredServices = selectedCategory === "all"
+    ? services
+    : services.filter((s) => (s.category || "general").toLowerCase() === selectedCategory)
 
   // Group services by category for better organization in dropdown
   const servicesByCategory = filteredServices.reduce((acc, service) => {
-    if (!acc[service.category]) {
-      acc[service.category] = []
-    }
-    acc[service.category].push(service)
+    const cat = (service.category || "general").toLowerCase()
+    if (!acc[cat]) acc[cat] = []
+    acc[cat].push(service)
     return acc
   }, {})
+
+  // Sort groups by category name for stable order
+  const servicesByCategoryEntries = Object.entries(servicesByCategory).sort(([a], [b]) =>
+    (getCategoryName(a) || a).localeCompare(getCategoryName(b) || b)
+  )
 
   const handleServiceSelect = (serviceId) => {
     const service = services.find(s => s.id === parseInt(serviceId))
@@ -862,7 +873,9 @@ export default function POS() {
       <header className="border-b bg-white px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <h1 className="text-xl font-bold">POS System</h1>
+            <h1 className="text-xl font-bold">
+              {businessType ? `${getBusinessTypeName(businessType)} POS` : "POS System"}
+            </h1>
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-blue-600" />
@@ -1043,7 +1056,7 @@ export default function POS() {
               {/* Category Filters */}
               <div className="p-4 border-b bg-gray-50">
                 <div className="flex gap-2 mb-4 flex-wrap">
-                  {categories.map((category) => (
+                  {SERVICE_CATEGORIES.map((category) => (
                     <Button
                       key={category.id}
                       variant={selectedCategory === category.id ? "default" : "outline"}
@@ -1062,64 +1075,48 @@ export default function POS() {
                 {/* Services Dropdown */}
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold">Select Service to Add</Label>
-                  <Select value={selectedService} onValueChange={handleServiceSelect} disabled={sessionLocked}>
-                    <SelectTrigger className="h-12 text-base" disabled={sessionLocked}>
+                  <Select
+                    key={selectedCategory}
+                    value={selectedService || undefined}
+                    onValueChange={handleServiceSelect}
+                    disabled={sessionLocked || filteredServices.length === 0}
+                  >
+                    <SelectTrigger className="h-12 text-base" disabled={sessionLocked || filteredServices.length === 0}>
                       <SelectValue placeholder="Choose a service..." />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[500px] w-full p-2">
-                      {Object.entries(servicesByCategory).map(([category, categoryServices], groupIndex) => (
+                    <SelectContent className="max-h-[500px] w-full p-2" position="popper" sideOffset={4}>
+                      {filteredServices.length === 0 ? (
+                        <div className="py-6 px-4 text-center text-sm text-muted-foreground">
+                          No services in this category
+                        </div>
+                      ) : (
+                        servicesByCategoryEntries.map(([category, categoryServices], groupIndex) => (
                         <SelectGroup key={category}>
                           <SelectLabel className="font-bold text-xs uppercase text-blue-700 px-3 py-2.5 bg-blue-50 sticky top-0 z-10 border-b border-blue-200 mb-1">
-                            {category}
+                            {getCategoryName(category)}
                           </SelectLabel>
-                          {categoryServices.map((service, index) => {
-                            const serviceCommission = (service.price || 0) * ((service.commissionRate || defaultCommissionRate))
-                            return (
-                              <SelectItem 
-                                key={service.id} 
-                                value={service.id.toString()}
-                                className="!py-3 !px-3 !my-1.5 mx-0 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 focus:bg-blue-100 focus:border-blue-400 cursor-pointer transition-all duration-150 shadow-sm hover:shadow"
-                              >
-                                <div className="flex items-start justify-between w-full pr-6 gap-4">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-semibold text-sm text-gray-900 mb-2 leading-tight">{service.name}</div>
-                                    <div className="flex items-center gap-2.5 text-xs text-muted-foreground flex-wrap">
-                                      <span className="flex items-center gap-1 text-gray-600">
-                                        <Clock className="h-3 w-3" />
-                                        {service.duration} min
-                                      </span>
-                                      {service.category && (
-                                        <>
-                                          <span className="text-gray-300">|</span>
-                                          <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-[10px] font-medium uppercase">
-                                            {service.category}
-                                          </span>
-                                        </>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="text-right ml-2 flex-shrink-0 border-l border-gray-200 pl-4">
-                                    <div className="font-bold text-base text-green-600 mb-1.5">{formatKES(service.price)}</div>
-                                    <div className="text-xs font-semibold text-green-700 bg-green-50 px-2 py-1 rounded border border-green-200">
-                                      Comm: {formatKES(serviceCommission)}
-                                    </div>
-                                  </div>
-                                </div>
-                              </SelectItem>
-                            )
-                          })}
-                          {groupIndex < Object.keys(servicesByCategory).length - 1 && (
-                            <div className="h-3 border-b border-gray-200 my-2 mx-3"></div>
+                          {categoryServices.map((service) => (
+                            <SelectItem
+                              key={service.id}
+                              value={service.id.toString()}
+                              className="cursor-pointer"
+                            >
+                              {service.name}
+                            </SelectItem>
+                          ))}
+                          {groupIndex < servicesByCategoryEntries.length - 1 && (
+                            <SelectSeparator className="my-2" />
                           )}
                         </SelectGroup>
-                      ))}
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   {loadingServices ? (
                     <p className="text-xs text-muted-foreground">Loading services...</p>
                   ) : filteredServices.length > 0 ? (
                     <p className="text-xs text-muted-foreground">
-                      {filteredServices.length} services available in {selectedCategory === "all" ? "all categories" : selectedCategory}
+                      {filteredServices.length} services available in {selectedCategory === "all" ? "all categories" : getCategoryName(selectedCategory)}
                     </p>
                   ) : (
                     <p className="text-xs text-muted-foreground">No services available</p>
@@ -1127,28 +1124,37 @@ export default function POS() {
                 </div>
               </div>
 
-              {/* Quick Add Section */}
+              {/* Service cards – demo-style grid */}
               {!loadingServices && (
-                <div className="p-4 border-b bg-white">
-                  <h3 className="text-sm font-semibold mb-3">Quick Add (Most Popular)</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {filteredServices.slice(0, 8).map((service) => {
-                      const serviceCommission = service.price * (service.commissionRate || defaultCommissionRate)
-                      return (
-                        <Button
+                <div className="p-4 border-b bg-white flex-1 overflow-y-auto">
+                  <h3 className="text-sm font-semibold mb-3">
+                    {selectedCategory === "all" ? "All services" : getCategoryName(selectedCategory)}
+                  </h3>
+                  {filteredServices.length === 0 ? (
+                    <p className="text-sm text-muted-foreground py-8 text-center">No services in this category</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {filteredServices.map((service) => (
+                        <div
                           key={service.id}
-                          variant="outline"
-                          size="sm"
-                          onClick={() => addServiceToSale(service)}
-                          disabled={sessionLocked}
-                          className="h-10 text-xs font-medium"
+                          className="bg-white rounded-lg p-3 border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all flex items-center justify-between"
                         >
-                          <Plus className="h-3 w-3 mr-1" />
-                          {service.name} - {formatKES(service.price)}
-                        </Button>
-                      )
-                    })}
-                  </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-sm text-gray-900 truncate">{service.name}</div>
+                            <div className="text-xs text-gray-600 mt-1">{formatKES(service.price)}</div>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="h-8 w-8 p-0 rounded-full bg-[#ef4444] hover:bg-[#dc2626] flex-shrink-0 ml-2"
+                            onClick={() => addServiceToSale(service)}
+                            disabled={sessionLocked}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -1158,54 +1164,24 @@ export default function POS() {
               <div className="p-4 border-b bg-gray-50">
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold">Select Product to Add</Label>
-                  <Select value={selectedProduct} onValueChange={handleProductSelect} disabled={sessionLocked}>
+                  <Select
+                    value={selectedProduct || undefined}
+                    onValueChange={handleProductSelect}
+                    disabled={sessionLocked}
+                  >
                     <SelectTrigger className="h-12 text-base" disabled={sessionLocked}>
                       <SelectValue placeholder="Choose a product..." />
                     </SelectTrigger>
-                    <SelectContent className="max-h-[500px] w-full p-2">
-                      {products.map((product) => {
-                        const sellingPrice = product.selling_price || product.unit_price || 0
-                        return (
-                          <SelectItem 
-                            key={product.id} 
-                            value={product.id.toString()}
-                            className="!py-3 !px-3 !my-1.5 mx-0 rounded-lg border border-gray-200 hover:border-blue-300 hover:bg-blue-50/50 focus:bg-blue-100 focus:border-blue-400 cursor-pointer transition-all duration-150 shadow-sm hover:shadow"
-                          >
-                            <div className="flex items-start justify-between w-full pr-6 gap-4">
-                              <div className="flex-1 min-w-0">
-                                <div className="font-semibold text-sm text-gray-900 mb-2 leading-tight">{product.name}</div>
-                                <div className="flex items-center gap-2.5 text-xs text-muted-foreground flex-wrap">
-                                  {product.category && (
-                                    <span className="px-2 py-0.5 bg-gray-100 text-gray-700 rounded-full text-[10px] font-medium uppercase">
-                                      {product.category}
-                                    </span>
-                                  )}
-                                  {product.stock_quantity !== undefined && (
-                                    <>
-                                      <span className="text-gray-300">|</span>
-                                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
-                                        product.stock_quantity <= (product.min_stock_level || 5)
-                                          ? 'bg-red-100 text-red-700'
-                                          : 'bg-green-100 text-green-700'
-                                      }`}>
-                                        Stock: {product.stock_quantity} {product.unit || 'pcs'}
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="text-right ml-2 flex-shrink-0 border-l border-gray-200 pl-4">
-                                <div className="font-bold text-base text-blue-600 mb-1.5">{formatKES(sellingPrice)}</div>
-                                {product.description && (
-                                  <div className="text-xs text-muted-foreground mt-1 max-w-[150px] truncate">
-                                    {product.description}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </SelectItem>
-                        )
-                      })}
+                    <SelectContent className="max-h-[500px] w-full p-2" position="popper" sideOffset={4}>
+                      {products.map((product) => (
+                        <SelectItem
+                          key={product.id}
+                          value={product.id.toString()}
+                          className="cursor-pointer"
+                        >
+                          {product.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {loadingProducts ? (

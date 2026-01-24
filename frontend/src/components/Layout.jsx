@@ -13,7 +13,8 @@ import {
   Users,
   Clock,
   ShoppingCart,
-  Calendar
+  Calendar,
+  Settings
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
@@ -35,6 +36,7 @@ const navigation = [
   { name: "Reports", href: "/reports", icon: FileText },
   // Admin-only navigation items
   { name: "Users", href: "/users", icon: Users, adminOnly: true },
+  { name: "Settings", href: "/settings", icon: Settings },
   // Customers removed - not used in walk-in only business model
   // POS removed - only accessible via staff login
 ]

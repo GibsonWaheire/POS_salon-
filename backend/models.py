@@ -42,6 +42,7 @@ class Service(db.Model):
     description = db.Column(db.Text)
     price = db.Column(db.Float, nullable=False)
     duration = db.Column(db.Integer, nullable=False)  # Duration in minutes
+    category = db.Column(db.String(50), nullable=True)  # Lowercase id from serviceCategories
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
@@ -55,6 +56,7 @@ class Service(db.Model):
             'description': self.description,
             'price': self.price,
             'duration': self.duration,
+            'category': self.category,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
@@ -697,3 +699,15 @@ class CommissionPaymentItem(db.Model):
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
+
+class Setting(db.Model):
+    """Key-value store for app settings (e.g. business_type). Admin-side only."""
+    __tablename__ = 'settings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    key = db.Column(db.String(100), unique=True, nullable=False)
+    value = db.Column(db.Text, nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {'key': self.key, 'value': self.value}

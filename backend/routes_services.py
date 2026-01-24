@@ -14,14 +14,23 @@ def get_services():
     return jsonify([service.to_dict() for service in services])
 
 
+def _normalize_category(cat):
+    if cat is None or (isinstance(cat, str) and not cat.strip()):
+        return None
+    s = str(cat).strip().lower()
+    return s if s else None
+
+
 @bp_services.route('/services', methods=['POST'])
 def create_service():
     data = request.get_json()
+    category = _normalize_category(data.get('category'))
     service = Service(
         name=data.get('name'),
         description=data.get('description'),
         price=data.get('price'),
-        duration=data.get('duration')
+        duration=data.get('duration'),
+        category=category
     )
     db.session.add(service)
     db.session.commit()
@@ -51,6 +60,8 @@ def update_service(id):
         service.name = data.get('name', service.name)
         service.description = data.get('description', service.description)
         service.duration = data.get('duration', service.duration)
+        if 'category' in data:
+            service.category = _normalize_category(data['category'])
         
         # Track price change if price is being updated
         if 'price' in data and old_price != new_price:
