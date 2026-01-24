@@ -1692,37 +1692,51 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Main Content Section - With Gradient */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center space-y-8 mb-16">
-            <h2 className="text-5xl md:text-6xl font-bold leading-tight">
-              Whatever Your Focus, You're in the Right Place
+      {/* Main Content Section - Modern Redesign */}
+      <section className="py-24 bg-white relative overflow-hidden">
+        {/* Decorative background elements */}
+        <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-white to-gray-50"></div>
+        <div className="absolute top-0 left-0 w-96 h-96 bg-[#ef4444]/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
+        
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="max-w-5xl mx-auto text-center space-y-6 mb-20">
+            
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-gray-900">
+              Whatever Your Focus,<br />
+              <span className="text-[#ef4444]">You're in the Right Place</span>
             </h2>
-            <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               Streamline your daily tasks by automating operations, from scheduling appointments and managing clients to handling retail sales, overseeing staff, and processing payments.
             </p>
           </div>
 
-          {/* Feature Showcase */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mt-12">
+          {/* Feature Showcase - Card Design */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
             {features.map((feature, index) => {
               const Icon = feature.icon
               return (
-                <div key={index} className="text-center space-y-4">
-                  <div className="flex justify-center">
-                    <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-[#ef4444] flex items-center justify-center">
-                      <Icon className="h-8 w-8 md:h-10 md:w-10 text-white" />
+                <div 
+                  key={index} 
+                  className="group bg-white rounded-2xl p-8 border border-gray-200 hover:border-[#ef4444]/30 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
+                >
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="flex-shrink-0">
+                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#ef4444] to-[#dc2626] flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-[#ef4444]/20">
+                        <Icon className="h-7 w-7 text-white" />
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-[#ef4444] transition-colors">
+                        {feature.title}
+                      </h3>
                     </div>
                   </div>
-                  <h3 className="text-2xl md:text-3xl font-bold text-white">
-                    {feature.title}
-                  </h3>
-                  <div className="flex flex-wrap gap-2 justify-center">
+                  <div className="flex flex-wrap gap-2">
                     {feature.subFeatures.map((subFeature, subIndex) => (
                       <span
                         key={subIndex}
-                        className="px-3 py-1.5 rounded-full text-sm text-white bg-white/20 backdrop-blur-sm"
+                        className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-[#ef4444] hover:text-white transition-colors cursor-default"
                       >
                         {subFeature}
                       </span>
