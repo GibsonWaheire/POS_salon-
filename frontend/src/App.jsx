@@ -4,7 +4,9 @@ import { AuthProvider } from "./context/AuthContext"
 import Layout from "./components/Layout"
 import ProtectedRoute from "./components/ProtectedRoute"
 import StaffProtectedRoute from "./components/StaffProtectedRoute"
+import Landing from "./pages/Landing"
 import Login from "./pages/Login"
+import Signup from "./pages/Signup"
 import StaffLogin from "./pages/StaffLogin"
 import POS from "./pages/POS"
 import StaffCommissionHistory from "./pages/StaffCommissionHistory"
@@ -28,7 +30,9 @@ function App() {
       <BrowserRouter>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<Login />} />
+          <Route path="/" element={<Landing />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="/staff-login" element={<StaffLogin />} />
           
           {/* Staff-only routes */}

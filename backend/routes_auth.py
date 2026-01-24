@@ -117,3 +117,68 @@ def logout():
     """Logout user (client-side session cleanup)"""
     session.pop('user_id', None)
     return jsonify({'success': True, 'message': 'Logged out successfully'}), 200
+
+
+@bp_auth.route('/auth/signup', methods=['POST'])
+def signup():
+    """Register a new user (manager account)"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'Invalid request data'}), 400
+        
+        email = data.get('email', '').lower().strip()
+        password = data.get('password')
+        name = data.get('name', '').strip()
+        phone = data.get('phone', '').strip()
+        
+        # Validation
+        if not email or not password or not name:
+            return jsonify({'success': False, 'error': 'Email, password, and name are required'}), 400
+        
+        # Check if email already exists
+        existing_user = User.query.filter_by(email=email).first()
+        if existing_user:
+            return jsonify({'success': False, 'error': 'Email already registered'}), 400
+        
+        # Create new user (default role is 'manager')
+        new_user = User(
+            email=email,
+            name=name,
+            phone=phone if phone else None,
+            role='manager',  # New signups are managers by default
+            is_active=True,
+            is_demo=False
+        )
+        new_user.set_password(password)
+        
+        db.session.add(new_user)
+        db.session.commit()
+        
+        # Store user ID in session
+        try:
+            session['user_id'] = new_user.id
+        except RuntimeError:
+            pass
+        
+        return jsonify({
+            'success': True,
+            'user': new_user.to_dict(),
+            'message': 'Account created successfully'
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        import traceback
+        error_msg = str(e)
+        print(f"Error in signup: {error_msg}")
+        traceback.print_exc()
+        if current_app.debug:
+            return jsonify({
+                'success': False,
+                'error': f'An error occurred during signup: {error_msg}'
+            }), 500
+        return jsonify({
+            'success': False,
+            'error': 'An error occurred during signup. Please try again.'
+        }), 500

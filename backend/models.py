@@ -440,6 +440,7 @@ class User(db.Model):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(255), nullable=False)
     name = db.Column(db.String(100), nullable=False)
+    phone = db.Column(db.String(20), nullable=True)  # Phone number for signup
     role = db.Column(db.String(20), nullable=False, default='manager')  # admin or manager
     managed_by = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Admin who manages this manager
     is_active = db.Column(db.Boolean, default=True)
@@ -480,6 +481,7 @@ class User(db.Model):
             'id': self.id,
             'email': self.email,
             'name': self.name,
+            'phone': self.phone,
             'role': self.role,
             'managed_by': self.managed_by,
             'is_active': self.is_active,
