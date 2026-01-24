@@ -64,10 +64,10 @@ export default function DemoModeToggle() {
         onCheckedChange={handleToggle}
         disabled={loading}
       />
-      <Label htmlFor="demo-mode" className="text-sm cursor-pointer">
+      <Label htmlFor="demo-mode" className="text-sm cursor-pointer text-gray-300">
         Demo Mode
       </Label>
-      <Badge variant={demoMode ? "default" : "secondary"} className="text-xs">
+      <Badge variant={demoMode ? "default" : "secondary"} className={`text-xs ${demoMode ? "bg-[#ef4444] text-white" : "bg-gray-700 text-gray-300"}`}>
         {demoMode ? "DEMO" : "LIVE"}
       </Badge>
     </div>

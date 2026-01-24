@@ -47,10 +47,10 @@ export default function WhatsAppChat() {
 
   return (
     <>
-      {/* Popup Modal */}
+      {/* Popup Modal - Positioned in left bottom corner */}
       {showPopup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <Card className="max-w-md w-full border-2 shadow-2xl animate-in zoom-in-95">
+        <div className="fixed bottom-4 left-4 z-50 animate-in fade-in slide-in-from-bottom-2">
+          <Card className="max-w-sm w-full border-2 shadow-2xl">
             <CardContent className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-lg font-semibold">Looking for Something Else?</h3>
@@ -74,7 +74,7 @@ export default function WhatsAppChat() {
                   }}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600"
                 >
-                  Visit McGibs Digital Solutions
+                  Explore More Solutions
                 </Button>
                 <Button
                   variant="outline"

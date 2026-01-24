@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils"
 import { useAuth } from "@/context/AuthContext"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import DemoModeToggle from "@/components/DemoModeToggle"
 import { isAdmin } from "@/lib/api"
 
 const navigation = [
@@ -54,10 +53,10 @@ export default function Layout() {
     <div className="min-h-screen bg-background">
       <div className="flex h-screen overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-64 border-r bg-card">
+        <aside className="w-64 border-r bg-[#1A202C] text-white">
           <div className="flex h-full flex-col">
-            <div className="flex h-16 items-center border-b px-6">
-              <h1 className="text-xl font-bold">Salonyst</h1>
+            <div className="flex h-16 items-center border-b border-gray-700 px-6">
+              <h1 className="text-xl font-bold text-white">Salonyst</h1>
             </div>
             <nav className="flex-1 space-y-1 px-3 py-4">
               {navigation
@@ -72,8 +71,8 @@ export default function Layout() {
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                         isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          ? "bg-gray-800 text-white border-l-4 border-[#ef4444]"
+                          : "text-gray-300 hover:bg-gray-800 hover:text-white"
                       )}
                     >
                       <Icon className="h-5 w-5" />
@@ -84,21 +83,19 @@ export default function Layout() {
             </nav>
             
             {/* User info and logout */}
-            <div className="border-t p-4 space-y-2">
+            <div className="border-t border-gray-700 p-4 space-y-2">
               {user && (
                 <div className="flex items-center gap-2 px-3 py-2 text-sm">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{user.name}</span>
-                  <Badge variant="secondary" className="ml-auto text-xs">
+                  <User className="h-4 w-4 text-gray-300" />
+                  <span className="text-gray-300">{user.name}</span>
+                  <Badge variant="secondary" className="ml-auto text-xs bg-gray-700 text-gray-300">
                     {user.role}
                   </Badge>
                 </div>
               )}
-              {/* Demo Mode Toggle for admin/manager */}
-              <DemoModeToggle />
               <Button
                 variant="ghost"
-                className="w-full justify-start gap-2"
+                className="w-full justify-start gap-2 text-gray-300 hover:bg-gray-800 hover:text-white"
                 onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4" />

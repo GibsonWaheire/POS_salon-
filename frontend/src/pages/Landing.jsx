@@ -49,6 +49,7 @@ import { toast } from "sonner"
 import WhatsAppChat from "@/components/WhatsAppChat"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { formatCurrency } from "@/lib/currency"
 
 export default function Landing() {
   const navigate = useNavigate()
@@ -133,6 +134,11 @@ export default function Landing() {
   }
 
   // Demo data constants
+  // Helper function to convert KES to USD (demo data is in KES)
+  const convertKESToUSD = (kesAmount) => {
+    return kesAmount / 130 // 1 USD = 130 KES
+  }
+
   const demoServices = [
     { id: 1, name: "Haircut & Style", price: 1000, duration: 45, category: "hair", description: "Professional haircut and styling" },
     { id: 2, name: "Blowout", price: 750, duration: 30, category: "hair", description: "Professional blow dry styling" },
@@ -475,14 +481,14 @@ export default function Landing() {
                 {demoViewMode === "manager" && (
                   <div className="flex items-center gap-6 text-sm">
                     <span className="font-medium">Today: 1 Clients</span>
-                    <span className="font-medium">Weekly Commission: <span className="text-green-600">KES 16,039</span></span>
-                    <span className="font-medium text-green-600">KES 323</span>
+                    <span className="font-medium">Weekly Commission: <span className="text-green-600">{formatCurrency(convertKESToUSD(16039), 'USD')}</span></span>
+                    <span className="font-medium text-green-600">{formatCurrency(convertKESToUSD(323), 'USD')}</span>
                   </div>
                 )}
                 {demoViewMode === "staff" && (
                   <div className="flex items-center gap-6 text-sm">
                     <span className="font-medium">Staff: {demoStaffPOSData.staff_name}</span>
-                    <span className="font-medium">Today's Commission: <span className="text-green-600">KES {demoStaffPOSData.today_commission.toLocaleString()}</span></span>
+                    <span className="font-medium">Today's Commission: <span className="text-green-600">{formatCurrency(convertKESToUSD(demoStaffPOSData.today_commission), 'USD')}</span></span>
                     <span className="font-medium">Clients Served: <span className="text-blue-600">{demoStaffPOSData.clients_served}</span></span>
                   </div>
                 )}
@@ -547,11 +553,11 @@ export default function Landing() {
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                             <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                               <div className="text-sm text-gray-600 mb-1">Today's Sales Revenue</div>
-                              <div className="text-2xl font-bold text-gray-900">KES {demoDashboardStats.today_revenue.toLocaleString()}</div>
+                              <div className="text-2xl font-bold text-gray-900">{formatCurrency(convertKESToUSD(demoDashboardStats.today_revenue), 'USD')}</div>
                             </div>
                             <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                               <div className="text-sm text-gray-600 mb-1">Total Commission Pending</div>
-                              <div className="text-2xl font-bold text-green-600">KES {demoDashboardStats.total_commission.toLocaleString()}</div>
+                              <div className="text-2xl font-bold text-green-600">{formatCurrency(convertKESToUSD(demoDashboardStats.total_commission), 'USD')}</div>
                             </div>
                             <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
                               <div className="text-sm text-gray-600 mb-1">Active Staff</div>
@@ -609,8 +615,8 @@ export default function Landing() {
                                           {tx.method}
                                         </span>
                                       </td>
-                                      <td className="p-2 text-sm text-right font-medium">KES {tx.amount.toLocaleString()}</td>
-                                      <td className="p-2 text-sm text-right text-green-600">KES {tx.commission.toFixed(2)}</td>
+                                      <td className="p-2 text-sm text-right font-medium">{formatCurrency(convertKESToUSD(tx.amount), 'USD')}</td>
+                                      <td className="p-2 text-sm text-right text-green-600">{formatCurrency(convertKESToUSD(tx.commission), 'USD')}</td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -638,8 +644,8 @@ export default function Landing() {
                                   {demoDashboardStats.staff_performance.map((perf) => (
                                     <tr key={perf.id} className="border-b hover:bg-gray-50">
                                       <td className="p-2 text-sm font-medium">{perf.name}</td>
-                                      <td className="p-2 text-sm text-right">KES {perf.sales.toLocaleString()}</td>
-                                      <td className="p-2 text-sm text-right text-green-600">KES {perf.commission.toFixed(2)}</td>
+                                      <td className="p-2 text-sm text-right">{formatCurrency(convertKESToUSD(perf.sales), 'USD')}</td>
+                                      <td className="p-2 text-sm text-right text-green-600">{formatCurrency(convertKESToUSD(perf.commission), 'USD')}</td>
                                       <td className="p-2 text-sm text-right">{perf.clients}</td>
                                     </tr>
                                   ))}
@@ -749,7 +755,7 @@ export default function Landing() {
                                           {service.category}
                                         </span>
                                       </td>
-                                      <td className="p-4 text-sm text-right font-medium">KES {service.price.toLocaleString()}</td>
+                                      <td className="p-4 text-sm text-right font-medium">{formatCurrency(convertKESToUSD(service.price), 'USD')}</td>
                                       <td className="p-4 text-sm text-right text-gray-600">{service.duration} min</td>
                                       <td className="p-4 text-sm text-right">
                                         <div className="flex items-center justify-end gap-2">
@@ -838,7 +844,7 @@ export default function Landing() {
                                     <tr key={payment.id} className="border-b hover:bg-gray-50">
                                       <td className="p-4 text-sm font-medium">{payment.staff_name}</td>
                                       <td className="p-4 text-sm text-gray-600">{payment.period}</td>
-                                      <td className="p-4 text-sm text-right font-medium">KES {payment.amount.toLocaleString()}</td>
+                                      <td className="p-4 text-sm text-right font-medium">{formatCurrency(convertKESToUSD(payment.amount), 'USD')}</td>
                                       <td className="p-4 text-sm">
                                         <span className={`px-2 py-1 rounded text-xs ${
                                           payment.status === "paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
@@ -888,7 +894,7 @@ export default function Landing() {
                                       <td className="p-4 text-sm">{payment.date}</td>
                                       <td className="p-4 text-sm text-gray-600">{payment.time}</td>
                                       <td className="p-4 text-sm font-medium">{payment.customer}</td>
-                                      <td className="p-4 text-sm text-right font-medium">KES {payment.amount.toLocaleString()}</td>
+                                      <td className="p-4 text-sm text-right font-medium">{formatCurrency(convertKESToUSD(payment.amount), 'USD')}</td>
                                       <td className="p-4 text-sm">
                                         <span className={`px-2 py-1 rounded text-xs ${payment.method === "CASH" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
                                           {payment.method}
@@ -934,7 +940,7 @@ export default function Landing() {
                                       <td className="p-4 text-sm">{sale.date}</td>
                                       <td className="p-4 text-sm font-medium">{sale.customer}</td>
                                       <td className="p-4 text-sm text-gray-600">{sale.items}</td>
-                                      <td className="p-4 text-sm text-right font-medium">KES {sale.total.toLocaleString()}</td>
+                                      <td className="p-4 text-sm text-right font-medium">{formatCurrency(convertKESToUSD(sale.total), 'USD')}</td>
                                       <td className="p-4 text-sm">{sale.staff}</td>
                                       <td className="p-4 text-sm">
                                         <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700">
@@ -1082,7 +1088,7 @@ export default function Landing() {
                                         </span>
                                       </td>
                                       <td className="p-4 text-sm text-gray-600">{expense.description}</td>
-                                      <td className="p-4 text-sm text-right font-medium">KES {expense.amount.toLocaleString()}</td>
+                                      <td className="p-4 text-sm text-right font-medium">{formatCurrency(convertKESToUSD(expense.amount), 'USD')}</td>
                                       <td className="p-4 text-sm">{expense.paid_by}</td>
                                     </tr>
                                   ))}
@@ -1254,7 +1260,7 @@ export default function Landing() {
                                   <SelectContent>
                                     {demoServices.map((service) => (
                                       <SelectItem key={service.id} value={service.id.toString()}>
-                                        {service.name} - KES {service.price.toLocaleString()}
+                                        {service.name} - {formatCurrency(convertKESToUSD(service.price), 'USD')}
                                       </SelectItem>
                                     ))}
                                   </SelectContent>
@@ -1274,7 +1280,7 @@ export default function Landing() {
                                     >
                                       <div>
                                         <div className="font-medium text-sm text-gray-900">{service.name}</div>
-                                        <div className="text-xs text-gray-600 mt-1">KES {service.price.toLocaleString()}</div>
+                                        <div className="text-xs text-gray-600 mt-1">{formatCurrency(convertKESToUSD(service.price), 'USD')}</div>
                                       </div>
                                       <Button size="sm" className="h-8 w-8 p-0 rounded-full bg-[#ef4444] hover:bg-[#dc2626]">
                                         <Plus className="h-4 w-4" />
@@ -1367,8 +1373,8 @@ export default function Landing() {
                                       </Button>
                                     </div>
                                     <div className="flex items-center justify-between text-xs text-gray-600">
-                                      <span>KES {service.price.toLocaleString()} x {service.quantity}</span>
-                                      <span className="font-medium text-green-600">Commission: KES {((service.price * service.quantity / 1.16) * 0.50).toFixed(2)}</span>
+                                      <span>{formatCurrency(convertKESToUSD(service.price * service.quantity), 'USD')} x {service.quantity}</span>
+                                      <span className="font-medium text-green-600">Commission: {formatCurrency(convertKESToUSD((service.price * service.quantity / 1.16) * 0.50), 'USD')}</span>
                                     </div>
                                   </div>
                                 ))}
@@ -1381,19 +1387,19 @@ export default function Landing() {
                             <div className="pt-4 border-t space-y-2">
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Subtotal</span>
-                                <span className="font-medium">KES {demoSubtotal.toLocaleString()}</span>
+                                <span className="font-medium">{formatCurrency(convertKESToUSD(demoSubtotal), 'USD')}</span>
                               </div>
                               <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">VAT (16% inclusive)</span>
-                                <span className="font-medium">KES {demoTax.toLocaleString()}</span>
+                                <span className="font-medium">{formatCurrency(convertKESToUSD(demoTax), 'USD')}</span>
                               </div>
                               <div className="flex justify-between text-sm font-semibold text-green-600">
                                 <span>Your Commission</span>
-                                <span>KES {demoCommission.toFixed(2)}</span>
+                                <span>{formatCurrency(convertKESToUSD(demoCommission), 'USD')}</span>
                               </div>
                               <div className="flex justify-between text-lg font-bold pt-2 border-t">
                                 <span>Total</span>
-                                <span>KES {demoTotal.toLocaleString()}</span>
+                                <span>{formatCurrency(convertKESToUSD(demoTotal), 'USD')}</span>
                               </div>
                               <div className="pt-4 space-y-2">
                                 <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white">
@@ -1424,8 +1430,8 @@ export default function Landing() {
                                     <div className="text-xs text-gray-600">{tx.time} {tx.method}</div>
                                   </div>
                                   <div className="text-right">
-                                    <div className="font-medium">KES {tx.amount.toLocaleString()}</div>
-                                    <div className="text-xs text-green-600">KES {tx.commission.toFixed(2)}</div>
+                                    <div className="font-medium">{formatCurrency(convertKESToUSD(tx.amount), 'USD')}</div>
+                                    <div className="text-xs text-green-600">{formatCurrency(convertKESToUSD(tx.commission), 'USD')}</div>
                                   </div>
                                 </div>
                               ))}
@@ -1492,7 +1498,7 @@ export default function Landing() {
                                   >
                                     <div>
                                       <div className="font-medium text-sm text-gray-900">{service.name}</div>
-                                      <div className="text-xs text-gray-600 mt-1">KES {service.price.toLocaleString()}</div>
+                                      <div className="text-xs text-gray-600 mt-1">{formatCurrency(convertKESToUSD(service.price), 'USD')}</div>
                                     </div>
                                     <Button size="sm" className="h-8 w-8 p-0 rounded-full bg-[#ef4444] hover:bg-[#dc2626]">
                                       <Plus className="h-4 w-4" />
@@ -1585,8 +1591,8 @@ export default function Landing() {
                                     </Button>
                                   </div>
                                   <div className="flex items-center justify-between text-xs text-gray-600">
-                                    <span>KES {service.price.toLocaleString()} x {service.quantity}</span>
-                                    <span className="font-medium text-green-600">Commission: KES {((service.price * service.quantity / 1.16) * 0.50).toFixed(2)}</span>
+                                    <span>{formatCurrency(convertKESToUSD(service.price * service.quantity), 'USD')} x {service.quantity}</span>
+                                    <span className="font-medium text-green-600">Commission: {formatCurrency(convertKESToUSD((service.price * service.quantity / 1.16) * 0.50), 'USD')}</span>
                                   </div>
                                 </div>
                               ))}
@@ -1599,19 +1605,19 @@ export default function Landing() {
                           <div className="pt-4 border-t space-y-2">
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">Subtotal</span>
-                              <span className="font-medium">KES {demoSubtotal.toLocaleString()}</span>
+                              <span className="font-medium">{formatCurrency(convertKESToUSD(demoSubtotal), 'USD')}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-600">VAT (16% inclusive)</span>
-                              <span className="font-medium">KES {demoTax.toLocaleString()}</span>
+                              <span className="font-medium">{formatCurrency(convertKESToUSD(demoTax), 'USD')}</span>
                             </div>
                             <div className="flex justify-between text-sm font-semibold text-green-600">
                               <span>Your Commission</span>
-                              <span>KES {demoCommission.toFixed(2)}</span>
+                              <span>{formatCurrency(convertKESToUSD(demoCommission), 'USD')}</span>
                             </div>
                             <div className="flex justify-between text-lg font-bold pt-2 border-t">
                               <span>Total</span>
-                              <span>KES {demoTotal.toLocaleString()}</span>
+                              <span>{formatCurrency(convertKESToUSD(demoTotal), 'USD')}</span>
                             </div>
                             <div className="pt-4 space-y-2">
                               <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={() => toast.info("Print Receipt - Demo only")}>
@@ -1642,8 +1648,8 @@ export default function Landing() {
                                   <div className="text-xs text-gray-600">{tx.time} {tx.method}</div>
                                 </div>
                                 <div className="text-right">
-                                  <div className="font-medium">KES {tx.amount.toLocaleString()}</div>
-                                  <div className="text-xs text-green-600">KES {tx.commission.toFixed(2)}</div>
+                                  <div className="font-medium">{formatCurrency(convertKESToUSD(tx.amount), 'USD')}</div>
+                                  <div className="text-xs text-green-600">{formatCurrency(convertKESToUSD(tx.commission), 'USD')}</div>
                                 </div>
                               </div>
                             ))}

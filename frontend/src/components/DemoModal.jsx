@@ -18,8 +18,10 @@ import {
   Plus,
   X,
   ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  DollarSign
 } from "lucide-react"
+import { formatCurrency, CURRENCIES } from "@/lib/currency"
 
 const mockServices = [
   { id: 1, name: "Root Touch Up w/Carolann", duration: "30 mins", price: 70.00 },
@@ -42,6 +44,7 @@ export default function DemoModal({ open, onOpenChange }) {
   const [selectedServices, setSelectedServices] = useState([])
   const [currentStep, setCurrentStep] = useState("service-selection") // service-selection, cart, payment, receipt
   const [selectedCategory, setSelectedCategory] = useState("Hair Service")
+  const [selectedCurrency, setSelectedCurrency] = useState("USD") // Default to USD
 
   const handleAddService = (service) => {
     setSelectedServices([...selectedServices, service])
@@ -115,14 +118,32 @@ export default function DemoModal({ open, onOpenChange }) {
             {/* Header */}
             <div className="border-b bg-white p-4 flex items-center justify-between">
               <h1 className="text-2xl font-bold text-gray-900">Select Services</h1>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onOpenChange(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="h-5 w-5" />
-              </Button>
+              <div className="flex items-center gap-3">
+                {/* Currency Selector */}
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-gray-500" />
+                  <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
+                    <SelectTrigger className="w-36 h-9">
+                      <SelectValue placeholder="USD ($)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.values(CURRENCIES).map((currency) => (
+                        <SelectItem key={currency.code} value={currency.code}>
+                          {currency.code} ({currency.symbol})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onOpenChange(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
 
             {/* Content Area */}
@@ -157,7 +178,7 @@ export default function DemoModal({ open, onOpenChange }) {
                             <div className="flex items-center gap-4 text-sm text-gray-600">
                               <span>{service.duration}</span>
                               <span className="font-medium text-gray-900">
-                                From ${service.price.toFixed(2)}
+                                From {formatCurrency(service.price, selectedCurrency)}
                               </span>
                             </div>
                           </div>
@@ -185,7 +206,7 @@ export default function DemoModal({ open, onOpenChange }) {
                           >
                             <div>
                               <p className="font-medium">{service.name}</p>
-                              <p className="text-sm text-gray-600">${service.price.toFixed(2)}</p>
+                              <p className="text-sm text-gray-600">{formatCurrency(service.price, selectedCurrency)}</p>
                             </div>
                             <Button
                               variant="ghost"
@@ -201,7 +222,7 @@ export default function DemoModal({ open, onOpenChange }) {
                       <div className="mt-6 pt-4 border-t">
                         <div className="flex justify-between text-lg font-bold">
                           <span>Total:</span>
-                          <span>${calculateTotal().toFixed(2)}</span>
+                          <span>{formatCurrency(calculateTotal(), selectedCurrency)}</span>
                         </div>
                       </div>
                     </div>
@@ -214,7 +235,7 @@ export default function DemoModal({ open, onOpenChange }) {
                     <div className="space-y-4">
                       <div className="p-4 border rounded-lg">
                         <p className="text-sm text-gray-600 mb-2">Total Amount</p>
-                        <p className="text-2xl font-bold">${calculateTotal().toFixed(2)}</p>
+                        <p className="text-2xl font-bold">{formatCurrency(calculateTotal(), selectedCurrency)}</p>
                       </div>
                       <div className="space-y-2">
                         <Button className="w-full bg-[#5E278E] hover:bg-[#4a1f6e] text-white">
@@ -242,12 +263,12 @@ export default function DemoModal({ open, onOpenChange }) {
                       {selectedServices.map((service) => (
                         <div key={service.id} className="flex justify-between">
                           <span>{service.name}</span>
-                          <span>${service.price.toFixed(2)}</span>
+                          <span>{formatCurrency(service.price, selectedCurrency)}</span>
                         </div>
                       ))}
                       <div className="pt-3 border-t flex justify-between font-bold">
                         <span>Total:</span>
-                        <span>${calculateTotal().toFixed(2)}</span>
+                        <span>{formatCurrency(calculateTotal(), selectedCurrency)}</span>
                       </div>
                     </div>
                     <div className="flex gap-3">
@@ -301,7 +322,7 @@ export default function DemoModal({ open, onOpenChange }) {
                           >
                             <p className="font-medium text-sm">{service.name}</p>
                             <p className="text-xs text-gray-600 mt-1">
-                              {service.duration} • ${service.price.toFixed(2)}
+                              {service.duration} • {formatCurrency(service.price, selectedCurrency)}
                             </p>
                           </div>
                         ))}
@@ -312,11 +333,11 @@ export default function DemoModal({ open, onOpenChange }) {
                       <div className="pt-4 border-t space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-600">Sub Total</span>
-                          <span className="font-medium">${calculateTotal().toFixed(2)}</span>
+                          <span className="font-medium">{formatCurrency(calculateTotal(), selectedCurrency)}</span>
                         </div>
                         <div className="flex justify-between font-bold">
                           <span>Total</span>
-                          <span>${calculateTotal().toFixed(2)}</span>
+                          <span>{formatCurrency(calculateTotal(), selectedCurrency)}</span>
                         </div>
                         <Button
                           onClick={handleContinue}
