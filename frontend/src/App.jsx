@@ -23,6 +23,13 @@ import Users from "./pages/Users"
 import Shifts from "./pages/Shifts"
 import Sales from "./pages/Sales"
 import Appointments from "./pages/Appointments"
+import AboutUs from "./pages/AboutUs"
+import WhyChooseUs from "./pages/WhyChooseUs"
+import SuccessStories from "./pages/SuccessStories"
+import Blog from "./pages/Blog"
+import HelpCenter from "./pages/HelpCenter"
+import Pricing from "./pages/Pricing"
+import Solutions from "./pages/Solutions"
 
 function App() {
   return (
@@ -35,6 +42,13 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/staff-login" element={<StaffLogin />} />
+          <Route path="/about-us" element={<AboutUs />} />
+          <Route path="/why-choose-us" element={<WhyChooseUs />} />
+          <Route path="/success-stories" element={<SuccessStories />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/help-center" element={<HelpCenter />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/solutions" element={<Solutions />} />
           
           {/* Staff-only routes */}
           <Route

@@ -362,9 +362,9 @@ export default function Landing() {
                   <ChevronDown className="h-5 w-5" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>About Us</DropdownMenuItem>
-                  <DropdownMenuItem>Why Choose Us</DropdownMenuItem>
-                  <DropdownMenuItem>Success Stories</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/about-us")}>About Us</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/why-choose-us")}>Why Choose Us</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/success-stories")}>Success Stories</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -374,17 +374,17 @@ export default function Landing() {
                   <ChevronDown className="h-5 w-5" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>All Features</DropdownMenuItem>
-                  <DropdownMenuItem>Appointment Management</DropdownMenuItem>
-                  <DropdownMenuItem>POS System</DropdownMenuItem>
-                  <DropdownMenuItem>Inventory</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>All Features</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>Appointment Management</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>POS System</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>Inventory</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <a href="#solutions" className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors py-2" style={{ fontSize: '18px', fontWeight: 600 }}>
+              <a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors py-2" style={{ fontSize: '18px', fontWeight: 600 }}>
                 Solutions
               </a>
-              <a href="#pricing" className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors py-2" style={{ fontSize: '18px', fontWeight: 600 }}>
+              <a href="/pricing" onClick={(e) => { e.preventDefault(); navigate("/pricing"); }} className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors py-2" style={{ fontSize: '18px', fontWeight: 600 }}>
                 Pricing
               </a>
             </nav>
@@ -408,8 +408,8 @@ export default function Landing() {
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => navigate("/login")}>Logins</DropdownMenuItem>
                   <DropdownMenuItem>Download</DropdownMenuItem>
-                  <DropdownMenuItem>Blog</DropdownMenuItem>
-                  <DropdownMenuItem>Help and Support</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/blog")}>Blog</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/help-center")}>Help and Support</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -427,15 +427,13 @@ export default function Landing() {
             <p className="text-lg md:text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed font-normal">
               Salonyst is an all-in-one salon management software designed to promote growth in the beauty and wellness industry. Helps to manage day-to-day operations and elevate your client experience.
             </p>
-            <div className="pt-4">
-              <Button 
-                size="lg"
+            <div className="pt-8 flex flex-col items-center gap-4">
+              <div 
                 onClick={() => document.getElementById('demo-section')?.scrollIntoView({ behavior: 'smooth' })}
-                className="rounded-lg bg-[#5E278E] hover:bg-[#4a1f6e] text-white text-lg px-8 py-6 h-auto shadow-lg hover:shadow-xl transition-all duration-300"
+                className="animate-bounce cursor-pointer"
               >
-                Request A Demo
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
+                <ChevronDown className="h-8 w-8 text-gray-600 hover:text-[#ef4444] transition-colors" />
+              </div>
             </div>
           </div>
         </div>
@@ -1711,36 +1709,29 @@ export default function Landing() {
             </p>
           </div>
 
-          {/* Feature Showcase - Card Design */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
+          {/* Feature List - Traditional Layout */}
+          <div className="space-y-12">
             {features.map((feature, index) => {
               const Icon = feature.icon
               return (
-                <div 
-                  key={index} 
-                  className="group bg-white rounded-2xl p-8 border border-gray-200 hover:border-[#ef4444]/30 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
-                >
-                  <div className="flex items-start gap-4 mb-6">
-                    <div className="flex-shrink-0">
-                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#ef4444] to-[#dc2626] flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-[#ef4444]/20">
-                        <Icon className="h-7 w-7 text-white" />
-                      </div>
+                <div key={index} className="border-b border-gray-200 pb-12 last:border-0">
+                  <div className="flex items-start gap-6 mb-4">
+                    <div className="flex-shrink-0 mt-1">
+                      <Icon className="h-6 w-6 text-[#ef4444]" />
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-[#ef4444] transition-colors">
+                      <h3 className="text-2xl font-semibold text-gray-900 mb-4">
                         {feature.title}
                       </h3>
+                      <ul className="space-y-2">
+                        {feature.subFeatures.map((subFeature, subIndex) => (
+                          <li key={subIndex} className="text-gray-700 flex items-start gap-2">
+                            <span className="text-[#ef4444] mt-1">•</span>
+                            <span>{subFeature}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {feature.subFeatures.map((subFeature, subIndex) => (
-                      <span
-                        key={subIndex}
-                        className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 bg-gray-100 hover:bg-[#ef4444] hover:text-white transition-colors cursor-default"
-                      >
-                        {subFeature}
-                      </span>
-                    ))}
                   </div>
                 </div>
               )
@@ -1895,13 +1886,13 @@ export default function Landing() {
             <div>
               <h3 className="font-semibold mb-4 text-white">Company</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
+                <li><a href="/about-us" onClick={(e) => { e.preventDefault(); navigate("/about-us"); }} className="hover:text-white transition-colors">About Us</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Leadership</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Terms & Conditions</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Refund policy</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Write for us</a></li>
-                <li><a href="#contact" className="hover:text-white transition-colors">Contact Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+                <li><a href="#contact" onClick={(e) => { e.preventDefault(); document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }); }} className="hover:text-white transition-colors">Contact Us</a></li>
+                <li><a href="/blog" onClick={(e) => { e.preventDefault(); navigate("/blog"); }} className="hover:text-white transition-colors">Blog</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Sitemap</a></li>
               </ul>
             </div>
@@ -1946,18 +1937,18 @@ export default function Landing() {
             <div>
               <h3 className="font-semibold mb-4 text-white">Who Can Use It?</h3>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition-colors">Barber Shops</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Hair Salons</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Massage Therapy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Nail Salon</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Spas</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Bridal Salon</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Medical Spa Software</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Aesthetic Skin Clinic</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Tattoo Artist Software</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Salon Booth For Renter</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Tanning Salon Software</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Pet Grooming</a></li>
+                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Barber Shops</a></li>
+                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Hair Salons</a></li>
+                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Massage Therapy</a></li>
+                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Nail Salon</a></li>
+                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Spas</a></li>
+                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Bridal Salon</a></li>
+                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Medical Spa Software</a></li>
+                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Aesthetic Skin Clinic</a></li>
+                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Tattoo Artist Software</a></li>
+                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Salon Booth For Renter</a></li>
+                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Tanning Salon Software</a></li>
+                <li><a href="/solutions" onClick={(e) => { e.preventDefault(); navigate("/solutions"); }} className="hover:text-white transition-colors">Pet Grooming</a></li>
               </ul>
             </div>
 
@@ -1966,12 +1957,12 @@ export default function Landing() {
               <h3 className="font-semibold mb-4 text-white">Our Resources</h3>
               <ul className="space-y-2 text-sm">
                 <li><a href="#" className="hover:text-white transition-colors">Videos</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Support</a></li>
+                <li><a href="/help-center" onClick={(e) => { e.preventDefault(); navigate("/help-center"); }} className="hover:text-white transition-colors">Help Center</a></li>
+                <li><a href="/help-center" onClick={(e) => { e.preventDefault(); navigate("/help-center"); }} className="hover:text-white transition-colors">Support</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Updates</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Case Studies</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Client Testimonials</a></li>
+                <li><a href="/success-stories" onClick={(e) => { e.preventDefault(); navigate("/success-stories"); }} className="hover:text-white transition-colors">Case Studies</a></li>
+                <li><a href="/success-stories" onClick={(e) => { e.preventDefault(); navigate("/success-stories"); }} className="hover:text-white transition-colors">Client Testimonials</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Reseller Partner Program</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Affiliate Partnership</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Compare Us</a></li>
