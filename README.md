@@ -47,37 +47,6 @@ npm install
 # Run dev server (default: http://localhost:5173)
 npm run dev
 ```
-
-### 3. Open the app
-
-- **Admin/Manager:** http://localhost:5173  
-- **Staff POS:** http://localhost:5173/staff-login
-
----
-
-## Login Credentials
-
-### Admin / Manager (email + password)
-
-| Role   | Email               | Password |
-|--------|---------------------|----------|
-| Admin  | admin@salon.com     | demo123  |
-| Manager| manager@salon.com   | demo123  |
-
-### Staff (ID + PIN at `/staff-login`)
-
-Demo staff (from `flask seed-staff` or `demo_staff.json`):
-
-| Name          | PIN    | Role             |
-|---------------|--------|------------------|
-| Jane Wanjiru  | 1234@  | stylist          |
-| Sarah Akinyi  | 5678!  | stylist          |
-| Mary Nyambura | 9012#  | nail_technician  |
-| Grace Muthoni | 3456$  | facial_specialist|
-| Lucy Wambui   | 7890%  | receptionist     |
-
-Run `flask show-demo-login` in `backend` to see current demo staff credentials.
-
 ---
 
 ## Project Structure
