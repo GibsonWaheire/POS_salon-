@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Check, X, ArrowRight, ChevronDown, ChevronUp } from "lucide-react"
 import NavigationHeader from "@/components/NavigationHeader"
+import LandingFooter from "@/components/landing/LandingFooter"
 import Breadcrumb from "@/components/Breadcrumb"
 import {
   Accordion,
@@ -708,6 +709,8 @@ export default function Pricing() {
           </Link>
         </div>
       </section>
+
+      <LandingFooter />
     </div>
   )
 }

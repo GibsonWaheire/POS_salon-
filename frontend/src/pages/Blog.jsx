@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Clock, ArrowRight, BookOpen, Calendar } from "lucide-react"
 import Breadcrumb from "@/components/Breadcrumb"
 import NavigationHeader from "@/components/NavigationHeader"
+import LandingFooter from "@/components/landing/LandingFooter"
 
 export default function Blog() {
   const blogPosts = [
@@ -123,6 +124,8 @@ export default function Blog() {
           </div>
         </section>
       </main>
+
+      <LandingFooter />
     </div>
   )
 }

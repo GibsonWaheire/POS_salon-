@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Phone, Mail, MapPin, Target, Users, Package, Heart, Zap, Award, TrendingUp, Shield, CheckCircle2 } from "lucide-react"
 import Breadcrumb from "@/components/Breadcrumb"
 import NavigationHeader from "@/components/NavigationHeader"
+import LandingFooter from "@/components/landing/LandingFooter"
 import dashboardScreenshot from "@/assets/dashboard-screenshot.png"
 import posScreenshot from "@/assets/pos-screenshot.png"
 
@@ -271,6 +272,8 @@ export default function AboutUs() {
           </section>
         </div>
       </main>
+
+      <LandingFooter />
     </div>
   )
 }

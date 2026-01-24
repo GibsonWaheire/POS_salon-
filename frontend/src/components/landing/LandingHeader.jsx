@@ -1,30 +1,24 @@
-import { Link, useNavigate, useLocation } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
-import { ChevronDown, Menu, Building2 } from "lucide-react"
-import { solutionsDropdownItems, solutionIcons, featuresDropdownItems, featureIcons } from "@/data/landingConstants"
+import { ChevronDown, Menu, Calendar, Building2 } from "lucide-react"
+import { solutionsDropdownItems, solutionIcons } from "@/data/landingConstants"
 import { toKebabCase } from "@/lib/posTypes"
 
-export default function NavigationHeader() {
+/**
+ * Landing Header Component with Navigation
+ */
+export default function LandingHeader() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const isOnLanding = location.pathname === "/" || location.pathname.startsWith("/solutions/")
-
-  const scrollToFeatures = () => {
-    if (isOnLanding) {
-      document.getElementById("features-section")?.scrollIntoView({ behavior: "smooth", block: "start" })
-    } else {
-      navigate("/")
-      setTimeout(() => {
-        document.getElementById("features-section")?.scrollIntoView({ behavior: "smooth", block: "start" })
-      }, 300)
-    }
-  }
 
   return (
     <header className="border-b bg-white sticky top-0 z-50">
@@ -32,12 +26,10 @@ export default function NavigationHeader() {
         <div className="flex h-20 items-center justify-center">
           {/* Logo */}
           <div className="absolute left-4 sm:left-8 flex items-center gap-2">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-gradient-to-br from-blue-400 via-green-400 to-yellow-400 rounded-sm"></div>
-              <span className="text-2xl font-bold text-gray-900" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700 }}>
-                Salonyst
-              </span>
-            </Link>
+            <div className="w-6 h-6 bg-gradient-to-br from-blue-400 via-green-400 to-yellow-400 rounded-sm"></div>
+            <span className="text-2xl font-bold text-gray-900" style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700 }}>
+              Salonyst
+            </span>
           </div>
 
           {/* Centered Navigation - Bigger and More Spaced */}
@@ -55,54 +47,71 @@ export default function NavigationHeader() {
             </DropdownMenu>
 
             <DropdownMenu>
-              <DropdownMenuTrigger
-                className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors flex items-center gap-2 py-2"
-                style={{ fontSize: "18px", fontWeight: 600 }}
+              <DropdownMenuTrigger 
+                className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors flex items-center gap-2 py-2" 
+                style={{ fontSize: '18px', fontWeight: 600 }}
               >
                 Features
                 <ChevronDown className="h-5 w-5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[950px] p-8 bg-white shadow-xl" align="start">
-                <div className="grid grid-cols-3 gap-8">
-                  {featuresDropdownItems.map((column, colIndex) => (
-                    <div key={colIndex} className="space-y-3">
-                      {column.map((item) => {
-                        const Icon = featureIcons[item.id] || Building2
-                        return (
-                          <DropdownMenuItem
-                            key={item.id}
-                            onClick={() => (item.path ? navigate(item.path) : scrollToFeatures())}
-                            className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
-                          >
-                            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[#ef4444] to-red-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
-                              <Icon className="h-6 w-6 text-white" />
-                            </div>
-                            <div className="flex-1 min-w-0 pt-1">
-                              <h4 className="font-bold text-gray-900 text-sm mb-1.5 group-hover:text-[#ef4444] transition-colors leading-tight">
-                                {item.title}
-                              </h4>
-                              <p className="text-xs text-gray-600 leading-relaxed">
-                                {item.description}
-                              </p>
-                            </div>
-                          </DropdownMenuItem>
-                        )
-                      })}
-                    </div>
-                  ))}
-                </div>
+              <DropdownMenuContent className="w-64">
+                <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                  All Features
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Appointment Management
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => navigate("/features/slot-blockers")}>
+                      Slot Blockers
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/features/drag-drop-reschedule")}>
+                      Drag & Drop Reschedule
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/features/popup-notes-history")}>
+                      Popup Notes & History
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/features/recurring-bookings")}>
+                      Recurring Bookings
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/features/color-coded-appointments")}>
+                      Color-Coded Appointments
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/features/resource-scheduling")}>
+                      Resource Scheduling
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/features/calendar-sync-export")}>
+                      Calendar Sync & Export
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/features/easy-rescheduling")}>
+                      Easy Rescheduling
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                  POS System
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => document.getElementById('features-section')?.scrollIntoView({ behavior: 'smooth' })}>
+                  Inventory
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
             <DropdownMenu>
-              <DropdownMenuTrigger
-                className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors flex items-center gap-2 py-2"
-                style={{ fontSize: "18px", fontWeight: 600 }}
+              <DropdownMenuTrigger 
+                className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors flex items-center gap-2 py-2" 
+                style={{ fontSize: '18px', fontWeight: 600 }}
               >
                 Solutions
                 <ChevronDown className="h-5 w-5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-[950px] p-8 bg-white shadow-xl" align="start">
+              <DropdownMenuContent 
+                className="w-[950px] p-8 bg-white shadow-xl" 
+                align="start"
+              >
                 <div className="grid grid-cols-3 gap-8">
                   {solutionsDropdownItems.map((column, colIndex) => (
                     <div key={colIndex} className="space-y-3">

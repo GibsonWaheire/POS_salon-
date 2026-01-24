@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import Breadcrumb from "@/components/Breadcrumb"
 import NavigationHeader from "@/components/NavigationHeader"
+import LandingFooter from "@/components/landing/LandingFooter"
 
 export default function WhyChooseUs() {
   const benefits = [
@@ -139,6 +140,8 @@ export default function WhyChooseUs() {
           </div>
         </div>
       </main>
+
+      <LandingFooter />
     </div>
   )
 }

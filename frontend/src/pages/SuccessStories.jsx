@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowLeft, Quote, Star, TrendingUp } from "lucide-react"
 import Breadcrumb from "@/components/Breadcrumb"
 import NavigationHeader from "@/components/NavigationHeader"
+import LandingFooter from "@/components/landing/LandingFooter"
 
 export default function SuccessStories() {
   const stories = [
@@ -137,6 +138,8 @@ export default function SuccessStories() {
           </div>
         </section>
       </main>
+
+      <LandingFooter />
     </div>
   )
 }

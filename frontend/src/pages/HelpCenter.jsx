@@ -5,6 +5,7 @@ import { ArrowLeft, ChevronDown, ChevronUp, Search, Phone, HelpCircle } from "lu
 import Breadcrumb from "@/components/Breadcrumb"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import NavigationHeader from "@/components/NavigationHeader"
+import LandingFooter from "@/components/landing/LandingFooter"
 
 export default function HelpCenter() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -200,6 +201,8 @@ export default function HelpCenter() {
           </div>
         </section>
       </main>
+
+      <LandingFooter />
     </div>
   )
 }

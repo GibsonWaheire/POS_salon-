@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { Toaster } from "sonner"
 import { AuthProvider } from "./context/AuthContext"
 import Layout from "./components/Layout"
@@ -30,7 +30,6 @@ import SuccessStories from "./pages/SuccessStories"
 import Blog from "./pages/Blog"
 import HelpCenter from "./pages/HelpCenter"
 import Pricing from "./pages/Pricing"
-import Solutions from "./pages/Solutions"
 import SlotBlockers from "./pages/SlotBlockers"
 import DragDropReschedule from "./pages/DragDropReschedule"
 import PopupNotesHistory from "./pages/PopupNotesHistory"
@@ -48,6 +47,7 @@ function App() {
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Landing />} />
+          <Route path="/solutions" element={<Navigate to="/solutions/hair" replace />} />
           <Route path="/solutions/:posType" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -58,7 +58,6 @@ function App() {
           <Route path="/blog" element={<Blog />} />
           <Route path="/help-center" element={<HelpCenter />} />
           <Route path="/pricing" element={<Pricing />} />
-          <Route path="/solutions" element={<Solutions />} />
           
           {/* Appointment Management Feature Pages */}
           <Route path="/features/slot-blockers" element={<SlotBlockers />} />
