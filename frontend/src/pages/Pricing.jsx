@@ -1,140 +1,713 @@
+import React, { useState } from "react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Check, DollarSign, Zap, Shield } from "lucide-react"
-import Breadcrumb from "@/components/Breadcrumb"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Check, X, ArrowRight, ChevronDown, ChevronUp } from "lucide-react"
 import NavigationHeader from "@/components/NavigationHeader"
+import Breadcrumb from "@/components/Breadcrumb"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 
 export default function Pricing() {
-  const features = [
-    "Unlimited appointments and scheduling",
-    "Point-of-sale system",
-    "Staff management and commission tracking",
-    "Inventory management",
-    "Customer database",
-    "Financial reporting",
-    "Expense tracking",
-    "Email and phone support"
+  const [billingCycle, setBillingCycle] = useState("monthly")
+
+  const plans = [
+    {
+      name: "Free",
+      tagline: "Free Market Place Listing",
+      monthlyPrice: 0,
+      annualPrice: 0,
+      features: {
+        appointments: { limit: "50/Month", unlimited: false },
+        "Online Booking Management": true,
+        "Appointment Calendar": true,
+        "Staff Roster": false,
+        "Google Calendar Integration": false,
+        "Automated Service Reminders": false,
+        "Social Booking Integration": false,
+        "Room Calendar": false,
+        "Waitlists Management": false,
+        "Point Of Sale (POS)": false,
+        "Expenses Management": false,
+        "Cash Register": false,
+        "Mobile point of sale": false,
+        "Products & Package Management": false,
+        "Quick Books Integration": false,
+        "Paypal Integration": false,
+        "Lead Management System": false,
+        "Third Party Addons": false,
+        "Membership Card Reader": false,
+        "Wordpress Integration": false,
+        "Getresponse Integration": false,
+        "Mailchimp Integration": false,
+        "Shopfiy Integration": false,
+        "Clover Integration": false,
+        "Stripe Integration": false,
+        "Customer Feedback System": false,
+        "Customer History Management": false,
+        "Rewards /Loyality Points": false,
+        "Consultation / Consent Forms": false,
+        "Appointment History": false,
+        "Before & After photos": false,
+        "Documents Management": false,
+        "Notes Management": false,
+        "Data Export": false,
+        "Staff Reports": false,
+        "Sales Reports": false,
+        "Inventory Reports": false,
+        "Appointment Reports": false,
+        "Multi Branch Management Reporting": false,
+        "Coupons Management": false,
+        "Website Booking Integration": false,
+        "Gift Cards": false,
+        "Membership Subscription": false,
+        "SMS Campaigns": false,
+        "Email Campaigns": false,
+        "Memberships & Ewallet Management": false,
+        "Mini Website": false,
+        "Google Analytics Management": false,
+        "Referral System": false,
+        "Ware House Management": false,
+        "Product Billing Management": false,
+        "Product Consumption Reports": false,
+        "Print Barcode /Label": false,
+        "Purchase Orders": false,
+        "Inventory Management": false,
+        "Retail stock management": false,
+        "Dedicated Account Manager": false,
+        "Data Migration From Your Old System": false,
+        "Online and call back support": false,
+        "No Shows Fees Management": false,
+        "Take deposits to reduce no shows": false,
+        "Sell and redeem gift vouchers Cards": false,
+        "Third party Payment integrations": false,
+        "Third Party Sms Integration": false,
+        "Twillo Integration": false,
+        "Rebooking reminders": false,
+        "WhatsApp Integration": false,
+        "Interakt Integration": false,
+        "AI Automation Marketing": false,
+      }
+    },
+    {
+      name: "Essential",
+      tagline: "Perfect for small businesses",
+      monthlyPrice: 49,
+      annualPrice: 441, // $49/month * 12 * 0.75 (25% discount)
+      features: {
+        appointments: { limit: "Unlimited", unlimited: true },
+        "Online Booking Management": true,
+        "Appointment Calendar": true,
+        "Staff Roster": true,
+        "Google Calendar Integration": false,
+        "Automated Service Reminders": false,
+        "Social Booking Integration": false,
+        "Room Calendar": false,
+        "Waitlists Management": false,
+        "Point Of Sale (POS)": true,
+        "Expenses Management": true,
+        "Cash Register": false,
+        "Mobile point of sale": true,
+        "Products & Package Management": true,
+        "Quick Books Integration": false,
+        "Paypal Integration": false,
+        "Lead Management System": false,
+        "Third Party Addons": false,
+        "Membership Card Reader": false,
+        "Wordpress Integration": false,
+        "Getresponse Integration": false,
+        "Mailchimp Integration": false,
+        "Shopfiy Integration": false,
+        "Clover Integration": false,
+        "Stripe Integration": false,
+        "Customer Feedback System": false,
+        "Customer History Management": true,
+        "Rewards /Loyality Points": false,
+        "Consultation / Consent Forms": false,
+        "Appointment History": false,
+        "Before & After photos": false,
+        "Documents Management": false,
+        "Notes Management": false,
+        "Data Export": false,
+        "Staff Reports": true,
+        "Sales Reports": true,
+        "Inventory Reports": false,
+        "Appointment Reports": true,
+        "Multi Branch Management Reporting": false,
+        "Coupons Management": true,
+        "Website Booking Integration": true,
+        "Gift Cards": false,
+        "Membership Subscription": false,
+        "SMS Campaigns": false,
+        "Email Campaigns": false,
+        "Memberships & Ewallet Management": true,
+        "Mini Website": false,
+        "Google Analytics Management": false,
+        "Referral System": false,
+        "Ware House Management": false,
+        "Product Billing Management": true,
+        "Product Consumption Reports": false,
+        "Print Barcode /Label": false,
+        "Purchase Orders": false,
+        "Inventory Management": false,
+        "Retail stock management": false,
+        "Dedicated Account Manager": false,
+        "Data Migration From Your Old System": true,
+        "Online and call back support": true,
+        "No Shows Fees Management": true,
+        "Take deposits to reduce no shows": false,
+        "Sell and redeem gift vouchers Cards": false,
+        "Third party Payment integrations": false,
+        "Third Party Sms Integration": false,
+        "Twillo Integration": false,
+        "Rebooking reminders": false,
+        "WhatsApp Integration": false,
+        "Interakt Integration": false,
+        "AI Automation Marketing": false,
+      }
+    },
+    {
+      name: "Advance",
+      tagline: "For growing businesses",
+      monthlyPrice: 99,
+      annualPrice: 891, // $99/month * 12 * 0.75 (25% discount)
+      features: {
+        appointments: { limit: "Unlimited", unlimited: true },
+        "Online Booking Management": true,
+        "Appointment Calendar": true,
+        "Staff Roster": true,
+        "Google Calendar Integration": false,
+        "Automated Service Reminders": true,
+        "Social Booking Integration": true,
+        "Room Calendar": true,
+        "Waitlists Management": false,
+        "Point Of Sale (POS)": true,
+        "Expenses Management": true,
+        "Cash Register": false,
+        "Mobile point of sale": true,
+        "Products & Package Management": true,
+        "Quick Books Integration": false,
+        "Paypal Integration": true,
+        "Lead Management System": true,
+        "Third Party Addons": true,
+        "Membership Card Reader": true,
+        "Wordpress Integration": true,
+        "Getresponse Integration": true,
+        "Mailchimp Integration": true,
+        "Shopfiy Integration": false,
+        "Clover Integration": false,
+        "Stripe Integration": true,
+        "Customer Feedback System": true,
+        "Customer History Management": true,
+        "Rewards /Loyality Points": true,
+        "Consultation / Consent Forms": false,
+        "Appointment History": true,
+        "Before & After photos": false,
+        "Documents Management": false,
+        "Notes Management": true,
+        "Data Export": false,
+        "Staff Reports": true,
+        "Sales Reports": true,
+        "Inventory Reports": true,
+        "Appointment Reports": true,
+        "Multi Branch Management Reporting": false,
+        "Coupons Management": true,
+        "Website Booking Integration": true,
+        "Gift Cards": true,
+        "Membership Subscription": true,
+        "SMS Campaigns": true,
+        "Email Campaigns": true,
+        "Memberships & Ewallet Management": true,
+        "Mini Website": false,
+        "Google Analytics Management": true,
+        "Referral System": false,
+        "Ware House Management": true,
+        "Product Billing Management": true,
+        "Product Consumption Reports": true,
+        "Print Barcode /Label": true,
+        "Purchase Orders": true,
+        "Inventory Management": true,
+        "Retail stock management": true,
+        "Dedicated Account Manager": false,
+        "Data Migration From Your Old System": true,
+        "Online and call back support": true,
+        "No Shows Fees Management": true,
+        "Take deposits to reduce no shows": true,
+        "Sell and redeem gift vouchers Cards": true,
+        "Third party Payment integrations": true,
+        "Third Party Sms Integration": true,
+        "Twillo Integration": false,
+        "Rebooking reminders": false,
+        "WhatsApp Integration": true,
+        "Interakt Integration": true,
+        "AI Automation Marketing": false,
+      }
+    },
+    {
+      name: "Expert",
+      tagline: "For enterprise businesses",
+      monthlyPrice: 199,
+      annualPrice: 1791, // $199/month * 12 * 0.75 (25% discount)
+      features: {
+        appointments: { limit: "Unlimited", unlimited: true },
+        "Online Booking Management": true,
+        "Appointment Calendar": true,
+        "Staff Roster": true,
+        "Google Calendar Integration": true,
+        "Automated Service Reminders": true,
+        "Social Booking Integration": true,
+        "Room Calendar": true,
+        "Waitlists Management": true,
+        "Point Of Sale (POS)": true,
+        "Expenses Management": true,
+        "Cash Register": true,
+        "Mobile point of sale": true,
+        "Products & Package Management": true,
+        "Quick Books Integration": true,
+        "Paypal Integration": true,
+        "Lead Management System": true,
+        "Third Party Addons": true,
+        "Membership Card Reader": true,
+        "Wordpress Integration": true,
+        "Getresponse Integration": true,
+        "Mailchimp Integration": true,
+        "Shopfiy Integration": true,
+        "Clover Integration": true,
+        "Stripe Integration": true,
+        "Customer Feedback System": true,
+        "Customer History Management": true,
+        "Rewards /Loyality Points": true,
+        "Consultation / Consent Forms": true,
+        "Appointment History": true,
+        "Before & After photos": true,
+        "Documents Management": true,
+        "Notes Management": true,
+        "Data Export": true,
+        "Staff Reports": true,
+        "Sales Reports": true,
+        "Inventory Reports": true,
+        "Appointment Reports": true,
+        "Multi Branch Management Reporting": true,
+        "Coupons Management": true,
+        "Website Booking Integration": true,
+        "Gift Cards": true,
+        "Membership Subscription": true,
+        "SMS Campaigns": true,
+        "Email Campaigns": true,
+        "Memberships & Ewallet Management": true,
+        "Mini Website": true,
+        "Google Analytics Management": true,
+        "Referral System": true,
+        "Ware House Management": true,
+        "Product Billing Management": true,
+        "Product Consumption Reports": true,
+        "Print Barcode /Label": true,
+        "Purchase Orders": true,
+        "Inventory Management": true,
+        "Retail stock management": true,
+        "Dedicated Account Manager": true,
+        "Data Migration From Your Old System": true,
+        "Online and call back support": true,
+        "No Shows Fees Management": true,
+        "Take deposits to reduce no shows": true,
+        "Sell and redeem gift vouchers Cards": true,
+        "Third party Payment integrations": true,
+        "Third Party Sms Integration": true,
+        "Twillo Integration": true,
+        "Rebooking reminders": true,
+        "WhatsApp Integration": true,
+        "Interakt Integration": true,
+        "AI Automation Marketing": true,
+      }
+    }
   ]
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Header */}
-      <NavigationHeader />
+  const featureCategories = [
+    {
+      name: "Appointments",
+      features: [
+        { key: "appointments", label: "Appointments" },
+        { key: "Online Booking Management", label: "Online Booking Management" },
+        { key: "Appointment Calendar", label: "Appointment Calendar" },
+        { key: "Staff Roster", label: "Staff Roster" },
+        { key: "Google Calendar Integration", label: "Google Calendar Integration" },
+        { key: "Automated Service Reminders", label: "Automated Service Reminders" },
+        { key: "Social Booking Integration", label: "Social Booking Integration" },
+        { key: "Room Calendar", label: "Room Calendar" },
+        { key: "Waitlists Management", label: "Waitlists Management" },
+      ]
+    },
+    {
+      name: "POS",
+      features: [
+        { key: "Point Of Sale (POS)", label: "Point Of Sale (POS)" },
+        { key: "Expenses Management", label: "Expenses Management" },
+        { key: "Cash Register", label: "Cash Register" },
+        { key: "Mobile point of sale", label: "Mobile point of sale" },
+        { key: "Products & Package Management", label: "Products & Package Management" },
+      ]
+    },
+    {
+      name: "Add-ons",
+      features: [
+        { key: "Quick Books Integration", label: "Quick Books Integration" },
+        { key: "Paypal Integration", label: "Paypal Integration" },
+        { key: "Lead Management System", label: "Lead Management System" },
+        { key: "Third Party Addons", label: "Third Party Addons" },
+        { key: "Membership Card Reader", label: "Membership Card Reader" },
+        { key: "Wordpress Integration", label: "Wordpress Integration" },
+        { key: "Getresponse Integration", label: "Getresponse Integration" },
+        { key: "Mailchimp Integration", label: "Mailchimp Integration" },
+        { key: "Shopfiy Integration", label: "Shopfiy Integration" },
+        { key: "Clover Integration", label: "Clover Integration" },
+        { key: "Stripe Integration", label: "Stripe Integration" },
+      ]
+    },
+    {
+      name: "Client Management",
+      features: [
+        { key: "Customer Feedback System", label: "Customer Feedback System" },
+        { key: "Customer History Management", label: "Customer History Management" },
+        { key: "Rewards /Loyality Points", label: "Rewards /Loyality Points" },
+        { key: "Consultation / Consent Forms", label: "Consultation / Consent Forms" },
+        { key: "Appointment History", label: "Appointment History" },
+        { key: "Before & After photos", label: "Before & After photos" },
+        { key: "Documents Management", label: "Documents Management" },
+        { key: "Notes Management", label: "Notes Management" },
+        { key: "Data Export", label: "Data Export" },
+      ]
+    },
+    {
+      name: "Business Analysis Reports",
+      features: [
+        { key: "Staff Reports", label: "Staff Reports" },
+        { key: "Sales Reports", label: "Sales Reports" },
+        { key: "Inventory Reports", label: "Inventory Reports" },
+        { key: "Appointment Reports", label: "Appointment Reports" },
+        { key: "Multi Branch Management Reporting", label: "Multi Branch Management Reporting" },
+      ]
+    },
+    {
+      name: "Marketing",
+      features: [
+        { key: "Coupons Management", label: "Coupons Management" },
+        { key: "Website Booking Integration", label: "Website Booking Integration" },
+        { key: "Gift Cards", label: "Gift Cards" },
+        { key: "Membership Subscription", label: "Membership Subscription" },
+        { key: "SMS Campaigns", label: "SMS Campaigns" },
+        { key: "Email Campaigns", label: "Email Campaigns" },
+        { key: "Memberships & Ewallet Management", label: "Memberships & Ewallet Management" },
+        { key: "Mini Website", label: "Mini Website" },
+        { key: "Google Analytics Management", label: "Google Analytics Management" },
+        { key: "Referral System", label: "Referral System" },
+      ]
+    },
+    {
+      name: "Inventory",
+      features: [
+        { key: "Ware House Management", label: "Ware House Management" },
+        { key: "Product Billing Management", label: "Product Billing Management" },
+        { key: "Product Consumption Reports", label: "Product Consumption Reports" },
+        { key: "Print Barcode /Label", label: "Print Barcode /Label" },
+        { key: "Purchase Orders", label: "Purchase Orders" },
+        { key: "Inventory Management", label: "Inventory Management" },
+        { key: "Retail stock management", label: "Retail stock management" },
+      ]
+    },
+    {
+      name: "Onboarding & Support from Salonist",
+      features: [
+        { key: "Dedicated Account Manager", label: "Dedicated Account Manager" },
+        { key: "Data Migration From Your Old System", label: "Data Migration From Your Old System" },
+        { key: "Online and call back support", label: "Online and call back support" },
+      ]
+    },
+    {
+      name: "Payments and deposits",
+      features: [
+        { key: "No Shows Fees Management", label: "No Shows Fees Management" },
+        { key: "Take deposits to reduce no shows", label: "Take deposits to reduce no shows" },
+        { key: "Sell and redeem gift vouchers Cards", label: "Sell and redeem gift vouchers Cards" },
+        { key: "Third party Payment integrations", label: "Third party Payment integrations" },
+      ]
+    },
+    {
+      name: "Messaging",
+      features: [
+        { key: "Third Party Sms Integration", label: "Third Party Sms Integration" },
+        { key: "Twillo Integration", label: "Twillo Integration" },
+        { key: "Rebooking reminders", label: "Rebooking reminders" },
+        { key: "WhatsApp Integration", label: "WhatsApp Integration" },
+        { key: "Interakt Integration", label: "Interakt Integration" },
+        { key: "AI Automation Marketing", label: "AI Automation Marketing" },
+      ]
+    }
+  ]
 
+  const faqs = [
+    {
+      category: "Subscription",
+      questions: [
+        {
+          q: "What is the cost of a Salonist?",
+          a: "Salonist offers flexible pricing plans starting from Free (with marketplace listing) to Expert plans at $1,790/month (or $1,611/month annually). Choose the plan that fits your business needs."
+        },
+        {
+          q: "What is included in the Salonist subscription?",
+          a: "Each plan includes different features. The Free plan includes basic appointment management (50/month), while higher tiers include unlimited appointments, POS system, staff management, inventory, reporting, and more advanced features. See our pricing table for complete details."
+        },
+        {
+          q: "Are there any hidden fees in the subscription pricing?",
+          a: "No, our pricing is transparent. The monthly or annual price you see is what you pay. There are no hidden fees, setup costs, or surprise charges."
+        },
+        {
+          q: "Can I upgrade my subscription plan at any time?",
+          a: "Yes, you can upgrade your plan at any time. When you upgrade, you'll immediately gain access to the new features, and we'll prorate the difference for the remainder of your billing cycle."
+        },
+        {
+          q: "How do I cancel my Salonist account?",
+          a: "You can cancel your subscription at any time from your account settings. Your account will remain active until the end of your current billing period, and you'll continue to have access to all features until then."
+        }
+      ]
+    },
+    {
+      category: "Additional Staff Members",
+      questions: [
+        {
+          q: "Can I set staff working hours in Salonist?",
+          a: "Yes, Salonist includes staff roster management where you can set individual working hours, schedules, and availability for each staff member."
+        },
+        {
+          q: "Can I add blocked time for staff in the calendar?",
+          a: "Yes, with our slot blockers feature, you can block time slots for breaks, days off, or any unavailable periods for individual staff or all staff."
+        },
+        {
+          q: "Do staff members have access to specific features based on their roles?",
+          a: "Yes, Salonist supports role-based access control. You can assign different permissions to staff members based on their roles, ensuring they only have access to the features they need."
+        }
+      ]
+    },
+    {
+      category: "Salonist Payment",
+      questions: [
+        {
+          q: "Can I select multiple payment methods while generating invoices?",
+          a: "Yes, Salonist supports multiple payment methods including cash, card, mobile payments (M-Pesa, PayPal, Stripe), and more. You can combine payment methods for a single transaction."
+        },
+        {
+          q: "What payment gateways have in Salonist?",
+          a: "Salonist integrates with multiple payment gateways including Stripe, PayPal, Clover, and supports mobile payment options like M-Pesa. Higher tier plans include more payment integration options."
+        },
+        {
+          q: "Can I accept payment via Stripe Card Reader in Salonist?",
+          a: "Yes, Stripe integration is available in Advance and Expert plans, allowing you to accept payments via Stripe card readers and terminals."
+        },
+        {
+          q: "Can I integrate Clover with Salonist for easy payments?",
+          a: "Yes, Clover integration is available in the Expert plan, providing seamless payment processing through Clover terminals."
+        }
+      ]
+    }
+  ]
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price)
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      <NavigationHeader />
+      
       {/* Hero Section */}
-      <section className="relative py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#ef4444]/10 via-blue-50/50 to-purple-50/30"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#ef4444]/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-6xl mx-auto">
-            <Breadcrumb items={[
-              { label: "Home", href: "/" },
-              { label: "Pricing" }
-            ]} />
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-6">
-                  Pricing
-                </h1>
-                <p className="text-sm md:text-base text-gray-700 leading-relaxed">
-                  Choose the plan that fits your business needs
-                </p>
-              </div>
-              <div className="relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1556740758-90de374c12ad?w=600&h=600&fit=crop&auto=format" 
-                  alt="Pricing and plans" 
-                  className="aspect-square rounded-3xl object-cover shadow-2xl"
+      <section className="bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 text-white py-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <Breadcrumb items={[
+            { label: "Home", href: "/" },
+            { label: "Pricing" }
+          ]} />
+          <div className="max-w-4xl mx-auto text-center mt-8">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              Simple, Honest, Affordable Pricing
+            </h1>
+            <p className="text-xl text-gray-300 mb-8">
+              Best Affordable Plans To Manage Your Business Efficiently
+            </p>
+            
+            {/* Billing Toggle */}
+            <div className="flex items-center justify-center gap-4 mb-8">
+              <span className={`text-sm font-medium ${billingCycle === "monthly" ? "text-white" : "text-gray-400"}`}>
+                Monthly
+              </span>
+              <button
+                onClick={() => setBillingCycle(billingCycle === "monthly" ? "annually" : "monthly")}
+                className="relative inline-flex h-6 w-11 items-center rounded-full bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-gray-800 transition-transform ${
+                    billingCycle === "annually" ? "translate-x-6" : "translate-x-1"
+                  }`}
                 />
-                <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-[#ef4444] rounded-2xl opacity-20"></div>
-                <div className="absolute -top-4 -left-4 w-16 h-16 bg-blue-500 rounded-xl opacity-20"></div>
-              </div>
+              </button>
+              <span className={`text-sm font-medium ${billingCycle === "annually" ? "text-white" : "text-gray-400"}`}>
+                Annually <span className="text-green-400">Save up to 25%</span>
+              </span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 max-w-6xl">
-        <div className="space-y-16">
-          {/* Flexible Pricing Section */}
-          <section className="bg-white rounded-3xl p-10 shadow-lg border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Flexible Pricing Plans</h2>
-            <p className="text-sm text-gray-700 leading-relaxed mb-6">
-              We offer flexible pricing options designed to scale with your business. All plans include our core features with no hidden fees.
-            </p>
-            <p className="text-sm text-gray-700 leading-relaxed">
-              Our pricing is based on your business size and specific needs. Contact us to discuss the best plan for your salon, spa, or beauty business.
-            </p>
-          </section>
-
-          {/* Features Section */}
-          <section className="bg-white rounded-3xl p-10 shadow-lg border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-8">What's Included</h2>
-            <p className="text-sm text-gray-700 mb-8">All plans include:</p>
-            <div className="grid md:grid-cols-2 gap-4">
-              {features.map((feature, index) => (
-                <div key={index} className="flex items-start gap-3 p-4 rounded-xl bg-gradient-to-r from-gray-50 to-white hover:shadow-md transition-all duration-300 border border-gray-100">
-                  <Check className="h-5 w-5 text-[#ef4444] mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">{feature}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Enterprise Section */}
-          <section className="bg-white rounded-3xl p-10 shadow-lg border border-gray-100">
-            <div className="flex items-start gap-6">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                <Shield className="h-8 w-8 text-white" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 mb-6">Custom Enterprise Plans</h2>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  For larger businesses or multiple locations, we offer custom enterprise plans with additional features, priority support, and dedicated account management. Contact us to discuss your specific requirements.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* Free Trial Section */}
-          <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#ef4444] via-red-600 to-red-700 p-12 text-white">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-            <div className="relative z-10">
-              <div className="flex items-start gap-6 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
-                  <Zap className="h-8 w-8" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold mb-4">Free Trial</h2>
-                  <p className="text-base mb-8 opacity-90 leading-relaxed">
-                    Not sure if Salonyst is right for you? We offer a free trial period so you can explore all features and see how it works for your business before making a commitment.
-                  </p>
+      {/* Pricing Cards */}
+      <section className="py-12 bg-gray-100">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            {plans.map((plan) => (
+              <Card key={plan.name} className={`${plan.name === "Essential" ? "border-2 border-red-500 shadow-lg scale-105" : ""}`}>
+                <CardHeader className="text-center pb-4">
+                  <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
+                  <CardDescription className="text-sm mt-2">{plan.tagline}</CardDescription>
+                  <div className="mt-4">
+                    <div className="text-4xl font-bold">
+                      {formatPrice(billingCycle === "monthly" ? plan.monthlyPrice : plan.annualPrice)}
+                    </div>
+                    <div className="text-sm text-gray-500 mt-1">
+                      {billingCycle === "monthly" ? "per month" : `per year (${formatPrice(Math.round(plan.annualPrice / 12))}/month)`}
+                    </div>
+                    {billingCycle === "annually" && plan.monthlyPrice > 0 && (
+                      <div className="text-xs text-gray-400 mt-1">
+                        Save {Math.round((1 - plan.annualPrice / (plan.monthlyPrice * 12)) * 100)}% vs monthly
+                      </div>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
                   <Link to="/signup">
-                    <Button className="bg-white text-[#ef4444] hover:bg-gray-100 text-sm px-8 py-6 h-auto shadow-xl">
-                      Start Free Trial
+                    <Button 
+                      className={`w-full ${plan.name === "Essential" ? "bg-red-500 hover:bg-red-600" : ""}`}
+                      variant={plan.name === "Essential" ? "default" : "outline"}
+                    >
+                      {plan.name === "Free" ? "Get Started" : "Get Started"}
+                      <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Custom Quote Section */}
-          <section className="bg-white rounded-3xl p-10 shadow-lg border border-gray-100 text-center">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Get a Custom Quote</h2>
-            <p className="text-sm text-gray-700 leading-relaxed mb-8 max-w-2xl mx-auto">
-              Want to discuss pricing options or have questions about our plans? Our team is ready to help you find the perfect solution for your business.
-            </p>
-            <Link to="/#contact">
-              <Button variant="outline" className="text-sm px-8 py-6 h-auto">
-                Request a Quote
-              </Button>
-            </Link>
-          </section>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* Feature Comparison Table */}
+      <section className="py-12 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-center mb-8">Pricing that Fits Every Business</h2>
+          <p className="text-center text-gray-600 mb-8">Unlimited Staffers</p>
+          
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-50 border-b-2 border-gray-200">
+                  <th className="text-left p-4 font-semibold text-gray-900 sticky left-0 bg-gray-50 z-10 min-w-[250px]">Feature</th>
+                  {plans.map((plan) => (
+                    <th key={plan.name} className={`text-center p-4 font-semibold ${plan.name === "Essential" ? "bg-red-50 text-red-700" : "text-gray-900"}`}>
+                      {plan.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {featureCategories.map((category, catIndex) => (
+                  <React.Fragment key={category.name}>
+                    <tr className="bg-gray-100">
+                      <td colSpan={5} className="p-3 font-bold text-gray-900 uppercase text-sm">
+                        {category.name}
+                      </td>
+                    </tr>
+                    {category.features.map((feature, featIndex) => (
+                      <tr key={feature.key} className="border-b border-gray-200 hover:bg-gray-50">
+                        <td className="p-4 text-sm text-gray-700 sticky left-0 bg-white z-10">
+                          {feature.label}
+                        </td>
+                        {plans.map((plan) => {
+                          const featureValue = plan.features[feature.key]
+                          if (feature.key === "appointments") {
+                            return (
+                              <td key={plan.name} className="text-center p-4">
+                                <span className="text-sm text-gray-700">{featureValue.limit}</span>
+                              </td>
+                            )
+                          }
+                          return (
+                            <td key={plan.name} className="text-center p-4">
+                              {featureValue ? (
+                                <Check className="h-5 w-5 text-green-500 mx-auto" />
+                              ) : (
+                                <X className="h-5 w-5 text-gray-300 mx-auto" />
+                              )}
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-16 bg-gray-100">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+          <h2 className="text-3xl font-bold text-center mb-4">Frequently Asked Questions</h2>
+          <p className="text-center text-gray-600 mb-12">
+            Need clarity? Our FAQ section covers everything you need to make an informed decision.
+          </p>
+          
+          <Accordion type="single" collapsible className="space-y-4">
+            {faqs.map((category, catIndex) => (
+              <div key={category.category} className="mb-6">
+                <h3 className="text-xl font-semibold mb-4 text-gray-900">{category.category}</h3>
+                {category.questions.map((faq, faqIndex) => (
+                  <AccordionItem key={faqIndex} value={`item-${catIndex}-${faqIndex}`} className="bg-white border border-gray-200 rounded-lg mb-2 px-4">
+                    <AccordionTrigger className="text-left hover:no-underline">
+                      <span className="font-medium text-gray-900">{faq.q}</span>
+                    </AccordionTrigger>
+                    <AccordionContent className="text-gray-700 pt-2 pb-4">
+                      {faq.a}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </div>
+            ))}
+          </Accordion>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-16 bg-gradient-to-br from-red-600 to-red-700 text-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold mb-4">Join the future of your business growth</h2>
+          <p className="text-xl mb-8 text-red-100">
+            Start managing your salon, spa, or beauty business more efficiently today
+          </p>
+          <Link to="/signup">
+            <Button size="lg" className="bg-white text-red-600 hover:bg-gray-100 text-lg px-8 py-6">
+              Get Started Now
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
+        </div>
+      </section>
     </div>
   )
 }
