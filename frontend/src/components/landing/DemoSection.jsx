@@ -300,13 +300,490 @@ export default function DemoSection({ posConfig }) {
                       </div>
                     )}
 
-                    {/* Other views (Staff, Services, Shifts, etc.) - Simplified for brevity */}
-                    {/* In a full implementation, these would be extracted into separate components */}
-                    {demoSelectedSidebar !== "dashboard" && (
+                    {/* Staff View */}
+                    {demoSelectedSidebar === "staff" && (
                       <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
-                        <div className="text-center py-20">
-                          <p className="text-gray-600">Demo view for {demoSelectedSidebar} - Full implementation available</p>
-                          <p className="text-sm text-gray-500 mt-2">This view would show the full demo content for {demoSelectedSidebar}</p>
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2">Staff Management</h2>
+                          <p className="text-gray-600">Manage your team members and their roles</p>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="border-b bg-gray-50">
+                                  <th className="text-left p-4 text-sm font-semibold">Name</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Phone</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Email</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Role</th>
+                                  <th className="text-center p-4 text-sm font-semibold">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {demoStaffList.map((staff) => (
+                                  <tr key={staff.id} className="border-b hover:bg-gray-50">
+                                    <td className="p-4 text-sm font-medium">{staff.name}</td>
+                                    <td className="p-4 text-sm text-gray-600">{staff.phone}</td>
+                                    <td className="p-4 text-sm text-gray-600">{staff.email}</td>
+                                    <td className="p-4 text-sm text-gray-600 capitalize">{staff.role.replace('_', ' ')}</td>
+                                    <td className="p-4 text-center">
+                                      <span className={`px-2 py-1 rounded text-xs ${staff.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                                        {staff.is_active ? 'Active' : 'Inactive'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Services View */}
+                    {demoSelectedSidebar === "services" && (
+                      <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2">Services</h2>
+                          <p className="text-gray-600">Manage your service offerings</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {demoServices.map((service) => (
+                            <div key={service.id} className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                              <div className="flex items-start justify-between mb-2">
+                                <h3 className="font-semibold text-gray-900">{service.name}</h3>
+                                <span className="text-sm font-medium text-green-600">{formatCurrency(convertKESToUSD(service.price), 'USD')}</span>
+                              </div>
+                              <p className="text-sm text-gray-600 mb-2">{service.description}</p>
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {service.duration} min
+                                </span>
+                                <span className="capitalize">{service.category}</span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Shifts View */}
+                    {demoSelectedSidebar === "shifts" && (
+                      <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2">Staff Shifts</h2>
+                          <p className="text-gray-600">View and manage staff schedules</p>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="border-b bg-gray-50">
+                                  <th className="text-left p-4 text-sm font-semibold">Staff Name</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Date</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Start Time</th>
+                                  <th className="text-left p-4 text-sm font-semibold">End Time</th>
+                                  <th className="text-center p-4 text-sm font-semibold">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {demoShifts.map((shift) => (
+                                  <tr key={shift.id} className="border-b hover:bg-gray-50">
+                                    <td className="p-4 text-sm font-medium">{shift.staff_name}</td>
+                                    <td className="p-4 text-sm text-gray-600">{shift.date}</td>
+                                    <td className="p-4 text-sm text-gray-600">{shift.start_time}</td>
+                                    <td className="p-4 text-sm text-gray-600">{shift.end_time}</td>
+                                    <td className="p-4 text-center">
+                                      <span className={`px-2 py-1 rounded text-xs ${
+                                        shift.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                                        shift.status === 'completed' ? 'bg-green-100 text-green-700' :
+                                        'bg-gray-100 text-gray-700'
+                                      }`}>
+                                        {shift.status.charAt(0).toUpperCase() + shift.status.slice(1)}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Commission Payments View */}
+                    {demoSelectedSidebar === "commission" && (
+                      <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2">Commission Payments</h2>
+                          <p className="text-gray-600">Track and manage staff commission payments</p>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="border-b bg-gray-50">
+                                  <th className="text-left p-4 text-sm font-semibold">Staff Name</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Period</th>
+                                  <th className="text-right p-4 text-sm font-semibold">Amount</th>
+                                  <th className="text-center p-4 text-sm font-semibold">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {demoCommissionPayments.map((payment) => (
+                                  <tr key={payment.id} className="border-b hover:bg-gray-50">
+                                    <td className="p-4 text-sm font-medium">{payment.staff_name}</td>
+                                    <td className="p-4 text-sm text-gray-600">{payment.period}</td>
+                                    <td className="p-4 text-sm text-right font-medium">{formatCurrency(convertKESToUSD(payment.amount), 'USD')}</td>
+                                    <td className="p-4 text-center">
+                                      <span className={`px-2 py-1 rounded text-xs ${
+                                        payment.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                                      }`}>
+                                        {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                                        {payment.paid_date && ` (${payment.paid_date})`}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Payments View */}
+                    {demoSelectedSidebar === "payments" && (
+                      <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2">Payments</h2>
+                          <p className="text-gray-600">View all payment transactions</p>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="border-b bg-gray-50">
+                                  <th className="text-left p-4 text-sm font-semibold">Date</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Time</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Customer</th>
+                                  <th className="text-right p-4 text-sm font-semibold">Amount</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Method</th>
+                                  <th className="text-center p-4 text-sm font-semibold">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {demoPayments.map((payment) => (
+                                  <tr key={payment.id} className="border-b hover:bg-gray-50">
+                                    <td className="p-4 text-sm text-gray-600">{payment.date}</td>
+                                    <td className="p-4 text-sm text-gray-600">{payment.time}</td>
+                                    <td className="p-4 text-sm font-medium">{payment.customer}</td>
+                                    <td className="p-4 text-sm text-right font-medium">{formatCurrency(convertKESToUSD(payment.amount), 'USD')}</td>
+                                    <td className="p-4 text-sm">
+                                      <span className={`px-2 py-1 rounded text-xs ${payment.method === "CASH" ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700"}`}>
+                                        {payment.method}
+                                      </span>
+                                    </td>
+                                    <td className="p-4 text-center">
+                                      <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700">
+                                        {payment.status.charAt(0).toUpperCase() + payment.status.slice(1)}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Sales View */}
+                    {demoSelectedSidebar === "sales" && (
+                      <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2">Sales</h2>
+                          <p className="text-gray-600">View all sales transactions</p>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="border-b bg-gray-50">
+                                  <th className="text-left p-4 text-sm font-semibold">Date</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Customer</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Items</th>
+                                  <th className="text-right p-4 text-sm font-semibold">Total</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Staff</th>
+                                  <th className="text-center p-4 text-sm font-semibold">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {demoSales.map((sale) => (
+                                  <tr key={sale.id} className="border-b hover:bg-gray-50">
+                                    <td className="p-4 text-sm text-gray-600">{sale.date}</td>
+                                    <td className="p-4 text-sm font-medium">{sale.customer}</td>
+                                    <td className="p-4 text-sm text-gray-600">{sale.items}</td>
+                                    <td className="p-4 text-sm text-right font-medium">{formatCurrency(convertKESToUSD(sale.total), 'USD')}</td>
+                                    <td className="p-4 text-sm text-gray-600">{sale.staff}</td>
+                                    <td className="p-4 text-center">
+                                      <span className="px-2 py-1 rounded text-xs bg-green-100 text-green-700">
+                                        {sale.status.charAt(0).toUpperCase() + sale.status.slice(1)}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* POS View */}
+                    {demoSelectedSidebar === "pos" && (
+                      <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2">Point of Sale</h2>
+                          <p className="text-gray-600">Process sales and manage transactions</p>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                            <h3 className="font-semibold mb-4">Quick Actions</h3>
+                            <div className="space-y-2">
+                              <Button className="w-full" onClick={() => toast.info("New Sale - Demo only")}>
+                                <Plus className="h-4 w-4 mr-2" />
+                                New Sale
+                              </Button>
+                              <Button variant="outline" className="w-full" onClick={() => toast.info("View Transactions - Demo only")}>
+                                <ShoppingCart className="h-4 w-4 mr-2" />
+                                View Transactions
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                            <h3 className="font-semibold mb-4">Recent Transactions</h3>
+                            <div className="space-y-2">
+                              {demoRecentTransactions.slice(0, 3).map((tx) => (
+                                <div key={tx.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                  <div>
+                                    <div className="text-sm font-medium">{tx.client}</div>
+                                    <div className="text-xs text-gray-600">{tx.time} • {tx.method}</div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm font-medium">{formatCurrency(convertKESToUSD(tx.amount), 'USD')}</div>
+                                    <div className="text-xs text-green-600">Commission: {formatCurrency(convertKESToUSD(tx.commission), 'USD')}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Appointments View */}
+                    {demoSelectedSidebar === "appointments" && (
+                      <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2">Appointments</h2>
+                          <p className="text-gray-600">Manage scheduled appointments</p>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="border-b bg-gray-50">
+                                  <th className="text-left p-4 text-sm font-semibold">Customer</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Service</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Date</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Time</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Staff</th>
+                                  <th className="text-center p-4 text-sm font-semibold">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {demoAppointments.map((appointment) => (
+                                  <tr key={appointment.id} className="border-b hover:bg-gray-50">
+                                    <td className="p-4 text-sm font-medium">{appointment.customer}</td>
+                                    <td className="p-4 text-sm text-gray-600">{appointment.service}</td>
+                                    <td className="p-4 text-sm text-gray-600">{appointment.date}</td>
+                                    <td className="p-4 text-sm text-gray-600">{appointment.time}</td>
+                                    <td className="p-4 text-sm text-gray-600">{appointment.staff}</td>
+                                    <td className="p-4 text-center">
+                                      <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-700">
+                                        {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Inventory View */}
+                    {demoSelectedSidebar === "inventory" && (
+                      <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2">Inventory</h2>
+                          <p className="text-gray-600">Track products and stock levels</p>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="border-b bg-gray-50">
+                                  <th className="text-left p-4 text-sm font-semibold">Product Name</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Category</th>
+                                  <th className="text-right p-4 text-sm font-semibold">Quantity</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Unit</th>
+                                  <th className="text-right p-4 text-sm font-semibold">Low Stock Threshold</th>
+                                  <th className="text-center p-4 text-sm font-semibold">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {demoInventory.map((item) => {
+                                  const isLowStock = item.quantity <= item.low_stock_threshold
+                                  return (
+                                    <tr key={item.id} className="border-b hover:bg-gray-50">
+                                      <td className="p-4 text-sm font-medium">{item.name}</td>
+                                      <td className="p-4 text-sm text-gray-600">{item.category}</td>
+                                      <td className="p-4 text-sm text-right font-medium">{item.quantity}</td>
+                                      <td className="p-4 text-sm text-gray-600">{item.unit}</td>
+                                      <td className="p-4 text-sm text-right text-gray-600">{item.low_stock_threshold}</td>
+                                      <td className="p-4 text-center">
+                                        <span className={`px-2 py-1 rounded text-xs ${isLowStock ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                                          {isLowStock ? 'Low Stock' : 'In Stock'}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Expenses View */}
+                    {demoSelectedSidebar === "expenses" && (
+                      <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2">Expenses</h2>
+                          <p className="text-gray-600">Track business expenses</p>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="border-b bg-gray-50">
+                                  <th className="text-left p-4 text-sm font-semibold">Date</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Category</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Description</th>
+                                  <th className="text-right p-4 text-sm font-semibold">Amount</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Paid By</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {demoExpenses.map((expense) => (
+                                  <tr key={expense.id} className="border-b hover:bg-gray-50">
+                                    <td className="p-4 text-sm text-gray-600">{expense.date}</td>
+                                    <td className="p-4 text-sm">
+                                      <span className="px-2 py-1 rounded text-xs bg-gray-100 text-gray-700">
+                                        {expense.category}
+                                      </span>
+                                    </td>
+                                    <td className="p-4 text-sm text-gray-600">{expense.description}</td>
+                                    <td className="p-4 text-sm text-right font-medium text-red-600">{formatCurrency(convertKESToUSD(expense.amount), 'USD')}</td>
+                                    <td className="p-4 text-sm text-gray-600">{expense.paid_by}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Reports View */}
+                    {demoSelectedSidebar === "reports" && (
+                      <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2">Reports</h2>
+                          <p className="text-gray-600">View business analytics and reports</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                            <h3 className="font-semibold mb-2">Sales Report</h3>
+                            <p className="text-sm text-gray-600 mb-3">View detailed sales analytics</p>
+                            <Button variant="outline" className="w-full" onClick={() => toast.info("Sales Report - Demo only")}>
+                              <FileText className="h-4 w-4 mr-2" />
+                              Generate Report
+                            </Button>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                            <h3 className="font-semibold mb-2">Staff Performance</h3>
+                            <p className="text-sm text-gray-600 mb-3">Track staff productivity</p>
+                            <Button variant="outline" className="w-full" onClick={() => toast.info("Staff Performance Report - Demo only")}>
+                              <TrendingUp className="h-4 w-4 mr-2" />
+                              Generate Report
+                            </Button>
+                          </div>
+                          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
+                            <h3 className="font-semibold mb-2">Inventory Report</h3>
+                            <p className="text-sm text-gray-600 mb-3">Stock levels and usage</p>
+                            <Button variant="outline" className="w-full" onClick={() => toast.info("Inventory Report - Demo only")}>
+                              <Package className="h-4 w-4 mr-2" />
+                              Generate Report
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Users View */}
+                    {demoSelectedSidebar === "users" && (
+                      <div className="flex-1 p-6 overflow-y-auto bg-gray-50">
+                        <div className="mb-6">
+                          <h2 className="text-2xl font-bold mb-2">Users</h2>
+                          <p className="text-gray-600">Manage admin and manager accounts</p>
+                        </div>
+                        <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                          <div className="overflow-x-auto">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="border-b bg-gray-50">
+                                  <th className="text-left p-4 text-sm font-semibold">Name</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Email</th>
+                                  <th className="text-left p-4 text-sm font-semibold">Role</th>
+                                  <th className="text-center p-4 text-sm font-semibold">Status</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {demoUsers.map((user) => (
+                                  <tr key={user.id} className="border-b hover:bg-gray-50">
+                                    <td className="p-4 text-sm font-medium">{user.name}</td>
+                                    <td className="p-4 text-sm text-gray-600">{user.email}</td>
+                                    <td className="p-4 text-sm">
+                                      <span className="px-2 py-1 rounded text-xs bg-blue-100 text-blue-700 capitalize">
+                                        {user.role}
+                                      </span>
+                                    </td>
+                                    <td className="p-4 text-center">
+                                      <span className={`px-2 py-1 rounded text-xs ${user.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                                        {user.is_active ? 'Active' : 'Inactive'}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
                     )}
