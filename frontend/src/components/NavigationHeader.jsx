@@ -170,7 +170,7 @@ export default function NavigationHeader() {
           {/* Right Side Actions */}
           <div className="absolute right-4 sm:right-8 flex items-center gap-4">
             <Button 
-              onClick={() => navigate("/signup")}
+              onClick={() => navigate("/pricing")}
               className="rounded-lg bg-[#ef4444] hover:bg-[#dc2626] text-white px-8 py-3 hidden md:inline-flex text-base font-semibold"
               style={{ fontSize: '16px', fontWeight: 600 }}
             >

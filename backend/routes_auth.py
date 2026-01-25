@@ -2,7 +2,7 @@
 Authentication routes for the POS Salon backend.
 """
 from flask import Blueprint, request, jsonify, current_app, session
-from models import User
+from models import User, Subscription
 from db import db
 from datetime import datetime
 from auth_helpers import require_auth, require_admin
@@ -201,7 +201,10 @@ def signup():
         password = data.get('password')
         name = data.get('name', '').strip()
         phone = data.get('phone', '').strip()
-        
+        plan = (data.get('plan') or 'free').strip().lower()
+        if plan not in ('free', 'essential', 'advance', 'expert'):
+            plan = 'free'
+
         # Validation
         if not email or not password or not name:
             return jsonify({'success': False, 'error': 'Email, password, and name are required'}), 400
@@ -223,6 +226,16 @@ def signup():
         new_user.set_password(password)
         
         db.session.add(new_user)
+        db.session.flush()
+        if plan == 'free':
+            sub = Subscription(
+                user_id=new_user.id,
+                plan_name='free',
+                status='active',
+                stripe_customer_id=None,
+                stripe_subscription_id=None,
+            )
+            db.session.add(sub)
         db.session.commit()
         
         # Store user ID in session

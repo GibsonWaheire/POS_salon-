@@ -663,9 +663,10 @@ class User(db.Model):
     last_login = db.Column(db.DateTime)
     
     # Relationships
-    manager = db.relationship('User', remote_side=[id], backref='managed_managers')  # Admin who manages this user
+    manager = db.relationship('User', remote_side=[id], backref='managed_managers')
     created_price_changes = db.relationship('ServicePriceHistory', backref='changed_by_user', lazy=True)
-    
+    subscription_rel = db.relationship('Subscription', backref='user', lazy='dynamic', foreign_keys='Subscription.user_id')
+
     def set_password(self, password):
         """Hash and set password"""
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
@@ -691,8 +692,9 @@ class User(db.Model):
         return False
     
     def to_dict(self):
+        sub = self._current_subscription()
         try:
-            return {
+            d = {
                 'id': self.id,
                 'email': self.email,
                 'name': self.name,
@@ -703,17 +705,57 @@ class User(db.Model):
                 'is_demo': getattr(self, 'is_demo', False),
                 'created_at': self.created_at.isoformat() if self.created_at else None,
                 'last_login': self.last_login.isoformat() if self.last_login else None
-                # password_hash is intentionally excluded
             }
+            d['subscription_status'] = sub.status if sub else 'none'
+            d['plan'] = sub.plan_name if sub else None
+            return d
         except Exception as e:
-            # Fallback if there's an error accessing attributes
             return {
                 'id': self.id,
                 'email': self.email,
                 'name': self.name,
                 'role': self.role,
                 'is_active': self.is_active,
+                'subscription_status': getattr(sub, 'status', None) if sub else 'none',
+                'plan': getattr(sub, 'plan_name', None) if sub else None,
             }
+
+    def _current_subscription(self):
+        """Latest subscription for this user (active preferred)."""
+        try:
+            active = Subscription.query.filter_by(
+                user_id=self.id, status='active'
+            ).order_by(Subscription.created_at.desc()).first()
+            if active:
+                return active
+            return Subscription.query.filter_by(user_id=self.id).order_by(
+                Subscription.created_at.desc()
+            ).first()
+        except Exception:
+            return None
+
+class Subscription(db.Model):
+    """User subscription to a plan (Stripe-backed for paid plans)."""
+    __tablename__ = 'subscriptions'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    plan_name = db.Column(db.String(50), nullable=False)  # free, essential, advance, expert
+    status = db.Column(db.String(30), nullable=False, default='none')  # active, past_due, canceled, trialing, none
+    stripe_customer_id = db.Column(db.String(255), nullable=True)
+    stripe_subscription_id = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'plan_name': self.plan_name,
+            'status': self.status,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
 
 class CommissionPayment(db.Model):
     """Track commission payments made to staff"""

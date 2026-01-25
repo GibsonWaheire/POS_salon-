@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,6 +15,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const redirect = searchParams.get("redirect")
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -24,7 +26,7 @@ export default function Login() {
     try {
       const result = await login(email, password)
       if (result.success) {
-        navigate("/dashboard")
+        navigate(redirect || "/dashboard", { replace: true })
       } else {
         setError(result.error || "Invalid email or password")
       }

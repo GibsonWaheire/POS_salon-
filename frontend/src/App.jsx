@@ -32,6 +32,9 @@ import Blog from "./pages/Blog"
 import BlogPost from "./pages/BlogPost"
 import HelpCenter from "./pages/HelpCenter"
 import Pricing from "./pages/Pricing"
+import Checkout from "./pages/Checkout"
+import Welcome from "./pages/Welcome"
+import Download from "./pages/Download"
 import PrivacyPolicy from "./pages/PrivacyPolicy"
 import TermsOfService from "./pages/TermsOfService"
 import SlotBlockers from "./pages/SlotBlockers"
@@ -64,6 +67,9 @@ function App() {
           <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/help-center" element={<HelpCenter />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/welcome" element={<Welcome />} />
+          <Route path="/download" element={<Download />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/terms-of-service" element={<TermsOfService />} />
           

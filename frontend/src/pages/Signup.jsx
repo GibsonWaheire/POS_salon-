@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,6 +13,9 @@ import { useAuth } from "@/context/AuthContext"
 
 export default function Signup() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const planParam = (searchParams.get("plan") || "").toLowerCase()
+  const plan = planParam === "free" ? "free" : null
   const { login } = useAuth()
   const [formData, setFormData] = useState({
     name: "",
@@ -50,14 +53,14 @@ export default function Signup() {
     try {
       const response = await fetch("http://localhost:5001/api/auth/signup", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
           password: formData.password,
-          phone: formData.phone || null
+          phone: formData.phone || null,
+          ...(plan ? { plan } : {}),
         }),
       })
       
@@ -111,14 +114,14 @@ export default function Signup() {
     try {
       const response = await fetch("http://localhost:5001/api/auth/signup", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           name: formData.name,
-          email: `phone_${formData.phone.replace(/\s+/g, '')}@salonpos.local`, // Temporary email format
+          email: `phone_${formData.phone.replace(/\s+/g, '')}@salonpos.local`,
           password: formData.password,
-          phone: formData.phone
+          phone: formData.phone,
+          ...(plan ? { plan } : {}),
         }),
       })
       

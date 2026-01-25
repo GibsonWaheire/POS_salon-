@@ -20,12 +20,16 @@ from routes_dashboard import bp_dashboard
 from routes_appointments import bp_appointments
 from routes_settings import bp_settings
 from routes_slot_blockers import bp_slot_blockers
+from routes_checkout import bp_checkout
+from routes_webhooks import bp_webhooks
 
 # Create main blueprint
 bp = Blueprint('api', __name__, url_prefix='/api')
 
 # Register all blueprints
 bp.register_blueprint(bp_auth)
+bp.register_blueprint(bp_checkout)
+bp.register_blueprint(bp_webhooks)
 bp.register_blueprint(bp_users)
 bp.register_blueprint(bp_customers)
 bp.register_blueprint(bp_services)

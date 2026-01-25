@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Check, X, ArrowRight, ChevronDown, ChevronUp } from "lucide-react"
@@ -13,87 +13,14 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 
+const PLAN_SLUG = { Essential: "essential", Advance: "advance", Expert: "expert" }
+
 export default function Pricing() {
   const [billingCycle, setBillingCycle] = useState("monthly")
+  const [searchParams] = useSearchParams()
+  const upgrade = searchParams.get("upgrade") === "1"
 
   const plans = [
-    {
-      name: "Free",
-      tagline: "Free Market Place Listing",
-      monthlyPrice: 0,
-      annualPrice: 0,
-      features: {
-        appointments: { limit: "50/Month", unlimited: false },
-        "Online Booking Management": true,
-        "Appointment Calendar": true,
-        "Staff Roster": false,
-        "Google Calendar Integration": false,
-        "Automated Service Reminders": false,
-        "Social Booking Integration": false,
-        "Room Calendar": false,
-        "Waitlists Management": false,
-        "Point Of Sale (POS)": false,
-        "Expenses Management": false,
-        "Cash Register": false,
-        "Mobile point of sale": false,
-        "Products & Package Management": false,
-        "Quick Books Integration": false,
-        "Paypal Integration": false,
-        "Lead Management System": false,
-        "Third Party Addons": false,
-        "Membership Card Reader": false,
-        "Wordpress Integration": false,
-        "Getresponse Integration": false,
-        "Mailchimp Integration": false,
-        "Shopfiy Integration": false,
-        "Clover Integration": false,
-        "Stripe Integration": false,
-        "Customer Feedback System": false,
-        "Customer History Management": false,
-        "Rewards /Loyality Points": false,
-        "Consultation / Consent Forms": false,
-        "Appointment History": false,
-        "Before & After photos": false,
-        "Documents Management": false,
-        "Notes Management": false,
-        "Data Export": false,
-        "Staff Reports": false,
-        "Sales Reports": false,
-        "Inventory Reports": false,
-        "Appointment Reports": false,
-        "Multi Branch Management Reporting": false,
-        "Coupons Management": false,
-        "Website Booking Integration": false,
-        "Gift Cards": false,
-        "Membership Subscription": false,
-        "SMS Campaigns": false,
-        "Email Campaigns": false,
-        "Memberships & Ewallet Management": false,
-        "Mini Website": false,
-        "Google Analytics Management": false,
-        "Referral System": false,
-        "Ware House Management": false,
-        "Product Billing Management": false,
-        "Product Consumption Reports": false,
-        "Print Barcode /Label": false,
-        "Purchase Orders": false,
-        "Inventory Management": false,
-        "Retail stock management": false,
-        "Dedicated Account Manager": false,
-        "Data Migration From Your Old System": false,
-        "Online and call back support": false,
-        "No Shows Fees Management": false,
-        "Take deposits to reduce no shows": false,
-        "Sell and redeem gift vouchers Cards": false,
-        "Third party Payment integrations": false,
-        "Third Party Sms Integration": false,
-        "Twillo Integration": false,
-        "Rebooking reminders": false,
-        "WhatsApp Integration": false,
-        "Interakt Integration": false,
-        "AI Automation Marketing": false,
-      }
-    },
     {
       name: "Essential",
       tagline: "Perfect for small businesses",
@@ -455,11 +382,11 @@ export default function Pricing() {
       questions: [
         {
           q: "What is the cost of a Salonist?",
-          a: "Salonist offers flexible pricing plans starting from Free (with marketplace listing) to Expert plans at $1,790/month (or $1,611/month annually). Choose the plan that fits your business needs."
+          a: "Salonist offers flexible pricing plans from Essential at $49/month (or $441/year) up to Expert at $1,791/month (or $1,611/month annually). Choose the plan that fits your business needs."
         },
         {
           q: "What is included in the Salonist subscription?",
-          a: "Each plan includes different features. The Free plan includes basic appointment management (50/month), while higher tiers include unlimited appointments, POS system, staff management, inventory, reporting, and more advanced features. See our pricing table for complete details."
+          a: "Each plan includes different features. Essential and higher include unlimited appointments, POS system, staff management, inventory, reporting, and more. See our pricing table for complete details."
         },
         {
           q: "Are there any hidden fees in the subscription pricing?",
@@ -527,7 +454,11 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-gray-100">
       <NavigationHeader />
-      
+      {upgrade && (
+        <div className="bg-amber-50 border-b border-amber-200 py-3 px-4 text-center text-amber-800 text-sm">
+          Complete your purchase to access the app. Choose a plan below to get started.
+        </div>
+      )}
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-gray-800 via-gray-700 to-gray-800 text-white py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -549,16 +480,16 @@ export default function Pricing() {
                 Monthly
               </span>
               <button
-                onClick={() => setBillingCycle(billingCycle === "monthly" ? "annually" : "monthly")}
+                onClick={() => setBillingCycle(billingCycle === "monthly" ? "annual" : "monthly")}
                 className="relative inline-flex h-6 w-11 items-center rounded-full bg-white transition-colors focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-gray-800"
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-gray-800 transition-transform ${
-                    billingCycle === "annually" ? "translate-x-6" : "translate-x-1"
+                    billingCycle === "annual" ? "translate-x-6" : "translate-x-1"
                   }`}
                 />
               </button>
-              <span className={`text-sm font-medium ${billingCycle === "annually" ? "text-white" : "text-gray-400"}`}>
+              <span className={`text-sm font-medium ${billingCycle === "annual" ? "text-white" : "text-gray-400"}`}>
                 Annually <span className="text-green-400">Save up to 25%</span>
               </span>
             </div>
@@ -569,7 +500,7 @@ export default function Pricing() {
       {/* Pricing Cards */}
       <section className="py-12 bg-gray-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-6 max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 max-w-7xl mx-auto">
             {plans.map((plan) => (
               <Card key={plan.name} className={`${plan.name === "Essential" ? "border-2 border-red-500 shadow-lg scale-105" : ""}`}>
                 <CardHeader className="text-center pb-4">
@@ -582,7 +513,7 @@ export default function Pricing() {
                     <div className="text-sm text-gray-500 mt-1">
                       {billingCycle === "monthly" ? "per month" : `per year (${formatPrice(Math.round(plan.annualPrice / 12))}/month)`}
                     </div>
-                    {billingCycle === "annually" && plan.monthlyPrice > 0 && (
+                    {billingCycle === "annual" && plan.monthlyPrice > 0 && (
                       <div className="text-xs text-gray-400 mt-1">
                         Save {Math.round((1 - plan.annualPrice / (plan.monthlyPrice * 12)) * 100)}% vs monthly
                       </div>
@@ -590,12 +521,12 @@ export default function Pricing() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Link to="/signup">
+                  <Link to={`/checkout?plan=${PLAN_SLUG[plan.name] || "essential"}&billing=${billingCycle}`}>
                     <Button 
                       className={`w-full ${plan.name === "Essential" ? "bg-red-500 hover:bg-red-600" : ""}`}
                       variant={plan.name === "Essential" ? "default" : "outline"}
                     >
-                      {plan.name === "Free" ? "Get Started" : "Get Started"}
+                      Get Started
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </Link>
@@ -628,7 +559,7 @@ export default function Pricing() {
                 {featureCategories.map((category, catIndex) => (
                   <React.Fragment key={category.name}>
                     <tr className="bg-gray-100">
-                      <td colSpan={5} className="p-3 font-bold text-gray-900 uppercase text-sm">
+                      <td colSpan={4} className="p-3 font-bold text-gray-900 uppercase text-sm">
                         {category.name}
                       </td>
                     </tr>
@@ -701,7 +632,7 @@ export default function Pricing() {
           <p className="text-xl mb-8 text-red-100">
             Start managing your salon, spa, or beauty business more efficiently today
           </p>
-          <Link to="/signup">
+          <Link to={`/checkout?plan=essential&billing=${billingCycle}`}>
             <Button size="lg" className="bg-white text-red-600 hover:bg-gray-100 text-lg px-8 py-6">
               Get Started Now
               <ArrowRight className="ml-2 h-5 w-5" />
