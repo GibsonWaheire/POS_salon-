@@ -32,6 +32,8 @@ import Blog from "./pages/Blog"
 import BlogPost from "./pages/BlogPost"
 import HelpCenter from "./pages/HelpCenter"
 import Pricing from "./pages/Pricing"
+import PrivacyPolicy from "./pages/PrivacyPolicy"
+import TermsOfService from "./pages/TermsOfService"
 import SlotBlockers from "./pages/SlotBlockers"
 import DragDropReschedule from "./pages/DragDropReschedule"
 import PopupNotesHistory from "./pages/PopupNotesHistory"
@@ -62,6 +64,8 @@ function App() {
           <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/help-center" element={<HelpCenter />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+          <Route path="/terms-of-service" element={<TermsOfService />} />
           
           {/* Appointment Management Feature Pages */}
           <Route path="/features/slot-blockers" element={<SlotBlockers />} />
