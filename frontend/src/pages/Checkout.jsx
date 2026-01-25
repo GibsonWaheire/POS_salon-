@@ -14,9 +14,9 @@ import { usePageSeo } from "@/hooks/usePageSeo"
 import { getAuthHeaders } from "@/lib/api"
 
 const PLAN_MAP = {
-  essential: { name: "Essential", monthly: 49, annual: 441, tagline: "Perfect for small businesses" },
-  advance: { name: "Advance", monthly: 99, annual: 891, tagline: "For growing businesses" },
-  expert: { name: "Expert", monthly: 199, annual: 1791, tagline: "For enterprise businesses" },
+  essential: { name: "Essential", monthly: 29, annual: 261, tagline: "Perfect for small businesses" },
+  advance: { name: "Advance", monthly: 79, annual: 711, tagline: "For growing businesses" },
+  expert: { name: "Expert", monthly: 299, annual: 2691, tagline: "For enterprise businesses" },
 }
 
 const API_BASE = "http://localhost:5001/api"

@@ -24,8 +24,8 @@ export default function Pricing() {
     {
       name: "Essential",
       tagline: "Perfect for small businesses",
-      monthlyPrice: 49,
-      annualPrice: 441, // $49/month * 12 * 0.75 (25% discount)
+      monthlyPrice: 29,
+      annualPrice: 261, // $29/month * 12 * 0.75 (25% discount)
       features: {
         appointments: { limit: "Unlimited", unlimited: true },
         "Online Booking Management": true,
@@ -101,8 +101,8 @@ export default function Pricing() {
     {
       name: "Advance",
       tagline: "For growing businesses",
-      monthlyPrice: 99,
-      annualPrice: 891, // $99/month * 12 * 0.75 (25% discount)
+      monthlyPrice: 79,
+      annualPrice: 711, // $79/month * 12 * 0.75 (25% discount)
       features: {
         appointments: { limit: "Unlimited", unlimited: true },
         "Online Booking Management": true,
@@ -178,8 +178,8 @@ export default function Pricing() {
     {
       name: "Expert",
       tagline: "For enterprise businesses",
-      monthlyPrice: 199,
-      annualPrice: 1791, // $199/month * 12 * 0.75 (25% discount)
+      monthlyPrice: 299,
+      annualPrice: 2691, // $299/month * 12 * 0.75 (25% discount)
       features: {
         appointments: { limit: "Unlimited", unlimited: true },
         "Online Booking Management": true,
@@ -382,7 +382,7 @@ export default function Pricing() {
       questions: [
         {
           q: "What is the cost of a Salonist?",
-          a: "Salonist offers flexible pricing plans from Essential at $49/month (or $441/year) up to Expert at $1,791/month (or $1,611/month annually). Choose the plan that fits your business needs."
+          a: "Salonist offers flexible pricing plans from Essential at $29/month (or $261/year) up to Expert at $299/month (or $2,691/year). Choose the plan that fits your business needs."
         },
         {
           q: "What is included in the Salonist subscription?",

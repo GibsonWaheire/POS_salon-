@@ -10,9 +10,9 @@ PLAN_SLUGS = ["essential", "advance", "expert"]
 
 # USD amounts (display): (monthly, annual) — match frontend Pricing
 USD_AMOUNTS = {
-    "essential": (49, 441),
-    "advance": (99, 891),
-    "expert": (199, 1791),
+    "essential": (29, 261),
+    "advance": (79, 711),
+    "expert": (299, 2691),
 }
 
 
