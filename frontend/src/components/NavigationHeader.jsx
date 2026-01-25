@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ChevronDown, Menu, Building2 } from "lucide-react"
-import { solutionsDropdownItems, solutionIcons, featuresDropdownItems, featureIcons } from "@/data/landingConstants"
+import { solutionsDropdownItems, solutionIcons, featuresDropdownItems, featureIcons, whySalonistDropdownItems, whySalonistIcons } from "@/data/landingConstants"
 import { toKebabCase } from "@/lib/posTypes"
 
 export default function NavigationHeader() {
@@ -43,14 +43,42 @@ export default function NavigationHeader() {
           {/* Centered Navigation - Bigger and More Spaced */}
           <nav className="hidden md:flex items-center gap-10">
             <DropdownMenu>
-              <DropdownMenuTrigger className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors flex items-center gap-2 py-2" style={{ fontSize: '18px', fontWeight: 600 }}>
+              <DropdownMenuTrigger
+                className="text-base font-semibold text-gray-800 hover:text-gray-900 transition-colors flex items-center gap-2 py-2"
+                style={{ fontSize: "18px", fontWeight: 600 }}
+              >
                 Why Salonist
                 <ChevronDown className="h-5 w-5" />
               </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => navigate("/about-us")}>About Us</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/why-choose-us")}>Why Choose Us</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/success-stories")}>Success Stories</DropdownMenuItem>
+              <DropdownMenuContent className="w-[950px] p-8 bg-white shadow-xl" align="start">
+                <div className="grid grid-cols-3 gap-8">
+                  {whySalonistDropdownItems.map((column, colIndex) => (
+                    <div key={colIndex} className="space-y-3">
+                      {column.map((item) => {
+                        const Icon = whySalonistIcons[item.id] || Building2
+                        return (
+                          <DropdownMenuItem
+                            key={item.id}
+                            onClick={() => navigate(item.path)}
+                            className="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
+                          >
+                            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[#ef4444] to-red-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                              <Icon className="h-6 w-6 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0 pt-1">
+                              <h4 className="font-bold text-gray-900 text-sm mb-1.5 group-hover:text-[#ef4444] transition-colors leading-tight">
+                                {item.title}
+                              </h4>
+                              <p className="text-xs text-gray-600 leading-relaxed">
+                                {item.description}
+                              </p>
+                            </div>
+                          </DropdownMenuItem>
+                        )
+                      })}
+                    </div>
+                  ))}
+                </div>
               </DropdownMenuContent>
             </DropdownMenu>
 

@@ -1,11 +1,17 @@
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Breadcrumb from "@/components/Breadcrumb"
 import NavigationHeader from "@/components/NavigationHeader"
 import LandingFooter from "@/components/landing/LandingFooter"
+import PageHero from "@/components/PageHero"
+import { usePageSeo } from "@/hooks/usePageSeo"
+
+const WHY_CHOOSE_META = {
+  title: "Why Choose Us | Salonyst – Built for Salons & Spas",
+  description: "Discover what makes Salonyst the preferred choice: built for salons, easy to use, comprehensive features, and reliable support.",
+}
 
 export default function WhyChooseUs() {
+  usePageSeo(WHY_CHOOSE_META.title, WHY_CHOOSE_META.description)
   const benefits = [
     {
       number: "01",
@@ -53,42 +59,12 @@ export default function WhyChooseUs() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Header */}
       <NavigationHeader />
-
-      {/* Hero Section */}
-      <section className="relative py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#ef4444]/10 via-blue-50/50 to-purple-50/30"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#ef4444]/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-6xl mx-auto">
-            <Breadcrumb items={[
-              { label: "Home", href: "/" },
-              { label: "Why Choose Us" }
-            ]} />
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-6">
-                  Why Choose Salonyst
-                </h1>
-                <p className="text-sm md:text-base text-gray-700 leading-relaxed">
-                  Discover what makes Salonyst the preferred choice for salons and beauty businesses across the region.
-                </p>
-              </div>
-              <div className="relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=600&fit=crop&auto=format" 
-                  alt="Why choose us" 
-                  className="aspect-square rounded-3xl object-cover shadow-2xl"
-                />
-                <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-500 rounded-2xl opacity-20"></div>
-                <div className="absolute -top-4 -left-4 w-16 h-16 bg-purple-500 rounded-xl opacity-20"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        breadcrumbItems={[{ label: "Home", href: "/" }, { label: "Why Choose Us" }]}
+        title="Why Choose Salonyst"
+        description="Discover what makes Salonyst the preferred choice for salons and beauty businesses across the region."
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 max-w-6xl">

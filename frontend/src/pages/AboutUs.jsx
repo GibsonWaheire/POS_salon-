@@ -1,13 +1,20 @@
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Phone, Mail, MapPin, Target, Users, Package, Heart, Zap, Award, TrendingUp, Shield, CheckCircle2 } from "lucide-react"
-import Breadcrumb from "@/components/Breadcrumb"
+import { Phone, Mail, MapPin, Target, Users, Package, Heart, Zap, Award, TrendingUp, Shield, CheckCircle2 } from "lucide-react"
 import NavigationHeader from "@/components/NavigationHeader"
 import LandingFooter from "@/components/landing/LandingFooter"
+import PageHero from "@/components/PageHero"
 import dashboardScreenshot from "@/assets/dashboard-screenshot.png"
 import posScreenshot from "@/assets/pos-screenshot.png"
+import { usePageSeo } from "@/hooks/usePageSeo"
+
+const ABOUT_META = {
+  title: "About Us | Salonyst – Mission, Team & What We Offer",
+  description: "Learn about Salonyst's mission, values, and commitment to empowering beauty and wellness businesses with comprehensive management software.",
+}
 
 export default function AboutUs() {
+  usePageSeo(ABOUT_META.title, ABOUT_META.description)
   const values = [
     { icon: Target, title: "Simplicity", desc: "Technology should be easy to use and understand", color: "from-[#ef4444] to-red-600" },
     { icon: Shield, title: "Reliability", desc: "Systems built to be dependable and secure", color: "from-blue-500 to-blue-600" },
@@ -34,63 +41,33 @@ export default function AboutUs() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Header */}
       <NavigationHeader />
-
-      {/* Hero Section */}
-      <section className="relative py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#ef4444]/10 via-blue-50/50 to-purple-50/30"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#ef4444]/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-6xl mx-auto">
-            <Breadcrumb items={[
-              { label: "Home", href: "/" },
-              { label: "About Us" }
-            ]} />
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-6">
-                  About Us
-                </h1>
-                <p className="text-sm md:text-base text-gray-700 leading-relaxed mb-8">
-                  Empowering beauty and wellness businesses with comprehensive management solutions designed to help you grow and succeed.
-                </p>
-                <div className="flex gap-4">
-                  <Link to="/signup">
-                    <Button className="bg-[#ef4444] hover:bg-[#dc2626] text-white text-sm px-8 py-6 h-auto">
-                      Get Started
-                    </Button>
-                  </Link>
-                  <Link
-                    to="#contact"
-                    onClick={(e) => {
-                      const el = document.getElementById('contact')
-                      if (el) {
-                        e.preventDefault()
-                        el.scrollIntoView({ behavior: 'smooth' })
-                      }
-                    }}
-                  >
-                    <Button variant="outline" className="text-sm px-8 py-6 h-auto">
-                      Contact Us
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-              <div className="relative">
-                <img 
-                  src={dashboardScreenshot} 
-                  alt="Salonyst dashboard – overview of sales, commissions, and staff" 
-                  className="aspect-video md:aspect-[16/10] w-full rounded-3xl object-cover object-top shadow-2xl border border-gray-200"
-                />
-                <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-500 rounded-2xl opacity-20"></div>
-                <div className="absolute -top-4 -left-4 w-16 h-16 bg-purple-500 rounded-xl opacity-20"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        breadcrumbItems={[{ label: "Home", href: "/" }, { label: "About Us" }]}
+        title="About Us"
+        description="Empowering beauty and wellness businesses with comprehensive management solutions designed to help you grow and succeed."
+        actions={
+          <>
+            <Link to="/signup">
+              <Button className="bg-[#ef4444] hover:bg-[#dc2626] text-white">
+                Get Started
+              </Button>
+            </Link>
+            <Link
+              to="#contact"
+              onClick={(e) => {
+                const el = document.getElementById("contact")
+                if (el) {
+                  e.preventDefault()
+                  el.scrollIntoView({ behavior: "smooth" })
+                }
+              }}
+            >
+              <Button variant="outline">Contact Us</Button>
+            </Link>
+          </>
+        }
+      />
 
       {/* Stats Section */}
       <section className="py-16 bg-white border-y border-gray-200">

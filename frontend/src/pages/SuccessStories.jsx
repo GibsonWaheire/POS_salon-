@@ -1,11 +1,18 @@
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Quote, Star, TrendingUp } from "lucide-react"
-import Breadcrumb from "@/components/Breadcrumb"
+import { Quote, Star } from "lucide-react"
 import NavigationHeader from "@/components/NavigationHeader"
 import LandingFooter from "@/components/landing/LandingFooter"
+import PageHero from "@/components/PageHero"
+import { usePageSeo } from "@/hooks/usePageSeo"
+
+const SUCCESS_META = {
+  title: "Success Stories | Salonyst – Salons & Spas Growing With Us",
+  description: "See how salons and beauty businesses are growing with Salonyst. Real results from real customers.",
+}
 
 export default function SuccessStories() {
+  usePageSeo(SUCCESS_META.title, SUCCESS_META.description)
   const stories = [
     {
       business: "Elegance Hair Salon",
@@ -59,42 +66,12 @@ export default function SuccessStories() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Header */}
       <NavigationHeader />
-
-      {/* Hero Section */}
-      <section className="relative py-24 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#ef4444]/10 via-blue-50/50 to-purple-50/30"></div>
-        <div className="absolute top-0 right-0 w-96 h-96 bg-[#ef4444]/5 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="max-w-6xl mx-auto">
-            <Breadcrumb items={[
-              { label: "Home", href: "/" },
-              { label: "Success Stories" }
-            ]} />
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div>
-                <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-6">
-                  Success Stories
-                </h1>
-                <p className="text-sm md:text-base text-gray-700 leading-relaxed">
-                  See how salons and beauty businesses are growing with Salonyst
-                </p>
-              </div>
-              <div className="relative">
-                <img 
-                  src="https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=600&h=600&fit=crop&auto=format" 
-                  alt="Success and growth" 
-                  className="aspect-square rounded-3xl object-cover shadow-2xl"
-                />
-                <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-500 rounded-2xl opacity-20"></div>
-                <div className="absolute -top-4 -left-4 w-16 h-16 bg-purple-500 rounded-xl opacity-20"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        breadcrumbItems={[{ label: "Home", href: "/" }, { label: "Success Stories" }]}
+        title="Success Stories"
+        description="See how salons and beauty businesses are growing with Salonyst."
+      />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-20 max-w-6xl">

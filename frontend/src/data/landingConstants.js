@@ -31,7 +31,9 @@ import {
   Tags,
   LayoutList,
   CalendarCheck,
-  RefreshCw
+  RefreshCw,
+  Award,
+  Quote
 } from "lucide-react"
 import { POS_TYPES } from "@/lib/posTypes"
 
@@ -130,6 +132,25 @@ export const featuresDropdownItems = [
     { id: "easy_rescheduling", title: "Easy Rescheduling", description: "Quickly move or update appointments.", path: "/features/easy-rescheduling" },
     { id: "pos_system", title: "POS System", description: "Process sales, payments, and manage transactions.", path: null },
     { id: "inventory", title: "Inventory", description: "Track products, stock levels, and usage.", path: null },
+  ],
+]
+
+// Why Salonist dropdown: same mega-menu style as Features/Solutions
+export const whySalonistIcons = {
+  about_us: Building2,
+  why_choose_us: Award,
+  success_stories: Quote,
+}
+
+export const whySalonistDropdownItems = [
+  [
+    { id: "about_us", title: "About Us", description: "Our mission, team, and commitment to beauty and wellness businesses.", path: "/about-us" },
+  ],
+  [
+    { id: "why_choose_us", title: "Why Choose Us", description: "What makes Salonyst the preferred choice for salons and spas.", path: "/why-choose-us" },
+  ],
+  [
+    { id: "success_stories", title: "Success Stories", description: "See how salons and beauty businesses grow with Salonyst.", path: "/success-stories" },
   ],
 ]
 
