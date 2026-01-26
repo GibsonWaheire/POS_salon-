@@ -169,8 +169,12 @@ if __name__ == '__main__':
         # Seed demo staff if needed
         seed_demo_staff_if_needed()
     
-    print(f"\n🚀 Starting Flask server on http://0.0.0.0:5001")
-    print(f"📡 API available at http://localhost:5001/api")
+    # Use PORT environment variable (Railway provides this) or default to 5001
+    port = int(os.getenv('PORT', 5001))
+    host = os.getenv('HOST', '0.0.0.0')
+    
+    print(f"\n🚀 Starting Flask server on http://{host}:{port}")
+    print(f"📡 API available at http://{host}:{port}/api")
     print(f"💡 Note: Run 'flask db upgrade' to apply database migrations")
-    app.run(debug=True, port=5001, host='0.0.0.0')
+    app.run(debug=False, port=port, host=host)
 
