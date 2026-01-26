@@ -1,8 +1,15 @@
-[build]
-builder = "nixpacks"
-buildCommand = "cd backend && pip install -r requirements.txt"
+[phases.setup]
+nixPkgs = ["python311", "pip311"]
 
-[deploy]
-startCommand = "cd backend && bash start.sh"
-watchPatterns = ["backend/**"]
+[phases.install]
+cmds = [
+  "cd backend && pip install --upgrade pip",
+  "cd backend && pip install -r requirements.txt"
+]
+
+[phases.build]
+cmds = ["cd backend && flask db upgrade || true"]
+
+[start]
+cmd = "cd backend && gunicorn app:app --bind 0.0.0.0:$PORT"
 
