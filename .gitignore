@@ -8,7 +8,10 @@
 .env.*.local
 .env.production
 .env.development
+.env.example
+# Ignore all .env files including .env.example
 *.env
+*.env.example
 secrets/
 *.key
 *.pem
