@@ -652,7 +652,7 @@ class User(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    password_hash = db.Column(db.String(255), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=True)  # Nullable for Google OAuth users
     name = db.Column(db.String(100), nullable=False)
     phone = db.Column(db.String(20), nullable=True)  # Phone number for signup
     role = db.Column(db.String(20), nullable=False, default='manager')  # admin or manager
@@ -661,6 +661,10 @@ class User(db.Model):
     is_demo = db.Column(db.Boolean, default=False)  # Marks demo user accounts
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime)
+    # Google OAuth fields
+    google_id = db.Column(db.String(255), unique=True, nullable=True)  # Google user ID
+    google_email = db.Column(db.String(100), nullable=True)  # Google email (may differ from email)
+    auth_provider = db.Column(db.String(20), default='email')  # 'email' or 'google'
     
     # Relationships
     manager = db.relationship('User', remote_side=[id], backref='managed_managers')
@@ -673,7 +677,13 @@ class User(db.Model):
     
     def check_password(self, password):
         """Check if provided password matches hash"""
+        if not self.password_hash:
+            return False  # Google OAuth users don't have passwords
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
+    
+    def is_google_user(self):
+        """Check if user signed up with Google"""
+        return self.auth_provider == 'google' and self.google_id is not None
     
     def is_admin(self):
         """Check if user is an admin"""

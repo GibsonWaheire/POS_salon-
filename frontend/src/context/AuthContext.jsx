@@ -36,9 +36,10 @@ export function AuthProvider({ children }) {
       if (!staff?.login_log_id && !staff?.id) return
 
       try {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api"
         const url = staff.login_log_id
-          ? `http://localhost:5001/api/staff/check-session?login_log_id=${staff.login_log_id}`
-          : `http://localhost:5001/api/staff/check-session?staff_id=${staff.id}`
+          ? `${API_BASE}/staff/check-session?login_log_id=${staff.login_log_id}`
+          : `${API_BASE}/staff/check-session?staff_id=${staff.id}`
         
         const response = await fetch(url)
         if (response.ok) {
@@ -70,12 +71,14 @@ export function AuthProvider({ children }) {
         return { success: false, error: "Email and password are required" }
       }
 
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api"
       // Call backend API for authentication
-      const response = await fetch("http://localhost:5001/api/auth/login", {
+      const response = await fetch(`${API_BASE}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ 
           email: email.trim(),
           password: password 
@@ -111,6 +114,52 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const googleLogin = async (idToken) => {
+    try {
+      if (!idToken) {
+        return { success: false, error: "Google authentication failed" }
+      }
+
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api"
+      const response = await fetch(`${API_BASE}/auth/google`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ 
+          id_token: idToken
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        return { 
+          success: false, 
+          error: errorData.error || "Google authentication failed" 
+        }
+      }
+
+      const data = await response.json()
+      
+      if (data.success && data.user) {
+        setUser(data.user)
+        setIsAuthenticated(true)
+        localStorage.setItem("salon_user", JSON.stringify(data.user))
+        localStorage.setItem("salon_auth", "true")
+        return { success: true }
+      } else {
+        return { success: false, error: "Google authentication failed" }
+      }
+    } catch (err) {
+      console.error("Google login error:", err)
+      return { 
+        success: false, 
+        error: "Unable to connect. Please check your internet connection and try again." 
+      }
+    }
+  }
+
   const staffLogin = async (staffId, pin) => {
     try {
       // Validate Staff ID
@@ -132,9 +181,10 @@ export function AuthProvider({ children }) {
       }
       
       // Call backend API for staff authentication with BOTH Staff ID and PIN
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api"
       let response
       try {
-        response = await fetch("http://localhost:5001/api/staff/login", {
+        response = await fetch(`${API_BASE}/staff/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -203,7 +253,8 @@ export function AuthProvider({ children }) {
     // Log logout event to backend if staff is logged in
     if (staff) {
       try {
-        await fetch("http://localhost:5001/api/staff/logout", {
+        const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api"
+        await fetch(`${API_BASE}/staff/logout`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -236,6 +287,7 @@ export function AuthProvider({ children }) {
       user, 
       isAuthenticated, 
       login, 
+      googleLogin,
       logout,
       staff,
       isStaffAuthenticated,

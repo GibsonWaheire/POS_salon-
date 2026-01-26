@@ -521,7 +521,7 @@ export default function Pricing() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Link to={`/checkout?plan=${PLAN_SLUG[plan.name] || "essential"}&billing=${billingCycle}`}>
+                  <Link to={`/signup?plan=${PLAN_SLUG[plan.name] || "essential"}&billing=${billingCycle}`}>
                     <Button 
                       className={`w-full ${plan.name === "Essential" ? "bg-red-500 hover:bg-red-600" : ""}`}
                       variant={plan.name === "Essential" ? "default" : "outline"}
@@ -632,7 +632,7 @@ export default function Pricing() {
           <p className="text-xl mb-8 text-red-100">
             Start managing your salon, spa, or beauty business more efficiently today
           </p>
-          <Link to={`/checkout?plan=essential&billing=${billingCycle}`}>
+          <Link to={`/signup?plan=essential&billing=${billingCycle}`}>
             <Button size="lg" className="bg-white text-red-600 hover:bg-gray-100 text-lg px-8 py-6">
               Get Started Now
               <ArrowRight className="ml-2 h-5 w-5" />

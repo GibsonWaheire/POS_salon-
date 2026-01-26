@@ -8,6 +8,7 @@ import os
 from flask import Blueprint, request, jsonify
 from db import db
 from models import User, Subscription
+from datetime import datetime
 
 bp_webhooks = Blueprint("webhooks", __name__, url_prefix="/webhooks")
 
@@ -56,12 +57,15 @@ def _handle_charge_success(body: dict) -> None:
     meta = data.get("metadata") or {}
     user_id_str = meta.get("user_id")
     plan = (meta.get("plan") or "essential").strip().lower()
+    billing_interval = (meta.get("billing_interval") or "monthly").strip().lower()
+    
     if not user_id_str:
         return
     try:
         user_id = int(user_id_str)
     except (ValueError, TypeError):
         return
+    
     user = User.query.get(user_id)
     if not user:
         return
@@ -72,12 +76,32 @@ def _handle_charge_success(body: dict) -> None:
     if existing:
         return
 
-    sub = Subscription(
+    # Update or create subscription
+    # Check if user has an existing subscription
+    existing_sub = Subscription.query.filter_by(
         user_id=user_id,
-        plan_name=plan,
-        status="active",
-        stripe_customer_id=None,
-        stripe_subscription_id=reference,
-    )
-    db.session.add(sub)
+        status='active'
+    ).first()
+    
+    if existing_sub:
+        # Update existing subscription
+        existing_sub.plan_name = plan
+        existing_sub.status = 'active'
+        existing_sub.stripe_subscription_id = reference
+        existing_sub.updated_at = datetime.utcnow()
+    else:
+        # Create new subscription
+        sub = Subscription(
+            user_id=user_id,
+            plan_name=plan,
+            status="active",
+            stripe_customer_id=None,
+            stripe_subscription_id=reference,
+        )
+        db.session.add(sub)
+    
     db.session.commit()
+    
+    # Note: In production, you would send an email here with login credentials
+    # For now, the user already has their account created, so they can login
+    # Email sending can be added later with a service like SendGrid, AWS SES, etc.

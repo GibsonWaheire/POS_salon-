@@ -4,9 +4,10 @@ Flask CLI commands for managing the Salonyst system
 import click
 import json
 import os
+import bcrypt
 from flask import current_app
 from flask.cli import with_appcontext
-from models import Staff, Customer, Service, Appointment, Payment, db
+from models import Staff, Customer, Service, Appointment, Payment, User, Subscription, db
 from datetime import datetime
 
 # Load demo staff from JSON file
@@ -237,9 +238,89 @@ def seed_services(force):
         click.echo("All seed services already exist with correct categories.")
 
 
+@click.command('init-users')
+@click.option('--force', is_flag=True, help='Force recreate default users even if they exist')
+@with_appcontext
+def init_users(force):
+    """Initialize default manager/admin users"""
+    default_users = [
+        {
+            'email': 'manager@salon.com',
+            'password': 'demo123',
+            'name': 'Demo Manager',
+            'role': 'manager',
+            'is_demo': True
+        },
+        {
+            'email': 'admin@salon.com',
+            'password': 'admin123',
+            'name': 'Admin User',
+            'role': 'admin',
+            'is_demo': True
+        }
+    ]
+    
+    created_count = 0
+    updated_count = 0
+    
+    for user_data in default_users:
+        existing = User.query.filter_by(email=user_data['email']).first()
+        
+        if existing:
+            if force:
+                # Update password if forcing
+                existing.set_password(user_data['password'])
+                existing.name = user_data['name']
+                existing.role = user_data['role']
+                existing.is_active = True
+                existing.is_demo = user_data['is_demo']
+                updated_count += 1
+                click.echo(f'✓ Updated user: {user_data["email"]}')
+            else:
+                click.echo(f'⚠ User already exists: {user_data["email"]} (use --force to update)')
+        else:
+            # Create new user
+            new_user = User(
+                email=user_data['email'],
+                name=user_data['name'],
+                role=user_data['role'],
+                is_active=True,
+                is_demo=user_data['is_demo']
+            )
+            new_user.set_password(user_data['password'])
+            db.session.add(new_user)
+            created_count += 1
+            
+            # Create free subscription for demo users
+            if user_data['is_demo']:
+                db.session.flush()
+                sub = Subscription(
+                    user_id=new_user.id,
+                    plan_name='free',
+                    status='active',
+                    stripe_customer_id=None,
+                    stripe_subscription_id=None,
+                )
+                db.session.add(sub)
+            click.echo(f'✓ Created user: {user_data["email"]}')
+    
+    db.session.commit()
+    
+    if created_count > 0 or updated_count > 0:
+        click.echo(f'\n✓ Initialized {created_count} new users, updated {updated_count} existing users')
+        click.echo('\nDefault User Credentials:')
+        click.echo('=' * 70)
+        for user_data in default_users:
+            click.echo(f"Email: {user_data['email']:<25} Password: {user_data['password']:<15} Role: {user_data['role']}")
+        click.echo('=' * 70)
+    else:
+        click.echo('All default users already exist. Use --force to update passwords.')
+
+
 def register_commands(app):
     """Register all CLI commands with the Flask app"""
     app.cli.add_command(init_db)
+    app.cli.add_command(init_users)
     app.cli.add_command(seed_staff)
     app.cli.add_command(seed_services)
     app.cli.add_command(list_staff)

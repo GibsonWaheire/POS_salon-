@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -15,8 +15,10 @@ export default function Signup() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const planParam = (searchParams.get("plan") || "").toLowerCase()
-  const plan = planParam === "free" ? "free" : null
-  const { login } = useAuth()
+  const billingParam = (searchParams.get("billing") || "monthly").toLowerCase()
+  const plan = planParam && planParam !== "free" ? planParam : null
+  const billing = billingParam === "annual" ? "annual" : "monthly"
+  const { login, googleLogin } = useAuth()
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -27,6 +29,28 @@ export default function Signup() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [signupMethod, setSignupMethod] = useState("email") // "email", "phone", "google"
+
+  // Plan mapping for display
+  const PLAN_MAP = {
+    essential: { name: "Essential", monthly: 29, annual: 261 },
+    advance: { name: "Advance", monthly: 79, annual: 711 },
+    expert: { name: "Expert", monthly: 299, annual: 2691 },
+  }
+
+  // Store plan context in sessionStorage
+  useEffect(() => {
+    if (plan && billing) {
+      sessionStorage.setItem("checkout_plan", plan)
+      sessionStorage.setItem("checkout_billing", billing)
+    }
+  }, [plan, billing])
+
+  // Helper to build checkout URL
+  const getCheckoutUrl = () => {
+    const planToUse = plan || sessionStorage.getItem("checkout_plan") || "essential"
+    const billingToUse = billing || sessionStorage.getItem("checkout_billing") || "monthly"
+    return `/checkout?plan=${planToUse}&billing=${billingToUse}`
+  }
 
   const handleEmailSignup = async (e) => {
     e.preventDefault()
@@ -76,7 +100,12 @@ export default function Signup() {
         // Auto-login after signup
         const loginResult = await login(formData.email, formData.password)
         if (loginResult.success) {
-          navigate("/dashboard")
+          // Redirect to checkout if plan is selected, otherwise dashboard
+          if (plan) {
+            navigate(getCheckoutUrl())
+          } else {
+            navigate("/dashboard")
+          }
         } else {
           navigate("/login")
         }
@@ -138,7 +167,12 @@ export default function Signup() {
         // Auto-login after signup
         const loginResult = await login(`phone_${formData.phone.replace(/\s+/g, '')}@salonpos.local`, formData.password)
         if (loginResult.success) {
-          navigate("/dashboard")
+          // Redirect to checkout if plan is selected, otherwise dashboard
+          if (plan) {
+            navigate(getCheckoutUrl())
+          } else {
+            navigate("/dashboard")
+          }
         } else {
           navigate("/login")
         }
@@ -151,10 +185,94 @@ export default function Signup() {
     }
   }
 
+  // Load Google Identity Services
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    document.body.appendChild(script)
+
+    script.onload = () => {
+      if (window.google && import.meta.env.VITE_GOOGLE_CLIENT_ID) {
+        window.google.accounts.id.initialize({
+          client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+          callback: handleGoogleCallback,
+        })
+        
+        // Render button if on Google tab
+        if (signupMethod === 'google') {
+          window.google.accounts.id.renderButton(
+            document.getElementById('google-signin-button'),
+            { theme: 'outline', size: 'large', width: '100%' }
+          )
+        }
+      }
+    }
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script)
+      }
+    }
+  }, [signupMethod])
+
+  const handleGoogleCallback = async (response) => {
+    if (!response.credential) {
+      toast.error("Google authentication failed")
+      return
+    }
+
+    setLoading(true)
+    setError("")
+
+    try {
+      // Decode the JWT token to get user info (optional, for display)
+      const result = await googleLogin(response.credential)
+      if (result.success) {
+        toast.success("Account created successfully!")
+        // Redirect to checkout if plan is selected, otherwise dashboard
+        if (plan) {
+          navigate(getCheckoutUrl())
+        } else {
+          navigate("/dashboard")
+        }
+      } else {
+        setError(result.error || "Google signup failed")
+        toast.error(result.error || "Google signup failed")
+      }
+    } catch (err) {
+      setError(err.message || "Failed to create account with Google")
+      toast.error(err.message || "Google signup failed")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleGoogleSignup = () => {
-    // Google OAuth integration would go here
-    // For now, show a message that it's coming soon
-    toast.info("Google signup coming soon! Please use email or phone signup for now.")
+    if (!window.google) {
+      toast.error("Google sign-in is not available. Please use email or phone signup.")
+      return
+    }
+
+    try {
+      window.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // Fallback: show popup
+          window.google.accounts.oauth2.initTokenClient({
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || '',
+            scope: 'email profile',
+            callback: (tokenResponse) => {
+              // For OAuth2 flow, you'd need to exchange token for user info
+              // For now, use the ID token from the prompt
+              toast.info("Please complete Google sign-in in the popup")
+            }
+          }).requestAccessToken()
+        }
+      })
+    } catch (err) {
+      toast.error("Google sign-in failed. Please try again.")
+    }
   }
 
   return (
@@ -200,11 +318,23 @@ export default function Signup() {
             <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
             
             <CardHeader className="space-y-3 pb-4 pt-6">
+              {plan && PLAN_MAP[plan] && (
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Selected Plan: <span className="font-bold">{PLAN_MAP[plan].name}</span>
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    {billing === "annual" 
+                      ? `$${PLAN_MAP[plan].annual}/year` 
+                      : `$${PLAN_MAP[plan].monthly}/month`}
+                  </p>
+                </div>
+              )}
               <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
                 Create Account
               </CardTitle>
               <CardDescription className="text-base">
-                Sign up to start managing your salon
+                {plan ? "Sign up to continue with your selected plan" : "Sign up to start managing your salon"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -428,6 +558,7 @@ export default function Signup() {
                     <p className="text-muted-foreground mb-6">
                       Sign up quickly with your Google account
                     </p>
+                    <div id="google-signin-button" className="flex justify-center mb-4"></div>
                     <Button
                       type="button"
                       onClick={handleGoogleSignup}
@@ -438,9 +569,11 @@ export default function Signup() {
                       <Chrome className="h-5 w-5 mr-2" />
                       Continue with Google
                     </Button>
-                    <p className="text-xs text-muted-foreground mt-4">
-                      Google signup is coming soon. Please use email or phone signup for now.
-                    </p>
+                    {!import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+                      <p className="text-xs text-muted-foreground mt-4">
+                        Google sign-in is not configured. Please use email or phone signup.
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -461,7 +594,12 @@ export default function Signup() {
                   type="button"
                   variant="outline"
                   className="w-full rounded-xl border-2"
-                  onClick={() => navigate("/login")}
+                  onClick={() => {
+                    const loginUrl = plan 
+                      ? `/login?plan=${plan}&billing=${billing}&redirect=${encodeURIComponent(getCheckoutUrl())}`
+                      : "/login"
+                    navigate(loginUrl)
+                  }}
                 >
                   Sign In Instead
                 </Button>

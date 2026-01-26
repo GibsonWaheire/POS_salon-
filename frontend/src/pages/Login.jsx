@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useNavigate, useSearchParams, Link } from "react-router-dom"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -7,6 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/context/AuthContext"
+
+const PLAN_MAP = {
+  essential: { name: "Essential", monthly: 29, annual: 261 },
+  advance: { name: "Advance", monthly: 79, annual: 711 },
+  expert: { name: "Expert", monthly: 299, annual: 2691 },
+}
 
 export default function Login() {
   const [email, setEmail] = useState("")
@@ -17,6 +23,25 @@ export default function Login() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const redirect = searchParams.get("redirect")
+  const planParam = (searchParams.get("plan") || "").toLowerCase()
+  const billingParam = (searchParams.get("billing") || "monthly").toLowerCase()
+  const plan = planParam && PLAN_MAP[planParam] ? planParam : null
+  const billing = billingParam === "annual" ? "annual" : "monthly"
+
+  // Store plan context in sessionStorage
+  useEffect(() => {
+    if (plan && billing) {
+      sessionStorage.setItem("checkout_plan", plan)
+      sessionStorage.setItem("checkout_billing", billing)
+    }
+  }, [plan, billing])
+
+  // Helper to build checkout URL
+  const getCheckoutUrl = () => {
+    const planToUse = plan || sessionStorage.getItem("checkout_plan") || "essential"
+    const billingToUse = billing || sessionStorage.getItem("checkout_billing") || "monthly"
+    return `/checkout?plan=${planToUse}&billing=${billingToUse}`
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -26,7 +51,14 @@ export default function Login() {
     try {
       const result = await login(email, password)
       if (result.success) {
-        navigate(redirect || "/dashboard", { replace: true })
+        // Priority: redirect param > checkout (if plan selected) > dashboard
+        if (redirect) {
+          navigate(redirect, { replace: true })
+        } else if (plan) {
+          navigate(getCheckoutUrl(), { replace: true })
+        } else {
+          navigate("/dashboard", { replace: true })
+        }
       } else {
         setError(result.error || "Invalid email or password")
       }
@@ -120,11 +152,23 @@ export default function Login() {
             <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
             
             <CardHeader className="space-y-3 pb-4 pt-6">
+              {plan && PLAN_MAP[plan] && (
+                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                    Selected Plan: <span className="font-bold">{PLAN_MAP[plan].name}</span>
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                    {billing === "annual" 
+                      ? `$${PLAN_MAP[plan].annual}/year` 
+                      : `$${PLAN_MAP[plan].monthly}/month`}
+                  </p>
+                </div>
+              )}
               <CardTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
                 Welcome Back
               </CardTitle>
               <CardDescription className="text-base">
-                Sign in to your account to continue managing your salon
+                {plan ? "Sign in to continue with your selected plan" : "Sign in to your account to continue managing your salon"}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -199,6 +243,21 @@ export default function Login() {
                 >
                   Staff Login
                 </Button>
+              </div>
+
+              {/* Sign Up Link */}
+              <div className="text-center mt-6">
+                <p className="text-sm text-muted-foreground mb-2">
+                  Don&apos;t have an account?
+                </p>
+                <Link 
+                  to={plan 
+                    ? `/signup?plan=${plan}&billing=${billing}` 
+                    : "/signup"}
+                  className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm"
+                >
+                  Sign up here
+                </Link>
               </div>
             </CardContent>
           </Card>
