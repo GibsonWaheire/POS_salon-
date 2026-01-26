@@ -51,7 +51,8 @@ export default function Signup() {
     setLoading(true)
     
     try {
-      const response = await fetch("http://localhost:5001/api/auth/signup", {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api"
+      const response = await fetch(`${API_BASE}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -112,7 +113,8 @@ export default function Signup() {
     setLoading(true)
     
     try {
-      const response = await fetch("http://localhost:5001/api/auth/signup", {
+      const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api"
+      const response = await fetch(`${API_BASE}/auth/signup`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

@@ -19,7 +19,7 @@ const PLAN_MAP = {
   expert: { name: "Expert", monthly: 299, annual: 2691, tagline: "For enterprise businesses" },
 }
 
-const API_BASE = "http://localhost:5001/api"
+import { API_BASE_URL as API_BASE } from '../config/api'
 
 export default function Checkout() {
   const [searchParams] = useSearchParams()
