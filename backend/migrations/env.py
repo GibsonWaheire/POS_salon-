@@ -97,6 +97,18 @@ def run_migrations_online():
     connectable = get_engine()
 
     with connectable.connect() as connection:
+        # On a fresh database, create all tables first so ALTER TABLE
+        # migrations don't fail. This project's migrations are schema
+        # changes only (no CREATE TABLE), so tables must exist first.
+        from sqlalchemy import inspect as sa_inspect
+        inspector = sa_inspect(connection)
+        existing_tables = inspector.get_table_names()
+        if 'staff' not in existing_tables and 'payments' not in existing_tables:
+            print("Fresh database detected in env.py - creating base tables...")
+            get_metadata().create_all(connection)
+            connection.commit()
+            print("Base tables created.")
+
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),
