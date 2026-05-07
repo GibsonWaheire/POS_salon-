@@ -1,6 +1,7 @@
 import logging
 from logging.config import fileConfig
 
+import sqlalchemy as sa
 from flask import current_app
 
 from alembic import context
@@ -97,17 +98,34 @@ def run_migrations_online():
     connectable = get_engine()
 
     with connectable.connect() as connection:
-        # On a fresh database, create all tables first so ALTER TABLE
-        # migrations don't fail. This project's migrations are schema
-        # changes only (no CREATE TABLE), so tables must exist first.
-        from sqlalchemy import inspect as sa_inspect
-        inspector = sa_inspect(connection)
+        # On a fresh database, create all tables directly from models and
+        # stamp alembic as head — skipping migrations entirely. This is
+        # required because all migrations in this project are ALTER TABLE
+        # only (no CREATE TABLE), so they fail on an empty database.
+        inspector = sa.inspect(connection)
         existing_tables = inspector.get_table_names()
+
         if 'staff' not in existing_tables and 'payments' not in existing_tables:
-            print("Fresh database detected in env.py - creating base tables...")
+            print("Fresh database detected - creating tables from models...")
             get_metadata().create_all(connection)
             connection.commit()
-            print("Base tables created.")
+            print("Tables created. Stamping alembic head...")
+
+            from alembic.script import ScriptDirectory
+            script = ScriptDirectory.from_config(config)
+            head = script.get_current_head()
+
+            with connection.begin():
+                connection.execute(sa.text(
+                    "CREATE TABLE IF NOT EXISTS alembic_version "
+                    "(version_num VARCHAR(32) NOT NULL)"
+                ))
+                connection.execute(sa.text("DELETE FROM alembic_version"))
+                connection.execute(sa.text(
+                    f"INSERT INTO alembic_version (version_num) VALUES ('{head}')"
+                ))
+            print(f"Alembic stamped at head: {head}")
+            return  # Skip running migrations — DB is already at head state
 
         context.configure(
             connection=connection,
