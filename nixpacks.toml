@@ -8,4 +8,4 @@ cmds = [
 ]
 
 [start]
-cmd = "cd backend && flask db upgrade && gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2"
+cmd = "cd backend && python init_db.py && gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2"

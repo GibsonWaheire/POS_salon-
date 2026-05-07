@@ -184,10 +184,6 @@ def seed_demo_staff_if_needed():
     except Exception as e:
         print(f"Note: Could not seed demo staff: {e}")
 
-# Seed demo staff on startup (runs for both gunicorn and direct python)
-with app.app_context():
-    seed_demo_staff_if_needed()
-
 if __name__ == '__main__':
     # Use PORT environment variable (Railway provides this) or default to 5001
     port = int(os.getenv('PORT', 5001))
