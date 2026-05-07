@@ -48,9 +48,9 @@ def health():
 # Enable CORS for all routes - MUST be after routes are registered
 # This handles all CORS including preflight OPTIONS requests
 # In production, set CORS_ORIGINS environment variable to restrict origins
-allowed_origins = os.getenv('CORS_ORIGINS', '*').split(',') if os.getenv('CORS_ORIGINS') else '*'
+allowed_origins = os.getenv('CORS_ORIGINS', '').split(',') if os.getenv('CORS_ORIGINS') else ['http://localhost:5173', 'http://127.0.0.1:5173']
 CORS(app, 
-     origins=allowed_origins,  # Use environment variable or allow all in development
+     origins=allowed_origins,  # Use environment variable or allow localhost in development
      methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],  # All HTTP methods
      allow_headers=["Content-Type", "Authorization", "X-Requested-With", "Accept", "X-User-Id"],  # All needed headers including custom auth header
      supports_credentials=True,  # Enable credentials for session support
@@ -61,13 +61,19 @@ CORS(app,
 @app.after_request
 def after_request(response):
     """Add CORS headers to all responses, including errors"""
-    # Only add if not already present (CORS should have added them, but ensure they're there)
-    if 'Access-Control-Allow-Origin' not in response.headers:
-        response.headers['Access-Control-Allow-Origin'] = '*'
-    if 'Access-Control-Allow-Methods' not in response.headers:
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
-    if 'Access-Control-Allow-Headers' not in response.headers:
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, X-User-Id'
+    # Get the request origin
+    origin = request.headers.get('Origin')
+    # Only allow specific origins (not wildcard) when credentials are used
+    allowed = ['http://localhost:5173', 'http://127.0.0.1:5173']
+    env_origins = os.getenv('CORS_ORIGINS', '')
+    if env_origins:
+        allowed.extend(env_origins.split(','))
+    
+    if origin in allowed:
+        response.headers['Access-Control-Allow-Origin'] = origin
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, X-User-Id'
     return response
 
 # Error handler to ensure proper error responses with CORS
@@ -87,8 +93,15 @@ def handle_500(e):
         'message': str(e) if app.debug else 'An error occurred'
     }), 500)
     
-    # Ensure CORS headers are present
-    response.headers['Access-Control-Allow-Origin'] = '*'
+    # Dynamic CORS origin
+    origin = request.headers.get('Origin')
+    allowed = ['http://localhost:5173', 'http://127.0.0.1:5173']
+    env_origins = os.getenv('CORS_ORIGINS', '')
+    if env_origins:
+        allowed.extend(env_origins.split(','))
+    if origin in allowed:
+        response.headers['Access-Control-Allow-Origin'] = origin
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, X-User-Id'
     
@@ -115,8 +128,15 @@ def handle_exception(e):
         'message': str(e) if app.debug else 'An error occurred'
     }), 500)
     
-    # Ensure CORS headers are present
-    response.headers['Access-Control-Allow-Origin'] = '*'
+    # Dynamic CORS origin
+    origin = request.headers.get('Origin')
+    allowed = ['http://localhost:5173', 'http://127.0.0.1:5173']
+    env_origins = os.getenv('CORS_ORIGINS', '')
+    if env_origins:
+        allowed.extend(env_origins.split(','))
+    if origin in allowed:
+        response.headers['Access-Control-Allow-Origin'] = origin
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, X-User-Id'
     
@@ -164,17 +184,17 @@ def seed_demo_staff_if_needed():
     except Exception as e:
         print(f"Note: Could not seed demo staff: {e}")
 
+# Seed demo staff on startup (runs for both gunicorn and direct python)
+with app.app_context():
+    seed_demo_staff_if_needed()
+
 if __name__ == '__main__':
-    with app.app_context():
-        # Seed demo staff if needed
-        seed_demo_staff_if_needed()
-    
     # Use PORT environment variable (Railway provides this) or default to 5001
     port = int(os.getenv('PORT', 5001))
     host = os.getenv('HOST', '0.0.0.0')
-    
-    print(f"\n🚀 Starting Flask server on http://{host}:{port}")
-    print(f"📡 API available at http://{host}:{port}/api")
-    print(f"💡 Note: Run 'flask db upgrade' to apply database migrations")
+
+    print(f"\n Starting Flask server on http://{host}:{port}")
+    print(f" API available at http://{host}:{port}/api")
+    print(f" Note: Run 'flask db upgrade' to apply database migrations")
     app.run(debug=False, port=port, host=host)
 

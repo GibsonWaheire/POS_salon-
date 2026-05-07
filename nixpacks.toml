@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["python311", "pip311"]
+nixPkgs = ["python311"]
 
 [phases.install]
 cmds = [
@@ -7,9 +7,5 @@ cmds = [
   "cd backend && pip install -r requirements.txt"
 ]
 
-[phases.build]
-cmds = ["cd backend && flask db upgrade || true"]
-
 [start]
-cmd = "cd backend && gunicorn app:app --bind 0.0.0.0:$PORT"
-
+cmd = "cd backend && flask db upgrade && gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2"
