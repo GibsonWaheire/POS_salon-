@@ -11,6 +11,7 @@ export default function StaffLogin() {
   const [pin, setPin] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [showDemo, setShowDemo] = useState(false)
   const { staffLogin } = useAuth()
   const navigate = useNavigate()
   const staffIdRef = useRef(null)
@@ -222,6 +223,39 @@ export default function StaffLogin() {
         <p className="text-center text-xs text-muted-foreground mt-4">
           PIN is not saved on this device for security
         </p>
+
+        {/* Demo Access Toggle */}
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => setShowDemo(!showDemo)}
+            className="w-full h-10 rounded-xl border-2 border-border bg-muted/50 text-foreground text-sm font-semibold hover:bg-muted transition-all flex items-center justify-center gap-2"
+          >
+            {showDemo ? "Hide Demo Access" : "Try a Demo Account"}
+            <span className="text-xs">{showDemo ? "▲" : "▼"}</span>
+          </button>
+
+          {showDemo && (
+            <div className="mt-3 p-4 rounded-2xl bg-muted/40 border-2 border-border">
+              <p className="text-xs text-muted-foreground mb-3 text-center">
+                Contact us via WhatsApp to get a demo Staff ID and PIN
+              </p>
+              <a
+                href="https://wa.me/254727957175?text=Hi%2C%20I%27d%20like%20the%20demo%20Staff%20ID%20and%20PIN%20for%20Salonyst"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-green-500/30 hover:-translate-y-0.5"
+              >
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                  alt="WhatsApp"
+                  className="w-5 h-5"
+                />
+                Get Demo Access on WhatsApp
+              </a>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )

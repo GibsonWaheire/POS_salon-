@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useNavigate, useSearchParams, Link } from "react-router-dom"
+import { Eye, EyeOff } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -19,6 +20,8 @@ export default function Login() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [showDemo, setShowDemo] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -199,16 +202,26 @@ export default function Login() {
                   <Label htmlFor="password" className="text-sm font-medium">
                     Password
                   </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                    className="h-11 text-base rounded-xl border-2 focus:border-blue-400 dark:focus:border-blue-600 transition-colors"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="h-11 text-base rounded-xl border-2 focus:border-blue-400 dark:focus:border-blue-600 transition-colors pr-11"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
 
                 <Button 
@@ -250,14 +263,57 @@ export default function Login() {
                 <p className="text-sm text-muted-foreground mb-2">
                   Don&apos;t have an account?
                 </p>
-                <Link 
-                  to={plan 
-                    ? `/signup?plan=${plan}&billing=${billing}` 
+                <Link
+                  to={plan
+                    ? `/signup?plan=${plan}&billing=${billing}`
                     : "/signup"}
                   className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm"
                 >
                   Sign up here
                 </Link>
+              </div>
+
+              {/* Demo Access Toggle */}
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={() => setShowDemo(!showDemo)}
+                  className="w-full h-10 rounded-xl border-2 border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 text-sm font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/50 hover:border-blue-400 transition-all flex items-center justify-center gap-2"
+                >
+                  {showDemo ? "Hide Demo Access" : "Try a Demo Account"}
+                  <span className="text-xs">{showDemo ? "▲" : "▼"}</span>
+                </button>
+
+                {showDemo && (
+                  <div className="mt-3 p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border-2 border-blue-200 dark:border-blue-800">
+                    <p className="text-xs text-muted-foreground mb-3 text-center">
+                      Use one of these emails, then get the password via WhatsApp
+                    </p>
+                    <div className="space-y-2 mb-3">
+                      <div className="flex items-center justify-between text-xs bg-white dark:bg-blue-900/20 rounded-xl px-3 py-2 border border-blue-200 dark:border-blue-700">
+                        <span className="text-muted-foreground">Admin</span>
+                        <span className="font-mono font-medium text-blue-700 dark:text-blue-300">admin@salon.com</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs bg-white dark:bg-blue-900/20 rounded-xl px-3 py-2 border border-blue-200 dark:border-blue-700">
+                        <span className="text-muted-foreground">Manager</span>
+                        <span className="font-mono font-medium text-blue-700 dark:text-blue-300">manager@salon.com</span>
+                      </div>
+                    </div>
+                    <a
+                      href="https://wa.me/254727957175?text=Hi%2C%20I%27d%20like%20the%20demo%20password%20for%20Salonyst"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full h-10 rounded-xl bg-green-500 hover:bg-green-600 text-white text-sm font-semibold transition-all duration-200 hover:shadow-lg hover:shadow-green-500/30 hover:-translate-y-0.5"
+                    >
+                      <img
+                        src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
+                        alt="WhatsApp"
+                        className="w-5 h-5"
+                      />
+                      Get Demo Password on WhatsApp
+                    </a>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
