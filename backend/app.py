@@ -13,9 +13,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///pos
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 # Production settings - use environment variables
-app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_SECURE'] = os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = os.getenv('SESSION_COOKIE_SAMESITE', 'Lax')  # 'Lax', 'Strict', or 'None'
+# For cross-domain Railway/Vercel deployments use SameSite=None (requires Secure=True)
+# For local dev, default to Lax
+app.config['SESSION_COOKIE_SAMESITE'] = os.getenv('SESSION_COOKIE_SAMESITE', 'None' if os.getenv('SESSION_COOKIE_SECURE', 'False').lower() == 'true' else 'Lax')
 
 # Initialize db with app
 db.init_app(app)
@@ -61,15 +63,17 @@ CORS(app,
 @app.after_request
 def after_request(response):
     """Add CORS headers to all responses, including errors"""
-    # Get the request origin
     origin = request.headers.get('Origin')
-    # Only allow specific origins (not wildcard) when credentials are used
+    if not origin:
+        return response
+
     allowed = ['http://localhost:5173', 'http://127.0.0.1:5173']
-    env_origins = os.getenv('CORS_ORIGINS', '')
+    env_origins = os.getenv('CORS_ORIGINS', '').strip()
     if env_origins:
-        allowed.extend(env_origins.split(','))
-    
-    if origin in allowed:
+        allowed.extend([o.strip() for o in env_origins.split(',')])
+
+    # If wildcard is configured, allow any origin
+    if '*' in allowed or origin in allowed:
         response.headers['Access-Control-Allow-Origin'] = origin
     response.headers['Access-Control-Allow-Credentials'] = 'true'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
@@ -93,18 +97,18 @@ def handle_500(e):
         'message': str(e) if app.debug else 'An error occurred'
     }), 500)
     
-    # Dynamic CORS origin
     origin = request.headers.get('Origin')
-    allowed = ['http://localhost:5173', 'http://127.0.0.1:5173']
-    env_origins = os.getenv('CORS_ORIGINS', '')
-    if env_origins:
-        allowed.extend(env_origins.split(','))
-    if origin in allowed:
-        response.headers['Access-Control-Allow-Origin'] = origin
+    if origin:
+        allowed = ['http://localhost:5173', 'http://127.0.0.1:5173']
+        env_origins = os.getenv('CORS_ORIGINS', '').strip()
+        if env_origins:
+            allowed.extend([o.strip() for o in env_origins.split(',')])
+        if '*' in allowed or origin in allowed:
+            response.headers['Access-Control-Allow-Origin'] = origin
     response.headers['Access-Control-Allow-Credentials'] = 'true'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, X-User-Id'
-    
+
     return response
 
 # Catch all exceptions to ensure CORS headers are always present
@@ -113,33 +117,31 @@ def handle_exception(e):
     """Handle all exceptions with CORS headers"""
     from flask import make_response
     import traceback
-    
-    # Log the error for debugging
+
     print(f"Exception: {str(e)}")
     if app.debug:
         traceback.print_exc()
-    
-    # If it's already a 500 error, let the specific handler deal with it
+
     if hasattr(e, 'code') and e.code == 500:
         return handle_500(e)
-    
+
     response = make_response(jsonify({
         'error': 'An error occurred',
         'message': str(e) if app.debug else 'An error occurred'
     }), 500)
-    
-    # Dynamic CORS origin
+
     origin = request.headers.get('Origin')
-    allowed = ['http://localhost:5173', 'http://127.0.0.1:5173']
-    env_origins = os.getenv('CORS_ORIGINS', '')
-    if env_origins:
-        allowed.extend(env_origins.split(','))
-    if origin in allowed:
-        response.headers['Access-Control-Allow-Origin'] = origin
+    if origin:
+        allowed = ['http://localhost:5173', 'http://127.0.0.1:5173']
+        env_origins = os.getenv('CORS_ORIGINS', '').strip()
+        if env_origins:
+            allowed.extend([o.strip() for o in env_origins.split(',')])
+        if '*' in allowed or origin in allowed:
+            response.headers['Access-Control-Allow-Origin'] = origin
     response.headers['Access-Control-Allow-Credentials'] = 'true'
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, X-User-Id'
-    
+
     return response
 
 

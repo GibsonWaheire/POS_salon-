@@ -10,6 +10,11 @@ export default function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />
   }
 
+  // Allow demo users and admins to access dashboard without subscription
+  if (user?.is_demo || user?.role === "admin") {
+    return children
+  }
+
   const status = user?.subscription_status || "none"
   const hasAccess = ALLOWED_STATUSES.includes(status)
   if (!hasAccess) {
